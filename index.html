@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>哥谭喵喵馆 v3.1</title>
+    <title>哥谭喵喵馆 v3.2.1</title>
     
     <!-- Icon Fix: Simplified and standardized -->
     <link rel="icon" type="image/png" href="https://files.catbox.moe/e15qui.png">
@@ -643,7 +643,7 @@
         </div>
 
         <!-- Bag Modal -->
-        <div v-if="showBag" class="fixed inset-0 bg-black/95 z-[200] p-6 flex flex-col">
+        <div v-if="showBag" class="fixed inset-0 bg-black/95 z-[200] p-6 flex flex-col" style="padding-top: calc(30px + env(safe-area-inset-top));">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold text-gray-200">背包</h2>
                 <button @click="showBag = false" class="text-gray-400"><i class="fas fa-times"></i></button>
@@ -681,7 +681,7 @@
                     </div>
                     <div class="bg-zinc-800 p-2 rounded">
                         <div class="text-[10px] text-gray-400">REWARD</div>
-                        <div class="text-lg font-mono text-yellow-500">+{{ Math.floor(currentSettlement.duration / 60) * 10 }} <i class="fas fa-coins text-xs"></i></div>
+                        <div class="text-lg font-mono text-yellow-500">Affinity {{ currentSettlement.isSuccess ? '+' : '' }}{{ affinityChangeValue }} | +{{ Math.floor(currentSettlement.duration / 60) * 10 }} <i class="fas fa-coins text-xs"></i></div>
                     </div>
                 </div>
                 
@@ -781,7 +781,7 @@
                                 <div class="font-bold text-gray-200">{{ item.name }}</div>
                                 <div class="text-xs text-gray-500 mt-1">{{ item.desc }}</div>
                                 <div class="text-[10px] text-yellow-600 mt-1">
-                                    {{ item.type === 'consumable' ? '❤️ 效果: +2~3' : '🏆 收藏品' }}
+                                    {{ item.type === 'consumable' ? '❤️ 效果: ?' : '🏆 收藏品' }}
                                 </div>
                             </div>
                         </div>
@@ -952,6 +952,7 @@
                 const audioPlayer = ref(null);
                 const isProcessingFocusTick = ref(false); 
                 const isFinishingFocus = ref(false); 
+                const affinityChangeValue = ref(0);
 
                 watch(currentTab, () => {
                     if (contentArea.value) {
@@ -1142,23 +1143,65 @@
                 const getUserRealLifeContext = () => {
                     const pendingTodosCount = user.todos ? user.todos.filter(t => !t.done).length : 0;
                     const nearestDDLStr = nearestDDL.value ? `${nearestDDL.value.title} (Time left: ${ddlCountdownStr.value})` : "None";
+                    
+                    // Logic Update: Check DDL < 5 days
+                    let ddlContext = "None";
+                    if (nearestDDL.value) {
+                        const diff = new Date(nearestDDL.value.time).getTime() - Date.now();
+                        const days = diff / (1000 * 60 * 60 * 24);
+                        if (days <= 5) {
+                            ddlContext = `URGENT DEADLINE: ${nearestDDL.value.title} in ${days.toFixed(1)} days!`;
+                        } else {
+                            ddlContext = `${nearestDDL.value.title} (Time left: ${ddlCountdownStr.value})`;
+                        }
+                    }
+
                     const eventContext = todayEventContext.value ? todayEventContext.value : "None";
-                    return `Gender: ${user.gender}. Pending Tasks: ${pendingTodosCount}. Urgent DDL: ${nearestDDLStr}. Special Event: ${eventContext}.`;
+                    
+                    // Recent Mail Context
+                    const lastMail = user.mailbox.length > 0 ? user.mailbox[user.mailbox.length - 1] : null;
+                    const mailContext = lastMail ? `Recent Mail from ${lastMail.from}: ${lastMail.content.substring(0, 20)}...` : "No recent mail.";
+
+                    return `Gender: ${user.gender}. Pending Tasks: ${pendingTodosCount}. ${ddlContext}. Special Event: ${eventContext}. ${mailContext}`;
                 };
 
                 const generateMail = async () => {
-                    const isRandomDC = Math.random() < 0.05; 
-                    let sender = isRandomDC ? 'Joker' : (cats.value.length > 0 ? cats.value[Math.floor(Math.random() * cats.value.length)].name : 'Alfred');
-                    const prompt = `Write mail from ${sender}. Format: Content|ItemName|Type(collectible/consumable)|ItemDesc. Simplified Chinese.`;
+                    if (user.mailbox.length >= 4) return;
+                    if (Math.random() > 0.25) return; // 25% chance
+
+                    // Logic Update: Sender Logic
+                    // 1. Filter cats that are OUT
+                    const catsOut = cats.value.filter(c => c.isOut);
+                    let sender = '';
+                    let isRandomDC = false;
+
+                    // 70% chance to be a cat (if any are out), 30% chance (or fallback) to be random DC
+                    if (catsOut.length > 0 && Math.random() < 0.7) {
+                        sender = catsOut[Math.floor(Math.random() * catsOut.length)].name;
+                    } else {
+                        isRandomDC = true;
+                        sender = 'Random DC Character'; // AI will pick
+                    }
+
+                    const prompt = `Generate a short letter/message to User.
+                    Sender Context: ${isRandomDC ? 'A random DC character (e.g., Joker, Catwoman, Gordon, etc.)' : 'Character ' + sender + ' who is currently OUT on patrol/mission'}.
+                    Length: Max 50 words. Language: Simplified Chinese.
+                    Tone: In-character.
+                    Include Item? 60% chance.
+                    Output JSON: { "sender": "Name", "content": "Message...", "item": { "name": "ItemName", "icon": "Emoji", "desc": "Short Desc" } or null }`;
+
                     try {
-                        const content = await callAI(prompt, "Generator", 150);
-                        const parts = content.split('|');
-                        if (parts.length >= 4) {
+                        const res = await callAI(prompt, "Mail System", 150);
+                        const data = parseAIJSON(res);
+                        
+                        if (data && data.sender && data.content) {
+                            const newItem = data.item ? { ...data.item, id: Date.now(), type: 'collectible' } : null;
+                            
                             user.mailbox.push({
-                                from: sender,
+                                from: data.sender,
                                 date: getCurrentTimeStr(),
-                                content: cleanText(parts[0]),
-                                item: { id: Date.now(), name: cleanText(parts[1]), type: parts[2].trim(), desc: cleanText(parts[3]) },
+                                content: cleanText(data.content),
+                                item: newItem,
                                 read: false, claimed: false
                             });
                             user.dailyMailCount++; 
@@ -1220,50 +1263,72 @@
                     const lastSyncTime = parseInt(localStorage.getItem('last_sync_time') || '0');
                     const lastSyncDate = new Date(lastSyncTime).toDateString();
 
-                    // Case 1: Midnight Passed (Date changed since last sync/login)
-                    if (lastSyncDate !== todayStr) {
+                    // Logic A Update:
+                    const isNewDay = lastSyncDate !== todayStr;
+                    const isThreeHours = (now - lastSyncTime) > (3 * 60 * 60 * 1000);
+
+                    // 1. New Day Check (Midnight Passed) -> Force logic
+                    if (isNewDay) {
                         checkSpecialEvent();
                         if (settings.apiKey) {
-                            await generateAlfredReport();
-                            await generateAllCatDiaries();
+                            await generateAlfredReport(); // Generate report based on YESTERDAY'S context
+                            await generateAllCatDiaries(); // Generate diaries based on logs
                         }
                         user.dailyMailCount = 0;
                         user.lastLoginDate = todayStr;
                         user.lastLogin = now;
                         await refreshAllStatus(true);
                     } 
-                    // Case 2: Same Day
-                    else {
-                        // Check if > 3 hours since last sync
-                        const threeHours = 3 * 60 * 60 * 1000;
-                        if (now - lastSyncTime > threeHours) {
-                            await refreshAllStatus(true);
-                        } else {
-                            console.log("Check skipped: < 3 hours since last sync.");
-                        }
+                    // 2. Same Day but > 3 Hours -> Refresh
+                    else if (isThreeHours) {
+                        await refreshAllStatus(true);
                     }
+                    // Else: Do nothing (save API calls)
                 };
 
                 const generateAlfredReport = async () => {
+                    // Summarize based on current state (assuming it reflects end of yesterday)
                     const doneTasks = user.todos.filter(t => t.done).map(t => t.text).join(', ');
                     const pendingTasks = user.todos.filter(t => !t.done).map(t => t.text).join(', ');
-                    const schedule = user.schedule.map(s => `${s.time} ${s.event}`).join(', ');
-                    const prompt = `Role: Alfred Pennyworth. Task: Daily Morning Briefing. Completed: ${doneTasks}. Pending: ${pendingTasks}. Schedule: ${schedule}. Summarize yesterday's progress (100 words). Be polite. Language: Simplified Chinese.`;
+                    
+                    const prompt = `Role: Alfred Pennyworth. Task: Daily Briefing based on yesterday.
+                    Completed Yesterday: ${doneTasks || 'None'}.
+                    Pending Remaining: ${pendingTasks || 'None'}.
+                    Summarize progress (100 words). Be polite. Language: Simplified Chinese.`;
+                    
                     try {
                         const summary = await callAI(prompt, "You are Alfred.", 200);
-                        user.missionReports.push({ missionName: '昨日总结报告', date: new Date().toLocaleDateString(), duration: 0, executor: 'Alfred', logs: [], summary: cleanText(summary), status: 'COMPLETED' });
+                        user.missionReports.push({ 
+                            missionName: '昨日总结报告', 
+                            date: new Date(Date.now() - 86400000).toLocaleDateString(), 
+                            duration: 0, 
+                            executor: 'Alfred', 
+                            logs: [], 
+                            summary: cleanText(summary), 
+                            status: 'COMPLETED' 
+                        });
+                        // Clear DONE todos only
                         user.todos = user.todos.filter(t => !t.done);
                     } catch (e) { console.error("Alfred Report Error", e); }
                 };
 
                 const generateAllCatDiaries = async () => {
                     for (const cat of cats.value) {
+                         // Only generate if there was interaction (logs or chat)
                          if (cat.chatHistory.length > 0 || cat.diary.length > 0) {
-                             const prompt = `Character: ${cat.name}. Task: Write a diary entry (200 words). 1st Person perspective. Language: Simplified Chinese.`;
+                             const logsText = cat.diary.map(d => d.content).join('; ');
+                             const chatText = cat.chatHistory.map(c => `${c.role}: ${c.content}`).join('; ');
+                             
+                             const prompt = `Character: ${cat.name}. Task: Write a diary entry (200-300 words). 
+                             Based on yesterday's interactions: ${logsText} ${chatText}.
+                             Tone: In-character (Human Language). Language: Simplified Chinese.`;
+                             
                              try {
                                  const res = await callAI(prompt, STRICT_CANON_PROMPT, 400);
                                  cat.logs.push({ date: new Date(Date.now() - 86400000).toLocaleDateString(), content: cleanText(res) });
-                                 cat.chatHistory = []; cat.diary = [];
+                                 // Clear logs/chat after archiving to diary
+                                 cat.chatHistory = []; 
+                                 cat.diary = [];
                              } catch(e) { console.error(e); }
                          }
                     }
@@ -1274,12 +1339,13 @@
                     const now = Date.now();
                     const lastSync = localStorage.getItem('last_sync_time');
                     if (lastSync && (now - parseInt(lastSync) < 20 * 60 * 1000)) return;
-                    checkMailboxLogic();
+                    
                     await refreshAllStatus(false);
+                    await checkMailboxLogic();
                 };
 
                 const checkMailboxLogic = async () => {
-                    if (user.mailbox.length < 4 && Math.random() < 0.25) { await generateMail(); }
+                    await generateMail();
                 };
 
                 const sendMessage = async (arg1 = null, arg2 = false) => {
@@ -1310,7 +1376,6 @@
                     
                     try {
                         const now = Date.now();
-                        // 1. History Logic: Only last 10 msgs if within 20 mins
                         let recentHistory = "";
                         if (sendingCat.lastInteractionTimestamp && (now - sendingCat.lastInteractionTimestamp < 20 * 60 * 1000)) {
                              recentHistory = sendingCat.chatHistory.slice(-10).map(m => `${m.role}: ${m.content}`).join('\n');
@@ -1318,11 +1383,8 @@
                              recentHistory = "(Previous conversation expired/too old)";
                         }
                         
-                        // 6 & 7. Diaries and Reports
                         const recentDiaries = sendingCat.diary.slice(-5).map(d => `[${d.time}] ${d.content}`).join('\n');
                         const relevantReports = user.missionReports.filter(r => r.executor.includes(sendingCat.name) || r.missionName.includes(sendingCat.name)).slice(-3).map(r => `Mission: ${r.missionName} - ${r.summary}`).join('\n');
-
-                        // 3 & 4. Context
                         const context = getUserRealLifeContext();
                         
                         const prompt = `
@@ -1359,7 +1421,7 @@
                             if(status) sendingCat.status = status;
                             if(voice) sendingCat.innerVoice = voice;
                             sendingCat.chatHistory.push({ role: 'assistant', content: reply });
-                            checkMailboxLogic();
+                            await checkMailboxLogic(); // Check mail on interaction
                         } else {
                              sendingCat.chatHistory.push({ role: 'assistant', content: cleanText(responseRaw) });
                         }
@@ -1486,20 +1548,31 @@
                     if(audioPlayer.value) audioPlayer.value.pause();
                     isFocusing.value = false;
                     
-                    // Logic update: Do NOT push to report yet. Store in temp object.
+                    // Logic update: New Affinity Rule for Focus
+                    // Success: +1 per 10 mins.
+                    // Fail (Early Exit): - (0~5)
+                    let affinityDelta = 0;
+                    if (success) {
+                        affinityDelta = Math.floor(minutes / 10);
+                    } else {
+                        affinityDelta = -Math.floor(Math.random() * 6); // 0 to 5
+                    }
+                    affinityChangeValue.value = affinityDelta;
+
                     currentSettlement.missionName = focusAction.value; 
                     currentSettlement.duration = success ? (minutes * 60) : (minutes * 60 - focusTime.value);
                     currentSettlement.status = success ? 'success' : 'failed';
-                    currentSettlement.plannedMinutes = minutes; // Store for reward calc
+                    currentSettlement.plannedMinutes = minutes; 
                     currentSettlement.isSuccess = success;
+                    currentSettlement.affinityDelta = affinityDelta;
                     
                     let summary = "任务结束。";
                     if(settings.apiKey) {
                         const form = focusCat.value.isHuman ? "Human Form" : "Cat Form";
                         const prompt = success ? 
-                            `Identity: ${focusCat.value.name}. Traits: ${focusCat.value.personality}. User finished task. Evaluation? (Strictly In-Character)` : 
-                            `Identity: ${focusCat.value.name}. Traits: ${focusCat.value.personality}. User quit task. Scold? (Strictly In-Character)`;
-                        summary = await callAI(prompt, STRICT_CANON_PROMPT, 200);
+                            `Identity: ${focusCat.value.name}. Traits: ${focusCat.value.personality}. User finished task. Write Evaluation (150 words). Subjective, In-character. Language: Simplified Chinese.` : 
+                            `Identity: ${focusCat.value.name}. Traits: ${focusCat.value.personality}. User GAVE UP task. Write Scolding/Evaluation (150 words). Subjective, In-character. Language: Simplified Chinese.`;
+                        summary = await callAI(prompt, STRICT_CANON_PROMPT, 300);
                     }
                     currentSettlement.summary = cleanText(summary);
                     
@@ -1511,12 +1584,12 @@
                     const duration = currentSettlement.duration;
                     const success = currentSettlement.isSuccess;
                     const minutes = currentSettlement.plannedMinutes;
+                    const affChange = currentSettlement.affinityDelta;
+                    
+                    focusCat.value.affinity = Math.max(0, focusCat.value.affinity + affChange);
                     
                     if(success) {
-                        focusCat.value.affinity += Math.floor(minutes / 20); 
                         user.coins += (minutes * 10);
-                    } else {
-                        focusCat.value.affinity = Math.max(0, focusCat.value.affinity - 2);
                     }
                     
                     user.missionReports.push({ 
@@ -1558,6 +1631,8 @@
                 const refreshAllStatus = async (forceUpdate = false) => {
                     if (!settings.apiKey) return;
                     localStorage.setItem('last_sync_time', Date.now());
+                    
+                    // Logic A Override: If not forcing, and auto update is off, return.
                     if (!forceUpdate && !settings.autoUpdate) return; 
                     
                     isUpdatingStatus.value = true;
@@ -1566,7 +1641,6 @@
                     const isNight = (h >= 22 || h < 6);
                     const userContext = getUserRealLifeContext();
                     
-                    // Use all cats to ensure global rules (e.g. at least 2 home) are respected
                     const catsToUpdate = cats.value; 
 
                     try {
@@ -1662,7 +1736,41 @@
                 const filteredShopItems = computed(() => shopItems.value.filter(i => i.category === currentShopCategory.value));
                 const consumableItems = computed(() => user.inventory.filter(i => i.type === 'consumable'));
                 const collectibleItems = computed(() => user.inventory.filter(i => i.type === 'collectible' || i.type === 'letter'));
-                const useItem = async (item) => { if (item.type === 'collectible') { if(item.type === 'letter') { alert(`【${item.name}】\n\n${item.fullContent || item.desc}`); } return; } const idx = user.inventory.findIndex(i => i === item); if(idx > -1) user.inventory.splice(idx, 1); if(selectedCat.value) { selectedCat.value.affinity += 2; const msg = `(使用物品) ${item.name}`; await sendMessage(msg, true); } showBag.value = false; };
+                
+                // Logic Update: Item Usage with Affinity Check
+                const useItem = async (item) => { 
+                    if (item.type === 'collectible') { 
+                        if(item.type === 'letter') { alert(`【${item.name}】\n\n${item.fullContent || item.desc}`); } 
+                        return; 
+                    } 
+                    const idx = user.inventory.findIndex(i => i === item); 
+                    if(idx > -1) user.inventory.splice(idx, 1); 
+                    
+                    if(selectedCat.value) { 
+                        let affinityBonus = 0;
+                        if(settings.apiKey) {
+                            // AI check for preference
+                            const prompt = `User gives [${item.name}] to ${selectedCat.value.name}. Cat Personality: ${selectedCat.value.personality}. 
+                            Does cat like it? 
+                            JSON: { "liked": boolean, "reaction": "Action description" }`;
+                            try {
+                                const res = await callAI(prompt, "Game AI", 100);
+                                const data = parseAIJSON(res);
+                                if(data) {
+                                    affinityBonus = data.liked ? (Math.floor(Math.random()*3)+1) : -(Math.floor(Math.random()*3)+2);
+                                    selectedCat.value.status = data.reaction || 'Interaction';
+                                } else { affinityBonus = 1; }
+                            } catch(e) { affinityBonus = 1; }
+                        } else { affinityBonus = 2; }
+
+                        selectedCat.value.affinity = Math.max(0, selectedCat.value.affinity + affinityBonus);
+                        
+                        const msg = `(使用物品: ${item.name}) ${affinityBonus > 0 ? '❤️ 喜欢' : '💔 不喜欢'}`; 
+                        await sendMessage(msg, true); 
+                    } 
+                    showBag.value = false; 
+                };
+                
                 const readItem = (item) => { if (item.type === 'letter') alert(`【${item.name}】\n\n${item.desc}`); };
                 const unreadMailCount = computed(() => user.mailbox.filter(m => !m.read).length);
                 const openMailbox = () => { showMailModal.value = true; user.mailbox.forEach(m => m.read = true); };
@@ -1679,7 +1787,6 @@
                     try {
                         const isMarvel = Math.random() < 0.2;
                         const universe = isMarvel ? "MARVEL Universe (Avengers/X-Men)" : "DC Universe (Batfamily/Justice League)";
-                        // Exclude existing cats
                         const existingNames = cats.value.map(c => c.name).join(', ');
                         
                         const prompt = `Generate random superhero cat from ${universe}. 
@@ -1750,7 +1857,7 @@
                     newItem, isSubmittingItem, submitShopItem, manualImgMode,
                     newSchedule, addSchedule, sortedSchedule, icsInput, handleIcsImport, showIcsHelp,
                     currentTime, calendarContainer, currentTimePixels, getEventTop, toggleScheduleDone, deleteSchedule, handleTimelineClick, handleAddClick,
-                    confirmSettlement
+                    confirmSettlement, affinityChangeValue
                 };
             }
         }).mount('#app');
