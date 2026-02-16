@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>哥谭喵喵馆 v3.0</title>
+    <title>哥谭喵喵馆 v3.2</title>
     
     <!-- Icon Fix: Added standard apple-touch-icon without sizes for better compatibility -->
     <link rel="icon" href="https://files.catbox.moe/e15qui.png" type="image/png">
@@ -159,15 +159,6 @@
         }
         @keyframes cardAppear { from { transform: scale(0) rotate(-10deg); opacity: 0; } to { transform: scale(1) rotate(0); opacity: 1; } }
 
-        .focus-log-item {
-            font-size: 12px; color: #aaa; margin-bottom: 6px; padding-left: 10px;
-            border-left: 2px solid #555; animation: fadeIn 0.5s;
-        }
-        .focus-log-item.harass-log {
-             border-left-color: #ef4444; color: #fca5a5;
-        }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
         .inner-voice-bubble {
             background: #2a2a2a; border: 1px solid #444; color: #bbb;
             padding: 8px 12px; border-radius: 12px; font-size: 12px;
@@ -193,6 +184,52 @@
             font-weight: bold; border-radius: 20px; box-shadow: 0 0 15px rgba(212,175,55,0.6);
             animation: pulse 2s infinite;
         }
+
+        /* --- Beautified Focus UI --- */
+        .focus-overlay {
+            position: fixed; inset: 0; z-index: 60;
+            background: radial-gradient(circle at center, #2a2a2a 0%, #000000 100%);
+            display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        .focus-timer {
+            font-family: 'Courier New', monospace;
+            font-size: 5rem; font-weight: bold; color: #eee;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+            letter-spacing: -2px;
+        }
+        .focus-mission-text {
+            color: var(--bat-yellow); letter-spacing: 2px; text-transform: uppercase;
+            font-weight: bold; font-size: 0.9rem; margin-top: 10px;
+        }
+        .focus-log-container {
+            width: 100%; height: 160px; overflow-y: auto;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 10px; margin-top: 10px;
+            mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+        }
+        .focus-log-item {
+            font-family: 'Courier New', monospace; font-size: 11px;
+            color: #888; margin-bottom: 6px; display: flex;
+            animation: slideIn 0.3s ease-out;
+        }
+        .focus-log-item .time { color: #555; margin-right: 8px; min-width: 45px; }
+        .focus-log-item .content { color: #bbb; }
+        .focus-log-item.harass-log .content { color: #ff6b6b; }
+        
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes pulse-border { 0% { border-color: rgba(212,175,55,0.3); } 50% { border-color: rgba(212,175,55,0.8); } 100% { border-color: rgba(212,175,55,0.3); } }
+
     </style>
 </head>
 <body>
@@ -588,282 +625,79 @@
             </div>
         </div>
 
-        <!-- Mailbox Modal -->
-        <div v-if="showMailModal" class="fixed inset-0 bg-black/90 z-[70] p-6 flex flex-col animate-fade-in" style="padding-top: calc(30px + env(safe-area-inset-top));">
-            <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
-                <h2 class="text-xl font-bold text-gray-200"><i class="fas fa-envelope-open-text mr-2"></i> 加密信箱</h2>
-                <button @click="showMailModal = false" class="text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
-            </div>
-            <div class="flex-1 overflow-y-auto custom-scrollbar space-y-3">
-                <div v-if="user.mailbox.length === 0" class="text-center text-gray-600 mt-10">暂无新邮件</div>
-                <div v-for="(mail, idx) in user.mailbox" :key="idx" class="mail-item" :class="{'unread': !mail.read}">
-                    <div class="flex justify-between mb-1">
-                        <span class="font-bold text-yellow-600 text-sm">{{ mail.from }}</span>
-                        <span class="text-[10px] text-gray-500">{{ mail.date }}</span>
-                    </div>
-                    <p class="text-xs text-gray-300 mb-2 leading-relaxed">{{ mail.content }}</p>
-                    <div v-if="mail.item" class="bg-zinc-800 p-2 rounded flex justify-between items-center border border-zinc-700">
-                        <div class="flex items-center">
-                            <span class="text-lg mr-2">🎁</span>
-                            <div>
-                                <div class="text-xs font-bold text-gray-300">{{ mail.item.name }}</div>
-                                <div class="text-[9px] text-gray-500">{{ mail.item.desc }}</div>
-                            </div>
-                        </div>
-                        <button v-if="!mail.claimed" @click="claimMailItem(mail)" class="bg-blue-700 text-white text-[10px] px-2 py-1 rounded hover:bg-blue-600">接收</button>
-                        <span v-else class="text-[10px] text-green-500"><i class="fas fa-check"></i> 已领取</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Reports (Archives) Modal -->
-        <div v-if="showReportModal" class="fixed inset-0 bg-black/90 z-[70] p-6 flex flex-col animate-fade-in" style="padding-top: calc(30px + env(safe-area-inset-top));">
-            <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
-                <h2 class="text-xl font-bold text-gray-200"><i class="fas fa-archive mr-2"></i> 哥谭档案库</h2>
-                <button @click="showReportModal = false" class="text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
-            </div>
-            <div class="flex-1 overflow-y-auto custom-scrollbar space-y-4">
-                <div v-if="user.missionReports.length === 0" class="text-center text-gray-600 mt-10">档案库为空</div>
-                <div v-for="(report, idx) in user.missionReports.slice().reverse()" :key="idx" class="bg-zinc-800 p-4 rounded-xl border border-zinc-700">
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-xs font-mono text-gray-500">{{ report.date }}</span>
-                        <span :class="report.status === 'COMPLETED' ? 'text-green-500' : 'text-red-500'" class="text-[10px] font-bold border border-current px-1 rounded">{{ report.status }}</span>
-                    </div>
-                    <h3 class="font-bold text-gray-200 mb-1">{{ report.missionName }}</h3>
-                    <div class="text-[10px] text-gray-400 mb-2">执行: {{ report.executor }} | 耗时: {{ Math.floor(report.duration/60) }} min</div>
-                    <div class="bg-black/30 p-2 rounded text-xs text-gray-300 italic border-l-2 border-yellow-600">
-                        "{{ report.summary }}"
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Bag Modal -->
-        <div v-if="showBag" class="fixed inset-0 bg-black/90 z-[70] p-6 flex flex-col animate-fade-in">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-gray-200">背包</h2>
-                <button @click="showBag = false" class="text-gray-400"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="flex space-x-2 mb-4">
-                <button class="flex-1 bg-zinc-800 py-2 rounded text-xs text-gray-300 hover:bg-zinc-700">消耗品</button>
-                <button class="flex-1 bg-zinc-800 py-2 rounded text-xs text-gray-300 hover:bg-zinc-700">收藏品</button>
-            </div>
-            <div class="grid grid-cols-3 gap-3 overflow-y-auto custom-scrollbar">
-                <div v-for="item in user.inventory" :key="item.uniqueId" @click="useItem(item)" class="bg-zinc-800 p-2 rounded flex flex-col items-center justify-center border border-zinc-700 aspect-square cursor-pointer hover:border-yellow-600">
-                    <div class="text-2xl mb-1">{{ item.icon }}</div>
-                    <div class="text-[10px] text-center text-gray-300 leading-tight">{{ item.name }}</div>
-                    <div class="text-[8px] text-gray-500 mt-1 scale-90">{{ item.type === 'consumable' ? '点击使用' : '查看' }}</div>
-                </div>
-                <div v-if="user.inventory.length === 0" class="col-span-3 text-center text-gray-600 py-10">背包空空如也</div>
-            </div>
-        </div>
-
-        <!-- Mission Settlement Modal -->
-        <div v-if="showMissionSettlementModal" class="fixed inset-0 bg-black/95 z-[90] flex items-center justify-center p-6 animate-fade-in">
-            <div class="bg-zinc-900 w-full max-w-md p-6 rounded-2xl border-2 border-yellow-600 shadow-[0_0_30px_rgba(212,175,55,0.2)] text-center">
-                <div class="text-4xl mb-2">{{ currentSettlement.status === 'success' ? '🏆' : '⚠️' }}</div>
-                <h2 class="text-2xl font-bold text-white mb-1">MISSION {{ currentSettlement.status === 'success' ? 'ACCOMPLISHED' : 'ABORTED' }}</h2>
-                <p class="text-yellow-600 text-sm font-bold mb-6 tracking-widest uppercase">{{ currentSettlement.missionName }}</p>
-                
-                <div class="bg-black p-4 rounded-lg mb-6 text-left border border-zinc-800">
-                    <p class="text-xs text-gray-500 font-mono mb-2">> EVALUATION_LOG:</p>
-                    <p class="text-sm text-gray-300 italic leading-relaxed">{{ currentSettlement.summary }}</p>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-4 mb-6">
-                    <div class="bg-zinc-800 p-2 rounded">
-                        <div class="text-[10px] text-gray-400">DURATION</div>
-                        <div class="text-lg font-mono text-white">{{ Math.floor(currentSettlement.duration / 60) }} <span class="text-xs">MIN</span></div>
-                    </div>
-                    <div class="bg-zinc-800 p-2 rounded">
-                        <div class="text-[10px] text-gray-400">REWARD</div>
-                        <div class="text-lg font-mono text-yellow-500">+{{ Math.floor(currentSettlement.duration / 60) * 10 }} <i class="fas fa-coins text-xs"></i></div>
-                    </div>
-                </div>
-                
-                <button @click="showMissionSettlementModal = false" class="bg-yellow-700 text-white w-full py-3 rounded-lg font-bold hover:bg-yellow-600">CONFIRM</button>
-            </div>
-        </div>
-
-        <!-- Edit Cat Modal -->
-        <div v-if="showEditCatModal && selectedCat" class="fixed inset-0 bg-black/80 z-[80] flex items-center justify-center p-6">
-            <div class="bg-zinc-800 w-full max-w-sm p-5 rounded-xl border border-zinc-600">
-                <h3 class="font-bold text-white mb-4">管理: {{ selectedCat.name }}</h3>
-                <label class="text-xs text-gray-400">修改昵称</label>
-                <input v-model="selectedCat.name" class="mb-4 bg-zinc-900 border-zinc-700">
-                <label class="text-xs text-gray-400">修改照片 (默认形态)</label>
-                <input type="file" @change="(e)=>handleSpecificImageUpload(e, 'default')" class="mb-4 text-xs w-full">
-                <label class="text-xs text-gray-400">修改照片 (拟人形态)</label>
-                <input type="file" @change="(e)=>handleSpecificImageUpload(e, 'human')" class="mb-4 text-xs w-full">
-                <div class="flex gap-2">
-                    <button @click="showEditCatModal = false" class="flex-1 bg-zinc-600 text-white py-2 rounded">取消</button>
-                    <button @click="releaseCat" class="flex-1 bg-red-900 text-red-200 py-2 rounded" :disabled="isReleasing">{{ isReleasing ? '告别中...' : '放生 (删除)' }}</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Diary/Logs Modal -->
-        <div v-if="showDiaryModal || showLogModal" class="fixed inset-0 bg-black/90 z-[70] p-6 flex flex-col animate-fade-in" style="padding-top: calc(30px + env(safe-area-inset-top));">
-            <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
-                <h2 class="text-xl font-bold text-gray-200">
-                    {{ showDiaryModal ? '实时监控记录' : '过往日记' }}
-                </h2>
-                <button @click="showDiaryModal=false; showLogModal=false" class="text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
-            </div>
-            <div class="flex-1 overflow-y-auto custom-scrollbar p-2">
-                <button v-if="showDiaryModal" @click="generateFullDiary" :disabled="isGeneratingDiary" class="w-full bg-zinc-800 text-yellow-600 text-xs py-3 rounded mb-4 border border-zinc-700">
-                    <i class="fas fa-magic mr-1" :class="{'fa-spin': isGeneratingDiary}"></i> {{ isGeneratingDiary ? '正在回溯监控录像...' : '生成今日完整记录' }}
-                </button>
-                
-                <!-- Today's Logs -->
-                <div v-if="showDiaryModal">
-                    <div v-for="(log, i) in selectedCat.diary" :key="i" class="diary-line text-sm text-gray-300 mb-2">
-                        <span class="text-xs text-yellow-600 font-mono font-bold">{{ log.time }}</span><br>
-                        {{ log.content }}
-                    </div>
-                </div>
-                
-                <!-- Past Logs -->
-                <div v-if="showLogModal">
-                    <div v-for="(log, i) in selectedCat.logs" :key="i" class="log-paper relative mb-4" @click="shareMemory(log)">
-                        <div class="border-b border-gray-400 pb-1 mb-2 flex justify-between">
-                            <span class="font-bold">{{ log.date }}</span>
-                            <i class="fas fa-share-alt text-gray-500"></i>
-                        </div>
-                        <p class="text-sm leading-relaxed whitespace-pre-wrap">{{ log.content }}</p>
-                    </div>
-                    <div v-if="selectedCat.logs.length === 0" class="text-center text-gray-500 mt-10">日记本是空的...</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Special Event Modal -->
-        <div v-if="showSpecialEventModal" class="fixed inset-0 bg-black/95 z-[100] flex items-center justify-center p-6 animate-fade-in">
-            <div class="bg-[#fff1f2] w-full max-w-md p-6 rounded-sm shadow-[0_0_50px_rgba(255,20,147,0.5)] relative overflow-hidden text-black rotate-1">
-                <div class="absolute top-0 left-0 w-full h-2 bg-pink-500"></div>
-                <div class="absolute bottom-0 right-0 text-[100px] text-pink-500 opacity-10 pointer-events-none">♥</div>
-                
-                <h2 class="text-2xl font-serif font-bold text-pink-800 mb-4 text-center">A Special Moment</h2>
-                <div class="text-sm font-serif leading-relaxed text-gray-800 mb-6 whitespace-pre-wrap max-h-[60vh] overflow-y-auto">
-                    {{ currentSpecialEventContent }}
-                </div>
-                
-                <button @click="closeSpecialEvent" class="w-full bg-pink-600 text-white py-3 rounded font-bold hover:bg-pink-500 shadow-lg">珍藏这份回忆</button>
-            </div>
-        </div>
-        
-        <div v-if="showShopModal" class="fixed inset-0 bg-black/95 z-[80] flex flex-col p-6 animate-fade-in" style="padding-top: calc(30px + env(safe-area-inset-top));">
-            <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
-                <h2 class="text-xl font-bold text-gray-200"><i class="fas fa-shopping-basket mr-2"></i> 补给站</h2>
-                <button @click="showShopModal = false" class="text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
-            </div>
+        <!-- Focus UI (Redesigned) -->
+        <div v-if="isFocusing" class="focus-overlay p-6 animate-fade-in">
+            <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none"></div>
             
-            <div class="flex space-x-2 mb-4 overflow-x-auto">
-                <button @click="currentShopCategory='food'" :class="currentShopCategory==='food'?'bg-yellow-700 text-white':'bg-zinc-800 text-gray-400'" class="px-3 py-1 rounded text-xs whitespace-nowrap">食品</button>
-                <button @click="currentShopCategory='toy'" :class="currentShopCategory==='toy'?'bg-yellow-700 text-white':'bg-zinc-800 text-gray-400'" class="px-3 py-1 rounded text-xs whitespace-nowrap">玩具</button>
-                <button @click="currentShopCategory='supply'" :class="currentShopCategory==='supply'?'bg-yellow-700 text-white':'bg-zinc-800 text-gray-400'" class="px-3 py-1 rounded text-xs whitespace-nowrap">日用</button>
-                <button @click="currentShopCategory='import'" :class="currentShopCategory==='import'?'bg-blue-700 text-white':'bg-zinc-800 text-gray-400'" class="px-3 py-1 rounded text-xs whitespace-nowrap"><i class="fas fa-truck-loading mr-1"></i>进货</button>
-            </div>
-
-            <div class="flex-1 overflow-y-auto custom-scrollbar">
-                <div v-if="currentShopCategory !== 'import'" class="grid grid-cols-1 gap-4">
-                     <div v-for="item in filteredShopItems" :key="item.id" class="bg-zinc-800 p-4 rounded-xl flex justify-between items-center border border-zinc-700 shadow-md">
-                        <div class="flex items-center">
-                            <div class="text-3xl mr-4 bg-black w-12 h-12 flex items-center justify-center rounded-full">{{ item.icon }}</div>
-                            <div>
-                                <div class="font-bold text-gray-200">{{ item.name }}</div>
-                                <div class="text-xs text-gray-500 mt-1">{{ item.desc }}</div>
-                                <div class="text-[10px] text-yellow-600 mt-1">
-                                    {{ item.type === 'consumable' ? '❤️ 效果: +2~3' : '🏆 收藏品' }}
-                                </div>
-                            </div>
-                        </div>
-                        <button @click="buyItem(item)" class="bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-yellow-600">
-                            {{ item.price }} <span class="text-[10px]">G</span>
-                        </button>
+            <div class="relative z-10 flex flex-col items-center mt-4 shrink-0">
+                <div class="relative group">
+                    <img :src="focusCat.isHuman ? (focusCat.image_human || focusCat.image) : focusCat.image" 
+                        class="w-24 h-24 rounded-full border-2 border-yellow-600 shadow-[0_0_30px_rgba(212,175,55,0.4)] object-cover mb-3 transition-transform duration-500 hover:scale-105">
+                    <div class="absolute -bottom-1 -right-1 bg-black text-xs text-yellow-500 px-2 py-0.5 rounded border border-yellow-600 font-mono">
+                        {{ focusCat.name }}
                     </div>
-                    <div v-if="filteredShopItems.length === 0" class="text-center text-gray-600 mt-10">该货架暂时空置</div>
                 </div>
-
-                <div v-if="currentShopCategory === 'import'" class="bg-zinc-800 p-5 rounded-xl border border-dashed border-zinc-600 shadow-inner">
-                    <h3 class="font-bold mb-3 text-gray-300 flex items-center"><i class="fas fa-box-open mr-2"></i> 供应商进货通道</h3>
-                    <div class="space-y-2 mb-3">
-                        <input v-model="newItem.name" placeholder="商品名称" class="text-sm bg-zinc-900 border-zinc-700">
-                        <input v-model="newItem.desc" placeholder="商品描述" class="text-sm bg-zinc-900 border-zinc-700">
-                        <div class="flex gap-2">
-                            <input v-model="newItem.icon" placeholder="图标(emoji)" class="text-sm bg-zinc-900 border-zinc-700 w-1/3">
-                            <select v-model="newItem.category" class="text-sm bg-zinc-900 border-zinc-700 flex-1">
-                                <option value="food">食品</option>
-                                <option value="toy">玩具</option>
-                                <option value="supply">日用</option>
-                            </select>
-                        </div>
-                    </div>
-                    <button @click="submitShopItem" :disabled="isSubmittingItem" class="w-full bg-zinc-700 hover:bg-zinc-600 text-white text-xs font-bold py-3 rounded-lg flex justify-center items-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                        <i v-if="isSubmittingItem" class="fas fa-circle-notch fa-spin mr-2"></i>
-                        {{ isSubmittingItem ? 'AI正在审核中...' : '提交上架申请' }}
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Focus UI -->
-        <div v-if="isFocusing" class="fixed inset-0 bg-black z-[60] flex flex-col p-6 animate-fade-in">
-            <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-30 pointer-events-none"></div>
-            
-            <div class="relative z-10 flex flex-col items-center mt-4">
-                <img :src="focusCat.isHuman ? (focusCat.image_human || focusCat.image) : focusCat.image" class="w-24 h-24 rounded-full border-4 border-yellow-600 shadow-[0_0_20px_rgba(212,175,55,0.3)] object-cover mb-4">
-                <h2 class="text-xl font-bold text-white">{{ focusCat.name }} <span class="text-xs font-normal text-gray-400">{{ focusCat.isHuman ? '监督中 (人形)' : '监督中' }}</span></h2>
-                <div class="w-full text-center px-4 mt-2 mb-6 max-h-20 overflow-y-auto custom-scrollbar">
-                     <p class="text-yellow-600 text-lg font-bold tracking-wider leading-relaxed break-words uppercase">
+                <div class="text-center px-4 mt-2 mb-4 w-full">
+                     <div class="focus-mission-text animate-pulse">
+                        STATUS: ENGAGED
+                     </div>
+                     <p class="text-gray-400 text-xs mt-1 tracking-widest uppercase">
                         MISSION: {{ cleanText(focusAction) }}
                      </p>
                 </div>
             </div>
 
-            <div class="relative z-10 flex flex-col items-center justify-center flex-1">
-                <div class="text-7xl font-mono font-bold text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.5)] mb-2">
+            <div class="relative z-10 flex flex-col items-center justify-center flex-1 w-full">
+                <div class="focus-timer mb-2 font-mono">
                     {{ formatTime(focusTime) }}
                 </div>
-                <div class="text-gray-500 text-xs font-mono mb-6">TARGET: {{ formatTime(focusTotalTime) }}</div>
+                <div class="w-full h-1 bg-gray-800 rounded-full mb-6 overflow-hidden max-w-xs mx-auto border border-gray-700">
+                    <div class="h-full bg-yellow-600 transition-all duration-1000 ease-linear" :style="{ width: (focusTime / focusTotalTime) * 100 + '%' }"></div>
+                </div>
                 
-                <div class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-3 h-32 overflow-y-auto custom-scrollbar mb-4 relative">
-                    <div class="text-[10px] text-gray-500 sticky top-0 bg-zinc-900 pb-1 border-b border-zinc-700 mb-2 w-full z-10">LIVE LOG</div>
-                    <div v-if="currentFocusLog.length === 0" class="text-gray-600 text-xs text-center mt-8">等待观测数据...</div>
+                <div class="glass-panel focus-log-container relative w-full max-w-sm">
+                    <div class="text-[9px] text-yellow-600 font-bold sticky top-0 bg-transparent pb-1 mb-2 w-full z-10 border-b border-white/10 uppercase tracking-widest flex justify-between">
+                        <span>/// LIVE_LOG_STREAM</span>
+                        <span class="animate-pulse">● REC</span>
+                    </div>
+                    <div v-if="currentFocusLog.length === 0" class="text-gray-600 text-xs text-center mt-8 italic">等待信号接入...</div>
                     <div v-for="(log, idx) in currentFocusLog" :key="idx" class="focus-log-item" :class="{'harass-log': log.includes('骚扰')}">
-                        {{ cleanText(log) }}
+                        <span class="time">[{{ log.split(' ')[0] }}]</span>
+                        <span class="content">{{ log.split(' ').slice(1).join(' ') }}</span>
                     </div>
                 </div>
-                <div v-if="focusCat.innerVoice" class="w-full px-4 mb-2">
-                    <div class="inner-voice-bubble text-center">"{{ cleanText(focusCat.innerVoice) }}"</div>
+                
+                <div v-if="focusCat.innerVoice" class="w-full px-4 mt-3 max-w-sm">
+                    <div class="text-center italic text-gray-400 text-xs border-l-2 border-yellow-600 pl-3 py-1 bg-white/5 rounded-r">
+                        "{{ cleanText(focusCat.innerVoice) }}"
+                    </div>
                 </div>
             </div>
             
-            <div class="relative z-10 w-full space-y-3 pb-4">
-                 <div class="bg-zinc-800 p-2 rounded-lg flex flex-col gap-2 border border-zinc-700">
+            <div class="relative z-10 w-full space-y-3 pb-4 shrink-0 max-w-sm mx-auto">
+                 <div class="glass-panel p-3 flex flex-col gap-2">
                     <div class="flex justify-between items-center">
-                        <span class="text-xs text-gray-400"><i class="fas fa-music mr-1"></i> 白噪音</span>
-                        <select v-model="currentNoise" @change="playNoise" class="bg-zinc-900 text-xs text-gray-300 p-1 rounded w-32 border-none">
-                            <option value="none">静音</option>
-                            <option value="rain">哥谭雨夜</option>
-                            <option value="cafe">韦恩庄园</option>
-                            <option value="custom">自定义频段</option>
+                        <span class="text-xs text-gray-300 font-bold"><i class="fas fa-wave-square mr-1 text-yellow-500"></i> 音频频段</span>
+                        <select v-model="currentNoise" @change="playNoise" class="bg-black/50 text-xs text-gray-300 p-1.5 rounded w-32 border border-gray-700 outline-none focus:border-yellow-600 transition-colors">
+                            <option value="none">/// MUTE</option>
+                            <option value="rain">FREQ: GOTHAM_RAIN</option>
+                            <option value="cafe">FREQ: WAYNE_MANOR</option>
+                            <option value="custom">FREQ: CUSTOM_LINK</option>
                         </select>
                     </div>
-                    <input v-if="currentNoise === 'custom'" v-model="customNoiseUrl" @change="playNoise" placeholder="输入音频 URL (mp3)..." class="text-xs bg-zinc-900 border-zinc-700 p-1">
+                    <input v-if="currentNoise === 'custom'" v-model="customNoiseUrl" @change="playNoise" @blur="playNoise" placeholder="Paste MP3 URL..." class="text-xs bg-black/50 border border-gray-700 p-2 rounded text-white w-full font-mono placeholder-gray-600 focus:border-yellow-600 outline-none transition-colors">
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
-                    <button @click="harassCat" class="bg-zinc-700 hover:bg-zinc-600 text-white py-3 rounded-lg text-sm font-bold transition flex items-center justify-center">
-                        <i class="fas fa-hand-point-up mr-2"></i> 骚扰TA
+                    <button @click="harassCat" class="bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl text-xs font-bold transition border border-white/10 backdrop-blur-sm">
+                        <i class="fas fa-hand-point-up mr-2"></i> 信号干扰 (骚扰)
                     </button>
-                    <button @click="stopFocus" class="bg-red-900/80 hover:bg-red-800 border border-red-700 text-red-200 py-3 rounded-lg text-sm font-bold transition">
-                        终止任务
+                    <button @click="stopFocus" class="bg-red-900/40 hover:bg-red-900/60 border border-red-500/30 text-red-200 py-3 rounded-xl text-xs font-bold transition backdrop-blur-sm">
+                        终止连接
                     </button>
                 </div>
                 
-                <div v-if="focusMessage" class="absolute bottom-36 left-0 right-0 mx-auto w-max max-w-[90%] bg-zinc-800 border border-yellow-600 px-4 py-2 rounded-full text-xs animate-bounce text-yellow-500 shadow-lg text-center z-20">
+                <div v-if="focusMessage" class="absolute bottom-40 left-0 right-0 mx-auto w-max max-w-[90%] bg-zinc-900/90 border border-yellow-600 px-4 py-2 rounded-full text-xs animate-bounce text-yellow-500 shadow-lg text-center z-20 backdrop-blur-md">
                     {{ cleanText(focusMessage) }}
                 </div>
             </div>
@@ -992,9 +826,10 @@
                 
                 4. **OUTPUT:**
                    - Language: **SIMPLIFIED CHINESE**.
+                   - **INNER VOICE RULE**: [VOICE] must be intelligible human thoughts (Simple Chinese), distinct from the external 'Cat' persona. Do NOT use 'meow' in Inner Voice.
                 `;
 
-                // Updated Default Cats with Breeds/EyeColors
+                // Updated Default Cats with HARDCODED Breeds/EyeColors
                 const defaultCats = [
                     { id: 1, name: '布鲁斯', breed: '纯黑长毛缅因猫 (Black Maine Coon)', eyeColor: '钢蓝色 (Steel Blue)', personality: '多疑、控制欲强、压抑', status: '蹲在柜顶俯瞰全屋', isOut: false, affinity: 10, isHuman: false, image: 'https://placehold.co/200x200/1a1a1a/white?text=Batman', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: '这座城市的阴影在召唤我...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Batman (Bruce Wayne). Paranoid, stoic, detective. Dark brooding. NOT arrogant. Canon compliance: Blue eyes, Black hair.", birthday: "02-19", isMarvel: false },
                     { id: 2, name: '迪克', breed: '黑蓝相间土耳其安哥拉猫 (Turkish Angora)', eyeColor: '电光蓝 (Electric Blue)', personality: '阳光、粘人、爱吃麦片', status: '试图在窗帘上荡秋千', isOut: false, affinity: 10, isHuman: false, image: 'https://placehold.co/200x200/007cc2/white?text=Nightwing', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: '这里好高！我喜欢！', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Nightwing (Dick Grayson). Energetic, charming, acrobat. Big brother figure. Canon compliance: Blue eyes, Black hair.", birthday: "03-20", isMarvel: false },
@@ -1335,7 +1170,7 @@
                         Task: Respond to user. If user used item, react to it.
                         Strict Format (NO MARKDOWN BLOCKS):
                         [STATUS] Update status based on interaction (e.g. "Being held", "Eating"). (3rd Person, Action only).
-                        [VOICE] Inner thoughts corresponding to action. (1st Person).
+                        [VOICE] Inner thoughts corresponding to action (HUMAN LANGUAGE THOUGHTS, NOT MEOWS). (1st Person).
                         [REPLY] Output to user. (50-100 words). IF CAT FORM: Meows/Purrs + Actions only. IF HUMAN FORM: Human speech allowed.
                         `;
 
@@ -1419,6 +1254,8 @@
                      
                      Scenario: User is focusing. You are ${formStr}.
                      Task: Describe Action (3rd Person) and Inner Voice (1st Person).
+                     
+                     [INNER VOICE RULE]: Inner Voice must be HUMAN THOUGHTS (Simple Chinese), not meows.
                      Output: [ACTION] Action [VOICE] Voice
                      `;
                      
@@ -1485,8 +1322,8 @@
                     if(settings.apiKey) {
                         const form = focusCat.value.isHuman ? "Human Form" : "Cat Form";
                         const prompt = success ? 
-                            `Identity: ${focusCat.value.name}. Traits: ${focusCat.value.personality}. User finished task. Evaluation? (Strictly In-Character)` : 
-                            `Identity: ${focusCat.value.name}. Traits: ${focusCat.value.personality}. User quit task. Scold? (Strictly In-Character)`;
+                            `Identity: ${focusCat.value.name}. Traits: ${focusCat.value.personality}. User finished task. Evaluation? (Strictly In-Character, Human Thoughts)` : 
+                            `Identity: ${focusCat.value.name}. Traits: ${focusCat.value.personality}. User quit task. Scold? (Strictly In-Character, Human Thoughts)`;
                         summary = await callAI(prompt, STRICT_CANON_PROMPT, 200);
                     }
                     currentSettlement.summary = cleanText(summary);
@@ -1552,14 +1389,14 @@
                         [GLOBAL SCENARIO RULES]:
                         1. **MINIMUM 2 CATS AT HOME**: You MUST ensure that at least 2 cats in this list stay home ([ISOUT] false). Do NOT send everyone on patrol, even if it is night.
                         2. **Anti-OOC**: Bruce is stoic/paranoid. Damian is arrogant. Dick is cheerful. Jason is grumpy. Tim is tired/techy.
-                        3. **Form**: They are cats. Status = 3rd person action. Voice = 1st person thought.
+                        3. **Form**: They are cats. Status = 3rd person action. Voice = 1st person thought (HUMAN LANGUAGE, NO MEOWS).
                         
                         Task: Update status for ALL characters listed above.
                         
                         Output Format (Repeat for EACH character ID):
                         [ID] {id}
                         [STATUS] {3rd person action}
-                        [VOICE] {1st person thought}
+                        [VOICE] {1st person thought - NO MEOWS}
                         [ISOUT] {true/false}
                         `;
 
@@ -1613,13 +1450,45 @@
                 const openDiary = () => showDiaryModal.value = true;
                 const openLogModal = () => showLogModal.value = true;
                 const stopFocus = () => { if(confirm("确定中止任务？")) { const plannedMinutes = focusTotalTime.value / 60; finishFocus(plannedMinutes, false); } };
-                const playLogSound = () => { const audio = new Audio('https://files.catbox.moe/mz99nm.mp3'); audio.volume = 0.5; audio.play().catch(() => {}); };
+                
+                const playLogSound = () => { 
+                    try {
+                        const audio = new Audio('https://files.catbox.moe/mz99nm.mp3'); 
+                        audio.volume = 0.6; // Slightly increased volume
+                        // Create a promise to handle play, ignore errors if blocked by browser policy
+                        const playPromise = audio.play();
+                        if (playPromise !== undefined) {
+                            playPromise.catch(error => {
+                                console.log("Log sound blocked by browser policy (needs interaction):", error);
+                            });
+                        }
+                    } catch(e) {
+                        console.error("Error playing log sound:", e);
+                    }
+                };
+
                 const fetchModels = async () => { if (!settings.apiKey) return alert("配置API Key"); isFetchingModels.value = true; try { const res = await fetch(settings.baseUrl + '/models', { method: 'GET', headers: { 'Authorization': `Bearer ${settings.apiKey}` } }); const data = await res.json(); if (data.data) availableModels.value = data.data.map(m => m.id); } catch (e) { alert("连接失败"); } finally { isFetchingModels.value = false; } };
                 const handleImageUpload = (e) => { const file = e.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = (evt) => newCat.image = evt.target.result; reader.readAsDataURL(file); } };
                 const handleSpecificImageUpload = (event, type) => { const file = event.target.files[0]; if (file && selectedCat.value) { const reader = new FileReader(); reader.onload = (e) => { if(type === 'human') selectedCat.value.image_human = e.target.result; else selectedCat.value.image = e.target.result; }; reader.readAsDataURL(file); } };
                 const adoptCat = () => { if(!newCat.name) return; let imgUrl = manualImgMode.value === 'auto' ? `https://placehold.co/200x200/${newCat.color.replace('#','')}/white?text=${newCat.codename}` : newCat.image; cats.value.push({ id: Date.now(), name: newCat.name, breed: newCat.breed, image: imgUrl, image_human: '', personality: newCat.personality, status: '新入住', isOut: false, affinity: 10, isHuman: false, chatHistory: [], diary: [], logs: [], innerVoice: '...', lastFocusTime: 0, prompt: `You are ${newCat.name}.`, isMarvel: false }); currentTab.value = 'lounge'; };
                 const confirmGacha = (keep) => { if(keep && gachaResult.value) { cats.value.push({ id: Date.now(), name: gachaResult.value.name, breed: gachaResult.value.breed, personality: gachaResult.value.personality, status: '初来乍到', isOut: false, affinity: 10, isHuman: false, image: gachaResult.value.image, image_human: '', prompt: `You are ${gachaResult.value.name}. ${gachaResult.value.prompt}`, chatHistory: [], diary: [], logs: [], innerVoice: '...', lastFocusTime: 0, lastInteractionDate: null, lastLogDate: null, isMarvel: gachaResult.value.isMarvel }); currentTab.value = 'lounge'; } gachaResult.value = null; };
-                const playNoise = () => { if (!audioPlayer.value) return; audioPlayer.value.pause(); if (currentNoise.value === 'rain') audioPlayer.value.src = 'https://files.catbox.moe/9xiysz.mp3'; else if (currentNoise.value === 'cafe') audioPlayer.value.src = 'https://files.catbox.moe/mqmb8n.mp3'; else if (currentNoise.value === 'custom' && customNoiseUrl.value) audioPlayer.value.src = customNoiseUrl.value; else return; audioPlayer.value.play().catch(e => {}); };
+                
+                const playNoise = () => { 
+                    if (!audioPlayer.value) return; 
+                    
+                    const player = audioPlayer.value;
+                    player.pause(); 
+                    
+                    if (currentNoise.value === 'rain') player.src = 'https://files.catbox.moe/9xiysz.mp3'; 
+                    else if (currentNoise.value === 'cafe') player.src = 'https://files.catbox.moe/mqmb8n.mp3'; 
+                    else if (currentNoise.value === 'custom' && customNoiseUrl.value) player.src = customNoiseUrl.value; 
+                    else return; 
+                    
+                    player.play().catch(e => {
+                        console.warn("Audio autoplay blocked or failed:", e);
+                    }); 
+                };
+
                 const toggleHumanMode = () => { if(selectedCat.value) selectedCat.value.isHuman = !selectedCat.value.isHuman; };
                 const buyItem = (item) => { if(user.coins >= item.price) { user.coins -= item.price; user.inventory.push({ ...item, uniqueId: Date.now() }); alert("交易成功"); } };
                 const filteredShopItems = computed(() => shopItems.value.filter(i => i.category === currentShopCategory.value));
@@ -1642,13 +1511,13 @@
                     try {
                         const isMarvel = Math.random() < 0.2;
                         const universe = isMarvel ? "MARVEL Universe (Avengers/X-Men)" : "DC Universe (Batfamily/Justice League)";
-                        // Enhanced Prompt for Breed/Looks
+                        // Enhanced Prompt for Breed/Looks - Auto generating ONCE
                         const prompt = `Generate random superhero cat from ${universe}. 
                         If Marvel, mark isMarvel: true. 
                         Requirements:
                         1. Breed/Appearance MUST match canon hair/eye color. (e.g. Tony Stark = Black Cat/Brown Eyes).
                         2. Use Simplified Chinese for personality/desc. 
-                        JSON Only: {"name":"","codename":"","color":"Hex#","breed":"Breed Name","personality":"","desc":"","prompt":"","isMarvel":${isMarvel}}`;
+                        JSON Only: {"name":"","codename":"","color":"Hex#","breed":"Breed Name","eyeColor":"Eye Color","personality":"","desc":"","prompt":"","isMarvel":${isMarvel}}`;
                         
                         const res = await fetch(`${settings.baseUrl}/chat/completions`, {
                             method: 'POST',
