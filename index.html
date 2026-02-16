@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>哥谭喵喵馆 v3.2.1</title>
+    <title>哥谭喵喵馆 v3.3.0</title>
     
-    <!-- Icon Fix: Simplified and standardized -->
     <link rel="icon" type="image/png" href="https://files.catbox.moe/e15qui.png">
     <link rel="apple-touch-icon" href="https://files.catbox.moe/e15qui.png">
     
@@ -15,6 +14,8 @@
     
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lunar Calendar Library for accurate Chinese Holidays -->
+    <script src="https://cdn.jsdelivr.net/npm/lunar-javascript/lunar.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -40,15 +41,20 @@
             width: 100%;
             position: relative;
         }
+        
+        /* UI FIX: Precise Calculation
+           Nav (50px) + Input (54px) + Buffer (26px) = 130px base
+           Plus Safe Area for iPhone Home Indicator
+        */
         .content-area {
             flex: 1;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             padding: 16px;
-            /* UI Fix: 50px (Nav) + 54px (Input) + 2px (Gap) = 106px */
-            padding-bottom: 106px; 
+            padding-bottom: calc(130px + env(safe-area-inset-bottom)); 
             width: 100%;
         }
+
         .nav-bar {
             background-color: var(--gotham-dark);
             border-top: 1px solid #333;
@@ -84,6 +90,8 @@
             align-items: center; 
             gap: 10px;
             box-shadow: 0 -4px 10px rgba(0,0,0,0.3);
+            height: 54px; /* Exact height for calculation */
+            box-sizing: border-box;
         }
 
         .cat-card {
@@ -122,6 +130,7 @@
         .ddl-banner {
             background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
             border-bottom: 1px solid #d4af37; padding: 8px; text-align: center;
+            flex-shrink: 0; 
         }
         .ddl-time { font-family: monospace; font-size: 1.2rem; font-weight: bold; color: #ef4444; text-shadow: 0 0 5px rgba(239,68,68,0.5); }
 
@@ -134,7 +143,11 @@
         }
         
         .holiday-banner {
-            background: linear-gradient(90deg, #8a0303, #d4af37); color: white; font-size: 10px; text-align: center; padding: 2px; font-weight: bold; letter-spacing: 1px;
+            background: linear-gradient(90deg, #b91c1c, #d4af37); /* Red and Gold */
+            color: white; font-size: 14px; text-align: center; padding: 8px; font-weight: bold; letter-spacing: 1px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5); z-index: 50;
+            flex-shrink: 0; 
+            border-bottom: 1px solid #d4af37;
         }
         .btn-disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
@@ -197,8 +210,9 @@
 </head>
 <body>
     <div id="app" class="app-container" v-cloak>
+        <!-- Special Event / Birthday Display -->
         <div v-if="todayEvent" class="holiday-banner animate-pulse">
-            🎉 {{ todayEvent }} 🎉
+            {{ todayEvent }}
         </div>
         
         <div v-if="nearestDDL" class="ddl-banner">
@@ -1008,11 +1022,11 @@
 
                 // Hardcoded 5 Default Cats (Fixed Data)
                 const defaultCats = [
-                    { id: 1, name: '布鲁斯', breed: '纯黑长毛缅因猫 (Black Maine Coon)', eyeColor: '钢蓝色 (Steel Blue)', personality: '多疑、控制欲强、压抑', status: '蹲在柜顶俯瞰全屋', isOut: false, affinity: 10, isHuman: false, image: 'https://placehold.co/200x200/1a1a1a/white?text=Batman', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: '这座城市的阴影在召唤我...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Batman (Bruce Wayne). Paranoid, stoic, detective. Dark brooding. NOT arrogant. Canon compliance: Blue eyes, Black hair.", birthday: "02-19", isMarvel: false },
-                    { id: 2, name: '迪克', breed: '黑蓝相间土耳其安哥拉猫 (Turkish Angora)', eyeColor: '电光蓝 (Electric Blue)', personality: '阳光、粘人、爱吃麦片', status: '试图在窗帘上荡秋千', isOut: false, affinity: 10, isHuman: false, image: 'https://placehold.co/200x200/007cc2/white?text=Nightwing', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: '这里好高！我喜欢！', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Nightwing (Dick Grayson). Energetic, charming, acrobat. Big brother figure. Canon compliance: Blue eyes, Black hair.", birthday: "03-20", isMarvel: false },
-                    { id: 3, name: '杰森', breed: '黑白斑纹街头野猫 (Tuxedo Street Cat)', eyeColor: '碧绿色 (Teal Green)', personality: '暴躁、护食、体格强壮', status: '霸占了最大的那个枕头', isOut: false, affinity: 10, isHuman: false, image: 'https://placehold.co/200x200/c20000/white?text=RedHood', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: '别过来，除非你有吃的。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Red Hood (Jason Todd). Grumpy, street-smart, secretly cares. Uses slang. Canon compliance: Green/Teal eyes, Black/White hair.", birthday: "08-16", isMarvel: false },
-                    { id: 4, name: '提姆', breed: '深色暹罗猫 (Siamese)', eyeColor: '冰蓝色 (Ice Blue)', personality: '过劳、咖啡因成瘾、极客', status: '盯着发光的路由器发呆', isOut: false, affinity: 10, isHuman: false, image: 'https://placehold.co/200x200/555/white?text=RedRobin', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: '这个路由器的频率有点奇怪...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Red Robin (Tim Drake). Sleepy genius, detective, tech-savvy. Polite but awkward. NOT arrogant. Canon compliance: Blue eyes, Black hair.", birthday: "07-19", isMarvel: false },
-                    { id: 5, name: '达米安', breed: '黑色东方短毛猫 (Oriental Shorthair)', eyeColor: '祖母绿 (Emerald Green)', personality: '傲慢、暴力、贵族气派', status: '正在磨爪子准备战斗', isOut: false, affinity: 10, isHuman: false, image: 'https://placehold.co/200x200/006400/white?text=Robin', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: 'Tt. 愚蠢的家具。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Robin (Damian Wayne). Arrogant, skilled assassin, heir. Says 'Tt'. Haughty. Canon compliance: Green eyes, Black hair.", birthday: "08-01", isMarvel: false }
+                    { id: 1, name: '布鲁斯', breed: '纯黑长毛缅因猫', eyeColor: '钢蓝色', personality: '多疑、控制欲强、压抑', status: '蹲在柜顶俯瞰全屋', isOut: false, affinity: 10, isHuman: false, image: 'https://placehold.co/200x200/1a1a1a/white?text=Batman', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: '这座城市的阴影在召唤我...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Batman (Bruce Wayne). Paranoid, stoic, detective. Dark brooding. NOT arrogant. Canon compliance: Blue eyes, Black hair.", birthday: "02-19", isMarvel: false },
+                    { id: 2, name: '迪克', breed: '黑蓝相间土耳其安哥拉猫', eyeColor: '电光蓝', personality: '阳光、粘人、爱吃麦片', status: '试图在窗帘上荡秋千', isOut: false, affinity: 10, isHuman: false, image: 'https://placehold.co/200x200/007cc2/white?text=Nightwing', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: '这里好高！我喜欢！', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Nightwing (Dick Grayson). Energetic, charming, acrobat. Big brother figure. Canon compliance: Blue eyes, Black hair.", birthday: "03-20", isMarvel: false },
+                    { id: 3, name: '杰森', breed: '黑白斑纹街头野猫', eyeColor: '蓝色', personality: '暴躁、护食、体格强壮', status: '霸占了最大的那个枕头', isOut: false, affinity: 10, isHuman: false, image: 'https://placehold.co/200x200/c20000/white?text=RedHood', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: '别过来，除非你有吃的。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Red Hood (Jason Todd). Grumpy, street-smart, secretly cares. Uses slang. Canon compliance: Blue eyes, Black/White hair.", birthday: "08-16", isMarvel: false },
+                    { id: 4, name: '提姆', breed: '深色暹罗猫', eyeColor: '冰蓝色', personality: '过劳、咖啡因成瘾、极客', status: '盯着发光的路由器发呆', isOut: false, affinity: 10, isHuman: false, image: 'https://placehold.co/200x200/555/white?text=RedRobin', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: '这个路由器的频率有点奇怪...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Red Robin (Tim Drake). Sleepy genius, detective, tech-savvy. Polite but awkward. NOT arrogant. Canon compliance: Blue eyes, Black hair.", birthday: "07-19", isMarvel: false },
+                    { id: 5, name: '达米安', breed: '黑色东方短毛猫', eyeColor: '祖母绿', personality: '傲慢、暴力、贵族气派', status: '正在磨爪子准备战斗', isOut: false, affinity: 10, isHuman: false, image: 'https://placehold.co/200x200/006400/white?text=Robin', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: 'Tt. 愚蠢的家具。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Robin (Damian Wayne). Arrogant, skilled assassin, heir. Says 'Tt'. Haughty. Canon compliance: Green eyes, Black hair.", birthday: "08-01", isMarvel: false }
                 ];
 
                 let initialCats = [...defaultCats];
@@ -1114,37 +1128,108 @@
                 // --- Helper Functions Restored ---
                 const checkSpecialEvent = () => {
                     const now = new Date();
-                    const month = now.getMonth() + 1;
-                    const date = now.getDate();
-                    const todayStr = `${String(month).padStart(2,'0')}-${String(date).padStart(2,'0')}`;
-                    if(user.birthday) {
-                        const birthDate = new Date(user.birthday);
-                        if(birthDate.getMonth() === now.getMonth() && birthDate.getDate() === now.getDate()) {
-                            todayEvent.value = `🎂 祝 ${user.nickname} 生日快乐！`;
-                            todayEventContext.value = `IMPORTANT: TODAY IS USER'S BIRTHDAY.`;
-                            return;
+                    const solarMonth = now.getMonth() + 1;
+                    const solarDay = now.getDate();
+                    const solarStr = `${String(solarMonth).padStart(2,'0')}-${String(solarDay).padStart(2,'0')}`;
+
+                    // Initialize Lunar
+                    let lunarStr = "";
+                    let lunarMonth = 0;
+                    let lunarDay = 0;
+                    try {
+                        const lunar = Lunar.fromDate(now);
+                        lunarMonth = lunar.getMonth();
+                        lunarDay = lunar.getDay();
+                        lunarStr = `农历${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}`;
+                        console.log("Lunar Date:", lunarStr);
+                    } catch(e) {
+                        console.error("Lunar Library not loaded", e);
+                    }
+
+                    let eventName = "";
+                    let eventCtx = "";
+
+                    // Solar Holidays
+                    const solarHolidays = {
+                        "01-01": "元旦快乐",
+                        "02-14": "情人节快乐",
+                        "04-01": "愚人节快乐",
+                        "05-01": "劳动节快乐",
+                        "06-01": "儿童节快乐",
+                        "10-01": "国庆节快乐",
+                        "10-31": "万圣节前夜",
+                        "11-01": "万圣节快乐",
+                        "12-24": "平安夜快乐",
+                        "12-25": "圣诞节快乐"
+                    };
+
+                    if(solarHolidays[solarStr]) {
+                        eventName = solarHolidays[solarStr];
+                        eventCtx = `Today is ${eventName}.`;
+                    }
+
+                    // Lunar Holidays (if library works)
+                    if(lunarMonth > 0) {
+                        const lunarEvents = {
+                            "1-1": "春节",
+                            "1-15": "元宵节",
+                            "2-2": "龙抬头",
+                            "5-5": "端午节",
+                            "7-7": "七夕节",
+                            "8-15": "中秋节",
+                            "9-9": "重阳节",
+                            "12-8": "腊八节",
+                            "12-23": "北方小年", 
+                            "12-24": "南方小年"
+                        };
+                        
+                        const lKey = `${lunarMonth}-${lunarDay}`;
+                        if(lunarEvents[lKey]) {
+                            eventName = lunarEvents[lKey] + "快乐";
+                            eventCtx = `Today is ${lunarEvents[lKey]} (Lunar Calendar).`;
+                        }
+
+                        // Check Eve (除夕) - simplistic check: Month 12 and tomorrow is Month 1 Day 1
+                        if (lunarMonth === 12) {
+                             const tomorrow = new Date(now);
+                             tomorrow.setDate(tomorrow.getDate() + 1);
+                             const lunarTomorrow = Lunar.fromDate(tomorrow);
+                             if (lunarTomorrow.getMonth() === 1 && lunarTomorrow.getDay() === 1) {
+                                 eventName = "除夕快乐";
+                                 eventCtx = "Today is Chinese New Year's Eve (除夕). Family reunion dinner tonight.";
+                             }
                         }
                     }
-                    const bdayCat = cats.value.find(c => c.birthday === todayStr);
+
+                    // User Birthday Override
+                    if(user.birthday) {
+                         const birthDate = new Date(user.birthday);
+                         if(birthDate.getMonth() === now.getMonth() && birthDate.getDate() === now.getDate()) {
+                             eventName = `🎂 祝 ${user.nickname} 生日快乐！`;
+                             eventCtx = `IMPORTANT: TODAY IS USER'S BIRTHDAY.`;
+                         }
+                    }
+                    
+                    // Character Birthday Check
+                    const bdayCat = cats.value.find(c => c.birthday === solarStr);
                     if (bdayCat) {
-                        todayEvent.value = `🎂 今天是 ${bdayCat.name} 的生日！`;
-                        todayEventContext.value = `IMPORTANT: TODAY IS ${bdayCat.name}'s BIRTHDAY.`;
-                        return;
+                        if(eventName) {
+                             eventName += ` & ${bdayCat.name}生日`;
+                             eventCtx += ` Also, today is ${bdayCat.name}'s birthday.`;
+                        } else {
+                             eventName = `🎂 今天是 ${bdayCat.name} 的生日！`;
+                             eventCtx = `IMPORTANT: TODAY IS ${bdayCat.name}'s BIRTHDAY.`;
+                        }
                     }
-                    const holidays = { "12-25": "Christmas", "10-31": "Halloween", "01-01": "New Year" };
-                    if (holidays[todayStr]) {
-                        todayEvent.value = `📅 ${holidays[todayStr]}`;
-                        todayEventContext.value = `IMPORTANT: TODAY IS ${holidays[todayStr]}.`;
-                        return;
-                    }
-                    todayEvent.value = ''; todayEventContext.value = '';
+
+                    todayEvent.value = eventName;
+                    todayEventContext.value = eventCtx;
                 };
 
                 const getUserRealLifeContext = () => {
                     const pendingTodosCount = user.todos ? user.todos.filter(t => !t.done).length : 0;
                     const nearestDDLStr = nearestDDL.value ? `${nearestDDL.value.title} (Time left: ${ddlCountdownStr.value})` : "None";
                     
-                    // Logic Update: Check DDL < 5 days
                     let ddlContext = "None";
                     if (nearestDDL.value) {
                         const diff = new Date(nearestDDL.value.time).getTime() - Date.now();
@@ -1158,7 +1243,6 @@
 
                     const eventContext = todayEventContext.value ? todayEventContext.value : "None";
                     
-                    // Recent Mail Context
                     const lastMail = user.mailbox.length > 0 ? user.mailbox[user.mailbox.length - 1] : null;
                     const mailContext = lastMail ? `Recent Mail from ${lastMail.from}: ${lastMail.content.substring(0, 20)}...` : "No recent mail.";
 
@@ -1167,22 +1251,16 @@
 
                 const generateMail = async () => {
                     if (user.mailbox.length >= 4) return;
-                    if (Math.random() > 0.25) return; // 25% chance
-
-                    // Logic Update: Sender Logic
-                    // 1. Filter cats that are OUT
+                    if (Math.random() > 0.25) return; 
                     const catsOut = cats.value.filter(c => c.isOut);
                     let sender = '';
                     let isRandomDC = false;
-
-                    // 70% chance to be a cat (if any are out), 30% chance (or fallback) to be random DC
                     if (catsOut.length > 0 && Math.random() < 0.7) {
                         sender = catsOut[Math.floor(Math.random() * catsOut.length)].name;
                     } else {
                         isRandomDC = true;
-                        sender = 'Random DC Character'; // AI will pick
+                        sender = 'Random DC Character'; 
                     }
-
                     const prompt = `Generate a short letter/message to User.
                     Sender Context: ${isRandomDC ? 'A random DC character (e.g., Joker, Catwoman, Gordon, etc.)' : 'Character ' + sender + ' who is currently OUT on patrol/mission'}.
                     Length: Max 50 words. Language: Simplified Chinese.
@@ -1241,7 +1319,6 @@
                         showEasterEggBtn.value = false;
                         selectedCat.value.diary.push({ time: getCurrentTimeStr(), content: "与用户进行了特别的约会/互动 (Easter Egg)" });
                         
-                        // Check if it's a letter/postcard to add to backpack
                         if(content.includes("信") || content.includes("Letter") || content.includes("Postcard")) {
                              user.inventory.push({ 
                                  id: Date.now(), 
@@ -1255,39 +1332,34 @@
                     } catch(e) { selectedCat.value.affinity += 10; }
                 };
 
-                // --- End Helper Functions ---
-
                 const checkDailyInitialization = async () => {
                     const todayStr = new Date().toDateString();
                     const now = Date.now();
                     const lastSyncTime = parseInt(localStorage.getItem('last_sync_time') || '0');
                     const lastSyncDate = new Date(lastSyncTime).toDateString();
 
-                    // Logic A Update:
                     const isNewDay = lastSyncDate !== todayStr;
                     const isThreeHours = (now - lastSyncTime) > (3 * 60 * 60 * 1000);
 
-                    // 1. New Day Check (Midnight Passed) -> Force logic
+                    // Re-check event on every initialization to be safe
+                    checkSpecialEvent();
+
                     if (isNewDay) {
-                        checkSpecialEvent();
                         if (settings.apiKey) {
-                            await generateAlfredReport(); // Generate report based on YESTERDAY'S context
-                            await generateAllCatDiaries(); // Generate diaries based on logs
+                            await generateAlfredReport(); 
+                            await generateAllCatDiaries(); 
                         }
                         user.dailyMailCount = 0;
                         user.lastLoginDate = todayStr;
                         user.lastLogin = now;
                         await refreshAllStatus(true);
                     } 
-                    // 2. Same Day but > 3 Hours -> Refresh
                     else if (isThreeHours) {
                         await refreshAllStatus(true);
                     }
-                    // Else: Do nothing (save API calls)
                 };
 
                 const generateAlfredReport = async () => {
-                    // Summarize based on current state (assuming it reflects end of yesterday)
                     const doneTasks = user.todos.filter(t => t.done).map(t => t.text).join(', ');
                     const pendingTasks = user.todos.filter(t => !t.done).map(t => t.text).join(', ');
                     
@@ -1307,14 +1379,12 @@
                             summary: cleanText(summary), 
                             status: 'COMPLETED' 
                         });
-                        // Clear DONE todos only
                         user.todos = user.todos.filter(t => !t.done);
                     } catch (e) { console.error("Alfred Report Error", e); }
                 };
 
                 const generateAllCatDiaries = async () => {
                     for (const cat of cats.value) {
-                         // Only generate if there was interaction (logs or chat)
                          if (cat.chatHistory.length > 0 || cat.diary.length > 0) {
                              const logsText = cat.diary.map(d => d.content).join('; ');
                              const chatText = cat.chatHistory.map(c => `${c.role}: ${c.content}`).join('; ');
@@ -1326,7 +1396,6 @@
                              try {
                                  const res = await callAI(prompt, STRICT_CANON_PROMPT, 400);
                                  cat.logs.push({ date: new Date(Date.now() - 86400000).toLocaleDateString(), content: cleanText(res) });
-                                 // Clear logs/chat after archiving to diary
                                  cat.chatHistory = []; 
                                  cat.diary = [];
                              } catch(e) { console.error(e); }
@@ -1421,7 +1490,7 @@
                             if(status) sendingCat.status = status;
                             if(voice) sendingCat.innerVoice = voice;
                             sendingCat.chatHistory.push({ role: 'assistant', content: reply });
-                            await checkMailboxLogic(); // Check mail on interaction
+                            await checkMailboxLogic(); 
                         } else {
                              sendingCat.chatHistory.push({ role: 'assistant', content: cleanText(responseRaw) });
                         }
@@ -1548,14 +1617,11 @@
                     if(audioPlayer.value) audioPlayer.value.pause();
                     isFocusing.value = false;
                     
-                    // Logic update: New Affinity Rule for Focus
-                    // Success: +1 per 10 mins.
-                    // Fail (Early Exit): - (0~5)
                     let affinityDelta = 0;
                     if (success) {
                         affinityDelta = Math.floor(minutes / 10);
                     } else {
-                        affinityDelta = -Math.floor(Math.random() * 6); // 0 to 5
+                        affinityDelta = -Math.floor(Math.random() * 6); 
                     }
                     affinityChangeValue.value = affinityDelta;
 
@@ -1632,7 +1698,6 @@
                     if (!settings.apiKey) return;
                     localStorage.setItem('last_sync_time', Date.now());
                     
-                    // Logic A Override: If not forcing, and auto update is off, return.
                     if (!forceUpdate && !settings.autoUpdate) return; 
                     
                     isUpdatingStatus.value = true;
@@ -1795,7 +1860,7 @@
                         Requirements:
                         1. Breed/Appearance MUST match canon hair/eye color. (e.g. Tony Stark = Black Cat/Brown Eyes).
                         2. Use Simplified Chinese for personality/desc. 
-                        3. Generate specific Breed and Eye Color.
+                        3. Generate specific Breed and Eye Color in Simplified Chinese ONLY.
                         JSON Only: {"name":"","codename":"","color":"Hex#","breed":"Breed Name","eyeColor":"Eye Color","personality":"","desc":"","prompt":"","isMarvel":${isMarvel}}`;
                         
                         const res = await fetch(`${settings.baseUrl}/chat/completions`, {
