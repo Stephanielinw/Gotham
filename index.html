@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>哥谭喵喵馆 v3.3.1</title>
+    <title>哥谭喵喵馆 v3.3.2</title>
     
     <link rel="icon" type="image/png" href="https://files.catbox.moe/e15qui.png">
     <link rel="apple-touch-icon" href="https://files.catbox.moe/e15qui.png">
@@ -1539,17 +1539,22 @@
 
                 const focusTickBehavior = async () => {
                      const formStr = focusCat.value.isHuman ? "Human Form" : "Cat Form";
-                     const previousLogs = currentFocusLog.value.slice(0, 3).join('; ');
+                     const previousLogs = currentFocusLog.value.slice(0, 3).join(' -> ');
+                     
                      const prompt = `
                      Identity: ${focusCat.value.name}. Breed: ${focusCat.value.breed}.
                      Traits: ${focusCat.value.personality}.
                      Inner Instructions: ${focusCat.value.prompt}.
                      
-                     NEGATIVE PROMPT: Do NOT mimic other characters. If you are Tim, do not act like Damian. If you are Jason, do not act like Bruce. Stay strictly in character.
+                     NEGATIVE PROMPT: Do NOT mimic other characters. Stay strictly in character.
                      
                      Scenario: User is focusing. You are ${formStr}.
-                     Task: Describe Action (3rd Person) and Inner Voice (1st Person).
-                     Output: [ACTION] Action [VOICE] Voice (Human Language, NO MEOWS)
+                     [PREVIOUS ACTIONS (Recent to Old)]: ${previousLogs || "Just started supervising."}
+                     
+                     Task: Describe NEXT Action (3rd Person) and Inner Voice (1st Person).
+                     CONSTRAINT: Your new action must be physically and logically continuous with the [PREVIOUS ACTIONS]. (e.g. If sleeping, must wake up first. If running, must stop first).
+                     
+                     Output: [ACTION] Action (3rd Person ONLY) [VOICE] Voice (Human Language, NO MEOWS)
                      `;
                      
                      try {
@@ -1582,14 +1587,15 @@
                         
                         if(focusTimer.value) clearInterval(focusTimer.value);
                         
-                        nextRandomEventTime.value = Date.now() + (Math.random() * (600000 - 300000) + 300000); 
+                        // First tick logic: Between 5-10 minutes from now (300000ms - 600000ms)
+                        nextRandomEventTime.value = Date.now() + (Math.random() * 300000 + 300000); 
 
                         focusTimer.value = setInterval(async () => {
                             if (!isFocusing.value) return; 
                             focusTime.value--;
                             if (Date.now() > nextRandomEventTime.value && settings.apiKey && !isProcessingFocusTick.value) {
                                 isProcessingFocusTick.value = true; 
-                                nextRandomEventTime.value = Date.now() + (Math.random() * (600000 - 300000) + 300000); 
+                                nextRandomEventTime.value = Date.now() + (Math.random() * 300000 + 300000); 
                                 await focusTickBehavior();
                                 isProcessingFocusTick.value = false; 
                             }
