@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>哥谭喵喵馆 v3.4.3</title>
+    <title>哥谭喵喵馆 v3.4.4</title>
     
     <link rel="icon" type="image/png" href="https://files.catbox.moe/e15qui.png">
     <link rel="apple-touch-icon" href="https://files.catbox.moe/e15qui.png">
@@ -41,16 +41,18 @@
             position: relative;
         }
         
-        /* UI FIX: Reduced padding for normal tabs (Mission/Lounge).
-           Detail tab will handle its own extra spacing.
-           50px (Nav) + Safe Area + 5px Buffer
+        /* UI FIX v3.4.4: 
+           Precision padding. 
+           Nav Bar Height = 50px.
+           Padding Bottom = 52px (Nav + 2px Visual Gap).
+           Note: padding-bottom overrides the bottom part of padding: 16px.
         */
         .content-area {
             flex: 1;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             padding: 16px;
-            padding-bottom: calc(55px + env(safe-area-inset-bottom)); 
+            padding-bottom: calc(52px + env(safe-area-inset-bottom)); 
             width: 100%;
         }
 
@@ -335,9 +337,9 @@
                 </div>
             </div>
 
-            <!-- LOUNGE TAB (Reverted UI Structure) -->
+            <!-- LOUNGE TAB (UI FIX: Removed ALL padding classes) -->
             <div v-if="currentTab === 'lounge'">
-                <div class="grid grid-cols-2 gap-4 pb-10">
+                <div class="grid grid-cols-2 gap-4">
                     <div class="col-span-2 flex space-x-2">
                          <button @click="refreshAllStatus(true)" :disabled="isUpdatingStatus" 
                             class="flex-1 bg-zinc-800 py-3 rounded-lg text-xs text-yellow-600 font-bold active:bg-zinc-700 border border-zinc-700 shadow-sm flex items-center justify-center transition-colors">
@@ -376,8 +378,8 @@
                 </div>
             </div>
 
-            <!-- DETAIL TAB (Specific padding added here to prevent gap in other tabs) -->
-            <div v-if="currentTab === 'detail' && selectedCat" class="flex flex-col min-h-full pb-16">
+            <!-- DETAIL TAB (UI FIX: Removed pb-16, reduced mb to 0, adjusted spacer to 55px) -->
+            <div v-if="currentTab === 'detail' && selectedCat" class="flex flex-col min-h-full">
                 <button @click="currentTab = 'lounge'" class="mb-4 text-left text-gray-500 hover:text-white flex items-center shrink-0">
                     <i class="fas fa-chevron-left mr-1"></i> 返回大厅
                 </button>
@@ -408,8 +410,8 @@
                     <button @click="openBag" :disabled="selectedCat.isOut" class="col-span-4 bg-zinc-800 p-3 rounded-lg text-xs mt-1 border border-zinc-600 hover:bg-zinc-700 flex justify-center items-center" :class="{'btn-disabled': selectedCat.isOut}"><i class="fas fa-briefcase mr-2"></i> 打开背包喂食</button>
                 </div>
 
-                <!-- Chat Area with Fixed Height and tiny margin -->
-                <div class="chat-container mx-2 mb-[2px] shadow-inner">
+                <!-- Chat Area with Reduced Margin -->
+                <div class="chat-container mx-2 mb-0 shadow-inner">
                     <div class="chat-messages custom-scrollbar" ref="chatMessagesRef">
                         <div v-if="selectedCat.chatHistory.length === 0" class="text-center text-gray-600 text-xs mt-10 italic">
                             {{ selectedCat.logs && selectedCat.logs.length > 0 ? '以前的记忆已存入日记...' : '和 ' + selectedCat.name + ' 打个招呼吧...' }}
@@ -425,8 +427,8 @@
                     </div>
                 </div>
                 
-                <!-- Spacer for Fixed Input to prevent cut-off during scroll -->
-                <div style="height: 60px;"></div>
+                <!-- Spacer for Fixed Input (55px) -->
+                <div style="height: 55px;"></div>
 
                 <!-- Fixed Input Bar -->
                 <div class="fixed-input-bar">
