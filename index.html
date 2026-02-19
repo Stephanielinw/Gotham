@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>哥谭喵喵馆 v3.5.3</title>
+    <title>哥谭喵喵馆 v3.5.4</title>
     
     <link rel="icon" type="image/png" href="https://files.catbox.moe/e15qui.png">
     <link rel="apple-touch-icon" href="https://files.catbox.moe/e15qui.png">
@@ -23,6 +23,7 @@
             --bat-yellow: #d4af37;
             --nightwing-blue: #005e94;
             --redhood-red: #8a0303;
+            --hacker-green: #33ff00;
         }
         [v-cloak] { display: none !important; }
         body {
@@ -216,10 +217,64 @@
             display: flex;
             flex-direction: column;
         }
+
+        /* NEW: System Log & Toast Styles */
+        .terminal-window {
+            background-color: #050505;
+            border: 1px solid #333;
+            font-family: 'Courier New', monospace;
+            padding: 8px;
+            height: 150px;
+            overflow-y: auto;
+            font-size: 9px;
+            color: var(--hacker-green);
+            text-shadow: 0 0 2px rgba(51, 255, 0, 0.4);
+            margin-top: 10px;
+            border-radius: 4px;
+            position: relative;
+        }
+        .terminal-line { margin-bottom: 2px; word-break: break-all; border-bottom: 1px solid #111; padding-bottom: 2px; }
+        .terminal-time { color: #666; margin-right: 5px; }
+        .terminal-type-error { color: #ff3333; }
+        .terminal-type-sent { color: #33ccff; }
+        .terminal-type-warn { color: #ffcc00; }
+        
+        .toast-notification {
+            position: fixed;
+            top: calc(10px + env(safe-area-inset-top));
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(16, 16, 16, 0.95);
+            border: 1px solid var(--bat-yellow);
+            color: var(--bat-yellow);
+            padding: 10px 20px;
+            border-radius: 6px;
+            z-index: 9999;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 200px;
+            justify-content: center;
+            animation: slideDown 0.3s ease-out;
+        }
+        @keyframes slideDown { from { transform: translate(-50%, -20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
     </style>
 </head>
 <body>
     <div id="app" class="app-container" v-cloak>
+        <!-- Toast Notification -->
+        <transition name="modal">
+            <div v-if="notification.visible" class="toast-notification">
+                <i v-if="notification.type === 'loading'" class="fas fa-circle-notch fa-spin"></i>
+                <i v-else-if="notification.type === 'success'" class="fas fa-check-circle"></i>
+                <i v-else class="fas fa-exclamation-triangle"></i>
+                <span>{{ notification.message }}</span>
+            </div>
+        </transition>
+
         <!-- DDL Banner -->
         <div v-if="nearestDDL" class="ddl-banner">
             <div class="text-[10px] text-gray-400 mb-1">距离 <span class="text-yellow-500 font-bold">{{ nearestDDL.title }}</span> 截止</div>
@@ -250,7 +305,6 @@
         </div>
 
         <!-- Main Content Area -->
-        <!-- Logic Fix: Dynamic padding to handle Nav Bar (50px) vs Nav+Input (104px) -->
         <div class="content-area" ref="contentArea" :style="{ paddingBottom: currentTab === 'detail' ? 'calc(115px + env(safe-area-inset-bottom))' : 'calc(55px + env(safe-area-inset-bottom))' }">
             
             <!-- MISSION TAB -->
@@ -332,6 +386,21 @@
                             <button @click="user.deadlines.splice(idx,1)" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
                         </div>
                     </div>
+                </div>
+
+                <!-- NEW: System Log Window (Batcomputer Terminal) -->
+                <div class="bg-zinc-800 p-5 rounded-xl border border-zinc-700 shadow-lg mt-6">
+                     <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-gray-400 text-xs flex items-center"><i class="fas fa-terminal mr-2"></i> SYSTEM LOGS (SESSION ONLY)</h3>
+                        <button @click="systemLogs = []" class="text-[9px] text-gray-500 hover:text-white">CLEAR</button>
+                     </div>
+                     <div class="terminal-window custom-scrollbar" ref="logWindow">
+                        <div v-if="systemLogs.length === 0" class="text-center mt-10 opacity-50">WAITING FOR INPUT...</div>
+                        <div v-for="(log, idx) in systemLogs" :key="idx" class="terminal-line" :class="'terminal-type-' + log.type">
+                            <span class="terminal-time">[{{ log.time }}]</span>
+                            <span v-html="log.message"></span>
+                        </div>
+                     </div>
                 </div>
             </div>
 
@@ -792,11 +861,19 @@
                 const isProcessingFocusTick = ref(false); 
                 const isFinishingFocus = ref(false); 
                 const affinityChangeValue = ref(0);
+                
+                // System Log & Notification Refs
+                const systemLogs = ref([]);
+                const logWindow = ref(null);
+                const notification = reactive({ message: '', type: 'info', visible: false });
 
                 // Auto-scroll chat
                 watch(currentTab, () => {
                     if (contentArea.value && currentTab.value !== 'detail') {
                         contentArea.value.scrollTop = 0;
+                    }
+                    if(currentTab.value === 'mission') {
+                         nextTick(() => { if(logWindow.value) logWindow.value.scrollTop = logWindow.value.scrollHeight; });
                     }
                 });
                 
@@ -807,12 +884,16 @@
                         }
                     });
                 });
+                
+                watch(() => systemLogs.value.length, () => {
+                    nextTick(() => { if(logWindow.value) logWindow.value.scrollTop = logWindow.value.scrollHeight; });
+                });
 
                 let initialUser = { 
                     coins: 100, inventory: [], nickname: '哥谭市民', gender: 'Secret', birthday: '', 
                     job: '', 
                     schedule: [], 
-                    calendarSources: [], // New for v3.5.0
+                    calendarSources: [], 
                     missionReports: [], mailbox: [], todos: [], deadlines: [], 
                     dailyMailCount: 0, lastMailDate: '', 
                     lastReportDate: '', 
@@ -928,6 +1009,18 @@
                     };
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
                 }, { deep: true });
+                
+                // --- System Helpers ---
+                const addLog = (message, type = 'info') => {
+                    systemLogs.value.push({ time: new Date().toLocaleTimeString(), message, type });
+                };
+                
+                const showToast = (message, type = 'info') => {
+                    notification.message = message;
+                    notification.type = type;
+                    notification.visible = true;
+                    setTimeout(() => { notification.visible = false; }, 3000);
+                };
 
                 const cleanText = (text) => {
                     if (!text || typeof text !== 'string') return '';
@@ -961,185 +1054,90 @@
                     return `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
                 };
 
-                // --- Helper Functions Restored ---
                 const checkSpecialEvent = () => {
                     const now = new Date();
                     const solarMonth = now.getMonth() + 1;
                     const solarDay = now.getDate();
                     const solarStr = `${String(solarMonth).padStart(2,'0')}-${String(solarDay).padStart(2,'0')}`;
-
-                    // Initialize Lunar
-                    let lunarStr = "";
-                    let lunarMonth = 0;
-                    let lunarDay = 0;
-                    try {
-                        const lunar = Lunar.fromDate(now);
-                        lunarMonth = lunar.getMonth();
-                        lunarDay = lunar.getDay();
-                        lunarStr = `农历${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}`;
-                    } catch(e) {}
-
-                    let eventName = "";
-                    let eventCtx = "";
-
-                    // Solar Holidays
-                    const solarHolidays = {
-                        "01-01": "元旦快乐",
-                        "02-14": "情人节快乐",
-                        "04-01": "愚人节快乐",
-                        "05-01": "劳动节快乐",
-                        "06-01": "儿童节快乐",
-                        "10-01": "国庆节快乐",
-                        "10-31": "万圣节前夜",
-                        "11-01": "万圣节快乐",
-                        "12-24": "平安夜快乐",
-                        "12-25": "圣诞节快乐"
-                    };
-
-                    if(solarHolidays[solarStr]) {
-                        eventName = solarHolidays[solarStr];
-                        eventCtx = `Today is ${eventName}.`;
-                    }
-
-                    // Lunar Holidays (if library works)
+                    let lunarStr = ""; let lunarMonth = 0; let lunarDay = 0;
+                    try { const lunar = Lunar.fromDate(now); lunarMonth = lunar.getMonth(); lunarDay = lunar.getDay(); lunarStr = `农历${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}`; } catch(e) {}
+                    let eventName = ""; let eventCtx = "";
+                    const solarHolidays = { "01-01": "元旦快乐", "02-14": "情人节快乐", "04-01": "愚人节快乐", "05-01": "劳动节快乐", "06-01": "儿童节快乐", "10-01": "国庆节快乐", "10-31": "万圣节前夜", "11-01": "万圣节快乐", "12-24": "平安夜快乐", "12-25": "圣诞节快乐" };
+                    if(solarHolidays[solarStr]) { eventName = solarHolidays[solarStr]; eventCtx = `Today is ${eventName}.`; }
                     if(lunarMonth > 0) {
-                        const lunarEvents = {
-                            "1-1": "春节",
-                            "1-15": "元宵节",
-                            "2-2": "龙抬头",
-                            "5-5": "端午节",
-                            "7-7": "七夕节",
-                            "8-15": "中秋节",
-                            "9-9": "重阳节",
-                            "12-8": "腊八节",
-                            "12-23": "北方小年", 
-                            "12-24": "南方小年"
-                        };
-                        
+                        const lunarEvents = { "1-1": "春节", "1-15": "元宵节", "2-2": "龙抬头", "5-5": "端午节", "7-7": "七夕节", "8-15": "中秋节", "9-9": "重阳节", "12-8": "腊八节", "12-23": "北方小年", "12-24": "南方小年" };
                         const lKey = `${lunarMonth}-${lunarDay}`;
-                        if(lunarEvents[lKey]) {
-                            eventName = lunarEvents[lKey] + "快乐";
-                            eventCtx = `Today is ${lunarEvents[lKey]} (Lunar Calendar).`;
-                        }
-
-                        if (lunarMonth === 12) {
-                             const tomorrow = new Date(now);
-                             tomorrow.setDate(tomorrow.getDate() + 1);
-                             const lunarTomorrow = Lunar.fromDate(tomorrow);
-                             if (lunarTomorrow.getMonth() === 1 && lunarTomorrow.getDay() === 1) {
-                                 eventName = "除夕快乐";
-                                 eventCtx = "Today is Chinese New Year's Eve (除夕). Family reunion dinner tonight.";
-                             }
-                        }
+                        if(lunarEvents[lKey]) { eventName = lunarEvents[lKey] + "快乐"; eventCtx = `Today is ${lunarEvents[lKey]} (Lunar Calendar).`; }
+                        if (lunarMonth === 12) { const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1); const lunarTomorrow = Lunar.fromDate(tomorrow); if (lunarTomorrow.getMonth() === 1 && lunarTomorrow.getDay() === 1) { eventName = "除夕快乐"; eventCtx = "Today is Chinese New Year's Eve (除夕). Family reunion dinner tonight."; } }
                     }
-
-                    if(user.birthday) {
-                         const birthDate = new Date(user.birthday);
-                         if(birthDate.getMonth() === now.getMonth() && birthDate.getDate() === now.getDate()) {
-                             eventName = `🎂 祝 ${user.nickname} 生日快乐！`;
-                             eventCtx = `IMPORTANT: TODAY IS USER'S BIRTHDAY.`;
-                         }
-                    }
-                    
+                    if(user.birthday) { const birthDate = new Date(user.birthday); if(birthDate.getMonth() === now.getMonth() && birthDate.getDate() === now.getDate()) { eventName = `🎂 祝 ${user.nickname} 生日快乐！`; eventCtx = `IMPORTANT: TODAY IS USER'S BIRTHDAY.`; } }
                     const bdayCat = cats.value.find(c => c.birthday === solarStr);
-                    if (bdayCat) {
-                        if(eventName) {
-                             eventName += ` & ${bdayCat.name}生日`;
-                             eventCtx += ` Also, today is ${bdayCat.name}'s birthday.`;
-                        } else {
-                             eventName = `🎂 今天是 ${bdayCat.name} 的生日！`;
-                             eventCtx = `IMPORTANT: TODAY IS ${bdayCat.name}'s BIRTHDAY.`;
-                        }
-                    }
-
-                    todayEvent.value = eventName;
-                    todayEventContext.value = eventCtx;
+                    if (bdayCat) { if(eventName) { eventName += ` & ${bdayCat.name}生日`; eventCtx += ` Also, today is ${bdayCat.name}'s birthday.`; } else { eventName = `🎂 今天是 ${bdayCat.name} 的生日！`; eventCtx = `IMPORTANT: TODAY IS ${bdayCat.name}'s BIRTHDAY.`; } }
+                    todayEvent.value = eventName; todayEventContext.value = eventCtx;
                 };
 
                 const getUserRealLifeContext = () => {
                     const pendingTodos = user.todos ? user.todos.filter(t => !t.done) : [];
                     const pendingTodosStr = pendingTodos.map(t => t.text).join(', ');
-                    
                     let ddlContext = "None";
-                    if (nearestDDL.value) {
-                        const diff = new Date(nearestDDL.value.time).getTime() - Date.now();
-                        const days = diff / (1000 * 60 * 60 * 24);
-                        if (days <= 5) {
-                            ddlContext = `URGENT DEADLINE: ${nearestDDL.value.title} in ${days.toFixed(1)} days!`;
-                        } else {
-                            ddlContext = `${nearestDDL.value.title} (Time left: ${ddlCountdownStr.value})`;
-                        }
-                    }
-
+                    if (nearestDDL.value) { const diff = new Date(nearestDDL.value.time).getTime() - Date.now(); const days = diff / (1000 * 60 * 60 * 24); if (days <= 5) { ddlContext = `URGENT DEADLINE: ${nearestDDL.value.title} in ${days.toFixed(1)} days!`; } else { ddlContext = `${nearestDDL.value.title} (Time left: ${ddlCountdownStr.value})`; } }
                     const eventContext = todayEventContext.value ? todayEventContext.value : "None";
-                    
                     const lastMail = user.mailbox.length > 0 ? user.mailbox[user.mailbox.length - 1] : null;
                     const mailContext = lastMail ? `Recent Mail from ${lastMail.from}: ${lastMail.content.substring(0, 30)}...` : "No recent mail.";
-
-                    return `User: ${user.nickname || 'Master/Miss'}. Gender: ${user.gender}. 
-                    Pending Tasks: ${pendingTodosStr}. 
-                    DDL Context: ${ddlContext}. 
-                    Special Event: ${eventContext}. 
-                    Mail Context: ${mailContext}`;
+                    return `User: ${user.nickname || 'Master/Miss'}. Gender: ${user.gender}. Pending Tasks: ${pendingTodosStr}. DDL Context: ${ddlContext}. Special Event: ${eventContext}. Mail Context: ${mailContext}`;
                 };
 
                 const generateMail = async () => {
                     if (user.mailbox.length >= 4) return;
                     if (Math.random() > 0.25) return; 
                     const catsOut = cats.value.filter(c => c.isOut);
-                    let sender = '';
-                    let isRandomDC = false;
-                    if (catsOut.length > 0 && Math.random() < 0.7) {
-                        sender = catsOut[Math.floor(Math.random() * catsOut.length)].name;
-                    } else {
-                        isRandomDC = true;
-                        sender = 'Random DC Character'; 
-                    }
-                    const prompt = `Generate a short letter/message to User.
-                    Sender Context: ${isRandomDC ? 'A random DC character (e.g., Joker, Catwoman, Gordon, etc.)' : 'Character ' + sender + ' who is currently OUT on patrol/mission'}.
-                    Length: Max 50 words. Language: Simplified Chinese.
-                    Tone: In-character.
-                    Include Item? 60% chance.
-                    Output JSON: { "sender": "Name", "content": "Message...", "item": { "name": "ItemName", "icon": "Emoji", "desc": "Short Desc" } or null }`;
-
+                    let sender = ''; let isRandomDC = false;
+                    if (catsOut.length > 0 && Math.random() < 0.7) { sender = catsOut[Math.floor(Math.random() * catsOut.length)].name; } else { isRandomDC = true; sender = 'Random DC Character'; }
+                    const prompt = `Generate a short letter/message to User. Sender Context: ${isRandomDC ? 'A random DC character (e.g., Joker, Catwoman, Gordon, etc.)' : 'Character ' + sender + ' who is currently OUT on patrol/mission'}. Length: Max 50 words. Language: Simplified Chinese. Tone: In-character. Include Item? 60% chance. Output JSON: { "sender": "Name", "content": "Message...", "item": { "name": "ItemName", "icon": "Emoji", "desc": "Short Desc" } or null }`;
                     try {
                         const res = await callAI(prompt, "Mail System", 150);
                         const data = parseAIJSON(res);
-                        
-                        if (data && data.sender && data.content) {
-                            const newItem = data.item ? { ...data.item, id: Date.now(), type: 'collectible' } : null;
-                            
-                            user.mailbox.push({
-                                from: data.sender,
-                                date: getCurrentTimeStr(),
-                                content: cleanText(data.content),
-                                item: newItem,
-                                read: false, claimed: false
-                            });
-                            user.dailyMailCount++; 
-                        }
+                        if (data && data.sender && data.content) { const newItem = data.item ? { ...data.item, id: Date.now(), type: 'collectible' } : null; user.mailbox.push({ from: data.sender, date: getCurrentTimeStr(), content: cleanText(data.content), item: newItem, read: false, claimed: false }); user.dailyMailCount++; }
                     } catch(e) {}
                 };
 
                 const callAI = async (prompt, systemPrompt, maxTokens = 100) => {
-                    if (!settings.apiKey) throw new Error("No API Key");
+                    if (!settings.apiKey) {
+                        showToast("连接失败: 缺少 API 密钥", "error");
+                        throw new Error("No API Key");
+                    }
+                    
+                    showToast("正在建立加密通道...", "loading");
+                    addLog(`API REQUEST [${settings.model}]: Initiated.`);
+
                     try {
                         const res = await fetch(`${settings.baseUrl}/chat/completions`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.apiKey}` },
                             body: JSON.stringify({ model: settings.model, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: prompt }], temperature: settings.temperature, max_tokens: maxTokens })
                         });
+                        
+                        if (!res.ok) {
+                            const errorText = await res.text();
+                            addLog(`API ERROR: ${res.status} - ${errorText}`, "error");
+                            showToast(`信号被阻断: ${res.status}`, "error");
+                            throw new Error(`API Error: ${res.status}`);
+                        }
+
                         const data = await res.json();
-                        return data.choices[0].message.content;
-                    } catch (e) { throw e; }
+                        showToast("数据传输完成", "success");
+                        const content = data.choices[0].message.content;
+                        addLog(`API SUCCESS. Length: ${content.length} chars.`, "sent");
+                        return content;
+                    } catch (e) { 
+                        addLog(`EXCEPTION: ${e.message}`, "error");
+                        showToast("信号中断", "error");
+                        throw e; 
+                    }
                 };
 
-                const handleCatClick = (cat) => { 
-                    selectedCat.value = cat; 
-                    currentTab.value = 'detail'; 
-                    showEasterEggBtn.value = (cat.affinity >= 90 && Math.random() < 0.05);
-                };
-
+                const handleCatClick = (cat) => { selectedCat.value = cat; currentTab.value = 'detail'; showEasterEggBtn.value = (cat.affinity >= 90 && Math.random() < 0.05); };
+                
                 const triggerEasterEgg = async () => { 
                     if(!settings.apiKey) return alert("API needed");
                     if(selectedCat.value.affinity < 10) return alert("好感度不足");
@@ -1152,131 +1150,71 @@
                         showSpecialEventModal.value = true;
                         showEasterEggBtn.value = false;
                         selectedCat.value.diary.push({ time: getCurrentTimeStr(), content: "与用户进行了特别的约会/互动 (Easter Egg)" });
-                        
-                        if(content.includes("信") || content.includes("Letter") || content.includes("Postcard")) {
-                             user.inventory.push({ 
-                                 id: Date.now(), 
-                                 name: `来自${selectedCat.value.name}的信`, 
-                                 type: 'letter', 
-                                 desc: content.substring(0, 50) + "...", 
-                                 fullContent: content,
-                                 icon: '💌'
-                             });
-                        }
+                        if(content.includes("信") || content.includes("Letter") || content.includes("Postcard")) { user.inventory.push({ id: Date.now(), name: `来自${selectedCat.value.name}的信`, type: 'letter', desc: content.substring(0, 50) + "...", fullContent: content, icon: '💌' }); }
                     } catch(e) { selectedCat.value.affinity += 10; }
                 };
 
                 // --- REFACTORED LOGIC A Implementation (v3.5.0) ---
                 const checkDailyInitialization = async () => {
-                    const todayStr = new Date().toDateString(); // "Mon Jan 01 2024"
+                    const todayStr = new Date().toDateString(); 
                     const now = Date.now();
                     const lastSyncTime = parseInt(localStorage.getItem('last_sync_time') || '0');
                     const lastLoginDate = localStorage.getItem('last_login_date') || ''; 
 
-                    // 1. Always update Daily Context
                     checkSpecialEvent();
-                    
-                    // 2. Refresh Schedule based on calendar sources
                     updateDailySchedule();
 
                     const isNewDay = lastLoginDate !== todayStr;
                     const isOverOneHour = (now - lastSyncTime) > (60 * 60 * 1000);
 
                     if (isNewDay) {
-                        console.log("Logic A: New Day Detected. Starting Full Logic.");
-                        
+                        addLog("NEW DAY DETECTED. STARTING PROTOCOL A.");
                         if (settings.apiKey) {
-                            // Order: Alfred Report (Yesterday) -> Diaries (Yesterday) -> Clean -> Refresh Status (Today)
-                            
-                            // 4. Alfred Report
                             await generateAlfredReport(); 
-                            
-                            // 5. Diaries
                             await generateAllCatDiaries(); 
-                            
-                            // 6. Global Status Update for Today
                             await refreshAllStatus(true);
                         } else {
-                            // If no API key, we still need to clear done tasks and reset logs
                              user.todos = user.todos.filter(t => !t.done);
                         }
-
                         user.dailyMailCount = 0;
                         localStorage.setItem('last_login_date', todayStr);
                         user.lastLogin = now;
                     } 
                     else if (isOverOneHour) {
-                        console.log("Logic A: >1 Hour Detected. Status Update Only.");
+                        addLog("STALE SESSION. REFRESHING STATUS.");
                         if (settings.apiKey) {
                              await refreshAllStatus(true);
                         }
                         await checkMailboxLogic();
-                    } else {
-                        console.log("Logic A: Throttled. Using Cache.");
                     }
                 };
 
                 const generateAlfredReport = async () => {
-                    // Logic: Summarize Yesterday
                     const doneTasks = user.todos.filter(t => t.done);
                     const pendingTasks = user.todos.filter(t => !t.done);
-                    
                     const doneStr = doneTasks.map(t => t.text).join(', ');
                     const pendingStr = pendingTasks.map(t => t.text).join(', ');
-                    
-                    const prompt = `Role: Alfred Pennyworth. 
-                    Task: Write a daily summary briefing for the User based on YESTERDAY'S activity.
-                    Context: 
-                    Completed Tasks: ${doneStr || 'None'}.
-                    Pending Tasks: ${pendingStr || 'None'}.
-                    Output: 100 words summary. Polite, efficient. Language: Simplified Chinese.`;
-                    
+                    const prompt = `Role: Alfred Pennyworth. Task: Write a daily summary briefing for the User based on YESTERDAY'S activity. Context: Completed Tasks: ${doneStr || 'None'}. Pending Tasks: ${pendingStr || 'None'}. Output: 100 words summary. Polite, efficient. Language: Simplified Chinese.`;
                     try {
                         const summary = await callAI(prompt, "You are Alfred Pennyworth.", 200);
-                        
-                        user.missionReports.push({ 
-                            missionName: '昨日总结报告', 
-                            date: new Date(Date.now() - 86400000).toLocaleDateString(), 
-                            duration: 0, 
-                            executor: 'Alfred', 
-                            logs: [], 
-                            summary: cleanText(summary), 
-                            status: 'COMPLETED' 
-                        });
-                        
-                        // Cleanup completed tasks
+                        user.missionReports.push({ missionName: '昨日总结报告', date: new Date(Date.now() - 86400000).toLocaleDateString(), duration: 0, executor: 'Alfred', logs: [], summary: cleanText(summary), status: 'COMPLETED' });
                         user.todos = pendingTasks; 
-                        
-                    } catch (e) { console.error("Alfred Report Error", e); }
+                    } catch (e) { addLog("Alfred Report Failed: " + e.message, "error"); }
                 };
 
                 const generateAllCatDiaries = async () => {
-                    // Logic: Generate Diary -> Then Clear Logs
                     for (const cat of cats.value) {
-                         // Condition: Only generate if there was meaningful interaction or monitoring logs yesterday
                          const hasInteraction = cat.chatHistory.length > 0 || cat.diary.some(d => !d.content.includes("监控数据"));
-                         
                          if (hasInteraction) {
                              const logsText = cat.diary.map(d => `[${d.time}] ${d.content}`).join('; ');
                              const chatText = cat.chatHistory.map(c => `${c.role}: ${c.content}`).join('; ');
-                             
-                             const prompt = `Character: ${cat.name}. Task: Write a diary entry (200-300 words). 
-                             Based on yesterday's interactions: ${logsText} ${chatText}.
-                             Tone: In-character (Human Language). NO OOC. Language: Simplified Chinese.`;
-                             
+                             const prompt = `Character: ${cat.name}. Task: Write a diary entry (200-300 words). Based on yesterday's interactions: ${logsText} ${chatText}. Tone: In-character (Human Language). NO OOC. Language: Simplified Chinese.`;
                              try {
                                  const res = await callAI(prompt, STRICT_CANON_PROMPT, 400);
                                  cat.logs.push({ date: new Date(Date.now() - 86400000).toLocaleDateString(), content: cleanText(res) });
-                                 
-                                 // Logic: CLEAR DATA AFTER SUCCESSFUL GENERATION
-                                 cat.chatHistory = []; 
-                                 cat.diary = [];
+                                 cat.chatHistory = []; cat.diary = [];
                              } catch(e) { console.error(e); }
-                         } else {
-                             // Just clear if nothing interesting happened
-                             cat.chatHistory = [];
-                             cat.diary = [];
-                         }
+                         } else { cat.chatHistory = []; cat.diary = []; }
                     }
                 };
 
@@ -1284,31 +1222,22 @@
                     if (!settings.autoUpdate) return;
                     const now = Date.now();
                     const lastSync = parseInt(localStorage.getItem('last_sync_time') || '0');
-                    if (now - lastSync < 20 * 60 * 1000) return; // 20 min throttle for background
-                    
+                    if (now - lastSync < 20 * 60 * 1000) return; 
                     await refreshAllStatus(false);
                     await checkMailboxLogic();
                 };
 
-                const checkMailboxLogic = async () => {
-                    await generateMail();
-                };
+                const checkMailboxLogic = async () => { await generateMail(); };
 
                 const sendMessage = async (arg1 = null, arg2 = false) => {
                     let overrideContent = null;
                     let isItemUse = false;
-                    
-                    if (typeof arg1 === 'string') {
-                        overrideContent = arg1;
-                        isItemUse = (typeof arg2 === 'boolean') ? arg2 : false;
-                    }
-
+                    if (typeof arg1 === 'string') { overrideContent = arg1; isItemUse = (typeof arg2 === 'boolean') ? arg2 : false; }
                     if ((!chatInput.value.trim() && !overrideContent) || !selectedCat.value) return;
+                    
                     const sendingCat = selectedCat.value; 
                     const msg = overrideContent || chatInput.value;
-                    
                     if (typeof msg !== 'string') return;
-
                     if(!overrideContent) chatInput.value = '';
                     
                     sendingCat.chatHistory.push({ role: 'user', content: msg });
@@ -1319,8 +1248,6 @@
                     }
 
                     thinkingStates[sendingCat.id] = true; 
-                    
-                    // Logic C -> E: Trigger background refresh for OTHER cats to react
                     refreshAllStatus(true, `User is interacting with ${sendingCat.name}.`, sendingCat.id);
 
                     try {
@@ -1328,10 +1255,7 @@
                         let recentHistory = "";
                         if (sendingCat.lastInteractionTimestamp && (now - sendingCat.lastInteractionTimestamp < 20 * 60 * 1000)) {
                              recentHistory = sendingCat.chatHistory.slice(-10).map(m => `${m.role}: ${m.content}`).join('\n');
-                        } else {
-                             recentHistory = "(Previous conversation expired/too old)";
-                        }
-                        
+                        } else { recentHistory = "(Previous conversation expired/too old)"; }
                         const recentDiaries = sendingCat.diary.slice(-5).map(d => `[${d.time}] ${d.content}`).join('\n');
                         const context = getUserRealLifeContext();
                         
@@ -1359,6 +1283,10 @@
                         `;
 
                         const responseRaw = await callAI(prompt, STRICT_CANON_PROMPT, 300);
+                        
+                        // Debugging: Log Raw Response for User Transparency
+                        addLog(`RAW RESPONSE [${sendingCat.name}]: ${responseRaw.substring(0, 100)}...`);
+
                         const status = extractSection(responseRaw, 'STATUS');
                         const voice = extractSection(responseRaw, 'VOICE');
                         const reply = extractSection(responseRaw, 'REPLY');
@@ -1369,12 +1297,20 @@
                             sendingCat.chatHistory.push({ role: 'assistant', content: reply });
                             await checkMailboxLogic(); 
                         } else {
-                             sendingCat.chatHistory.push({ role: 'assistant', content: cleanText(responseRaw) });
+                             // Fallback: If AI fails to format, just output the raw text (cleaned)
+                             const fallbackText = cleanText(responseRaw);
+                             if (fallbackText) {
+                                 sendingCat.chatHistory.push({ role: 'assistant', content: fallbackText });
+                             } else {
+                                 sendingCat.chatHistory.push({ role: 'assistant', content: "(收到空讯号)" });
+                                 addLog("ERROR: Empty response from AI after cleaning.", "error");
+                             }
                         }
-                        
                         sendingCat.lastInteractionTimestamp = Date.now();
-
-                    } catch (e) { sendingCat.chatHistory.push({ role: 'assistant', content: "(信号中断...)" }); } 
+                    } catch (e) { 
+                        sendingCat.chatHistory.push({ role: 'assistant', content: "(信号中断，详情请查看任务日志)" }); 
+                        addLog(`CHAT ERROR: ${e.message}`, "error");
+                    } 
                     finally { thinkingStates[sendingCat.id] = false; }
                 };
 
@@ -1401,12 +1337,7 @@
                     try {
                         const res = await callAI(prompt, STRICT_CANON_PROMPT, 300);
                         const lines = res.split('\n');
-                        lines.forEach(l => {
-                            if(l.includes('|')) {
-                                const [t, c] = l.split('|');
-                                selectedCat.value.diary.push({ time: t.trim(), content: c.trim() });
-                            }
-                        });
+                        lines.forEach(l => { if(l.includes('|')) { const [t, c] = l.split('|'); selectedCat.value.diary.push({ time: t.trim(), content: c.trim() }); } });
                         selectedCat.value.diary.sort((a,b) => a.time.localeCompare(b.time));
                     } catch(e) { alert("生成失败"); } finally { isGeneratingDiary.value = false; }
                 };
@@ -1429,20 +1360,7 @@
                 const focusTickBehavior = async () => {
                      const formStr = focusCat.value.isHuman ? "Human Form" : "Cat Form";
                      const previousLogs = currentFocusLog.value.slice(0, 3).join(' -> ');
-                     
-                     const prompt = `
-                     Identity: ${focusCat.value.name}. Breed: ${focusCat.value.breed}.
-                     Traits: ${focusCat.value.personality}.
-                     
-                     Scenario: User is focusing. You are ${formStr}.
-                     [PREVIOUS ACTIONS (Recent to Old)]: ${previousLogs || "Just started supervising."}
-                     
-                     Task: Describe NEXT Action (3rd Person) and Inner Voice (1st Person).
-                     CONSTRAINT: Your new action must be physically and logically continuous with the [PREVIOUS ACTIONS].
-                     
-                     Output: [ACTION] Action (3rd Person ONLY) [VOICE] Voice (Human Language, NO MEOWS)
-                     `;
-                     
+                     const prompt = `Identity: ${focusCat.value.name}. Breed: ${focusCat.value.breed}. Traits: ${focusCat.value.personality}. Scenario: User is focusing. You are ${formStr}. [PREVIOUS ACTIONS]: ${previousLogs || "Just started supervising."} Task: Describe NEXT Action (3rd Person) and Inner Voice (1st Person). Output: [ACTION] Action (3rd Person ONLY) [VOICE] Voice (Human Language, NO MEOWS)`;
                      try {
                          const res = await callAI(prompt, STRICT_CANON_PROMPT, 150);
                          const action = extractSection(res, 'ACTION');
@@ -1464,18 +1382,9 @@
                     const minutes = parseInt(timeStr);
                     const action = prompt("本次任务目标:", "调查档案");
                     if(action) {
-                        focusCat.value = selectedCat.value;
-                        focusAction.value = action;
-                        isFocusing.value = true;
-                        focusTotalTime.value = minutes * 60;
-                        focusTime.value = minutes * 60;
-                        currentFocusLog.value = []; 
-                        
+                        focusCat.value = selectedCat.value; focusAction.value = action; isFocusing.value = true; focusTotalTime.value = minutes * 60; focusTime.value = minutes * 60; currentFocusLog.value = []; 
                         if(focusTimer.value) clearInterval(focusTimer.value);
-                        
-                        // 5-10 min interval
                         nextRandomEventTime.value = Date.now() + (Math.random() * 300000 + 300000); 
-
                         focusTimer.value = setInterval(async () => {
                             if (!isFocusing.value) return; 
                             focusTime.value--;
@@ -1497,12 +1406,7 @@
                     if(audioPlayer.value) audioPlayer.value.pause();
                     isFocusing.value = false;
                     
-                    let affinityDelta = 0;
-                    if (success) {
-                        affinityDelta = Math.floor(minutes / 10);
-                    } else {
-                        affinityDelta = -Math.floor(Math.random() * 6); 
-                    }
+                    let affinityDelta = success ? Math.floor(minutes / 10) : -Math.floor(Math.random() * 6);
                     affinityChangeValue.value = affinityDelta;
 
                     currentSettlement.missionName = focusAction.value; 
@@ -1514,43 +1418,20 @@
                     
                     let summary = "任务结束。";
                     if(settings.apiKey) {
-                        const form = focusCat.value.isHuman ? "Human Form" : "Cat Form";
-                        const prompt = success ? 
-                            `Identity: ${focusCat.value.name}. Traits: ${focusCat.value.personality}. User finished task. Write Evaluation (150 words). Subjective, In-character. Language: Simplified Chinese.` : 
-                            `Identity: ${focusCat.value.name}. Traits: ${focusCat.value.personality}. User GAVE UP task. Write Scolding/Evaluation (150 words). Subjective, In-character. Language: Simplified Chinese.`;
+                        const prompt = success ? `Identity: ${focusCat.value.name}. Traits: ${focusCat.value.personality}. User finished task. Write Evaluation (150 words). Subjective, In-character. Language: Simplified Chinese.` : `Identity: ${focusCat.value.name}. Traits: ${focusCat.value.personality}. User GAVE UP task. Write Scolding/Evaluation (150 words). Subjective, In-character. Language: Simplified Chinese.`;
                         summary = await callAI(prompt, STRICT_CANON_PROMPT, 300);
                     }
                     currentSettlement.summary = cleanText(summary);
-                    
                     showMissionSettlementModal.value = true; 
                     isFinishingFocus.value = false; 
                 };
                 
                 const confirmSettlement = () => {
-                    const duration = currentSettlement.duration;
-                    const success = currentSettlement.isSuccess;
-                    const minutes = currentSettlement.plannedMinutes;
-                    const affChange = currentSettlement.affinityDelta;
-                    
+                    const duration = currentSettlement.duration; const success = currentSettlement.isSuccess; const minutes = currentSettlement.plannedMinutes; const affChange = currentSettlement.affinityDelta;
                     focusCat.value.affinity = Math.max(0, focusCat.value.affinity + affChange);
-                    
-                    if(success) {
-                        user.coins += (minutes * 10);
-                    }
-                    
-                    user.missionReports.push({ 
-                        date: new Date().toLocaleString(), 
-                        duration: duration, 
-                        missionName: currentSettlement.missionName, 
-                        executor: `${user.nickname} & ${focusCat.value.name}`, 
-                        logs: [...currentFocusLog.value], 
-                        summary: currentSettlement.summary, 
-                        status: success ? 'COMPLETED' : 'FAILED' 
-                    });
-                    
+                    if(success) { user.coins += (minutes * 10); }
+                    user.missionReports.push({ date: new Date().toLocaleString(), duration: duration, missionName: currentSettlement.missionName, executor: `${user.nickname} & ${focusCat.value.name}`, logs: [...currentFocusLog.value], summary: currentSettlement.summary, status: success ? 'COMPLETED' : 'FAILED' });
                     showMissionSettlementModal.value = false;
-                    
-                    // Logic E: Refresh all cats status after focus
                     const focusContext = `User just finished focusing on: ${currentSettlement.missionName}.`;
                     const focusCatLastLog = currentFocusLog.value.length > 0 ? currentFocusLog.value[0] : "";
                     refreshAllStatus(true, focusContext, focusCat.value.id, focusCatLastLog);
@@ -1566,17 +1447,9 @@
                          try {
                              const res = await callAI(prompt, STRICT_CANON_PROMPT, 100);
                              const action = extractSection(res, 'ACTION') || cleanText(res);
-                             if(isFocusing.value) {
-                                 const timeStr = getCurrentTimeStr();
-                                 currentFocusLog.value.unshift(`${timeStr} ${action}`); 
-                                 focusMessage.value = "骚扰成功！";
-                                 playLogSound();
-                                 setTimeout(() => focusMessage.value = '', 2000);
-                             } else { alert(`${targetCat.name}: ${action}`); }
+                             if(isFocusing.value) { const timeStr = getCurrentTimeStr(); currentFocusLog.value.unshift(`${timeStr} ${action}`); focusMessage.value = "骚扰成功！"; playLogSound(); setTimeout(() => focusMessage.value = '', 2000); } else { alert(`${targetCat.name}: ${action}`); }
                          } catch(e) {}
-                     } else {
-                         if(isFocusing.value) currentFocusLog.value.unshift(`${getCurrentTimeStr()} ${targetCat.name} 嫌弃地躲开了。`);
-                     }
+                     } else { if(isFocusing.value) currentFocusLog.value.unshift(`${getCurrentTimeStr()} ${targetCat.name} 嫌弃地躲开了。`); }
                 };
 
                 // REFACTORED Status Refresh (Variety + Logic E)
@@ -1591,191 +1464,95 @@
                     const h = new Date().getHours();
                     const isNight = (h >= 22 || h < 6);
                     const userContext = getUserRealLifeContext() + (additionalContext ? ` RECENT EVENT: ${additionalContext}` : "");
-                    
                     const catsToUpdate = cats.value; 
 
                     try {
                         let characterBlock = "";
                         catsToUpdate.forEach(c => {
-                            // SKIP the active cat if we are in chat mode (activeCatId provided)
                             if (activeCatId && c.id === activeCatId) return;
-
                             let specificContext = "";
-                            if(c.id === activeCatId) { // Logic E: Match focus cat state
-                                specificContext = `(Must align with last action: ${focusCatLastAction})`;
-                            }
-                            
-                            characterBlock += `
-                            --- CHARACTER ---
-                            ID: ${c.id}
-                            Name: ${c.name} (${c.breed})
-                            Traits: ${c.personality}
-                            Previous Status: ${c.status}
-                            Is Currently Out: ${c.isOut}
-                            ${specificContext}
-                            `;
+                            if(c.id === activeCatId) { specificContext = `(Must align with last action: ${focusCatLastAction})`; }
+                            characterBlock += `\n--- CHARACTER ---\nID: ${c.id}\nName: ${c.name} (${c.breed})\nTraits: ${c.personality}\nPrevious Status: ${c.status}\nIs Currently Out: ${c.isOut}\n${specificContext}\n`;
                         });
 
-                        const prompt = `
-                        Current Time: ${timeStr}. ${isNight ? 'Night Time (Patrol Likely)' : 'Day Time (Rest Likely)'}.
-                        User Context: ${userContext}
-                        
-                        [GLOBAL SCENARIO RULES]:
-                        1. **MINIMUM 2 CATS AT HOME**: You MUST ensure that at least 2 cats in this list stay home ([ISOUT] false). Do NOT send everyone on patrol, even if it is night.
-                        2. **Anti-OOC**: Bruce is stoic/paranoid. Damian is arrogant. Dick is cheerful. Jason is grumpy. Tim is tired/techy.
-                        3. **VARIETY & CONTINUITY**: Check "Previous Status". Time has passed. Do NOT repeat the exact same action. If they were sleeping, maybe they woke up. If playing, maybe they stopped. Ensure logic flow.
-                        
-                        Task: Update status for ALL characters listed above.
-                        
-                        Output Format (Repeat for EACH character ID):
-                        [ID] {id}
-                        [STATUS] {3rd person action}
-                        [VOICE] {1st person thought (Human Language, NO MEOWS)}
-                        [ISOUT] {true/false}
-                        `;
+                        const prompt = `Current Time: ${timeStr}. ${isNight ? 'Night Time (Patrol Likely)' : 'Day Time (Rest Likely)'}. User Context: ${userContext} [GLOBAL SCENARIO RULES]: 1. **MINIMUM 2 CATS AT HOME**: You MUST ensure that at least 2 cats in this list stay home ([ISOUT] false). Do NOT send everyone on patrol, even if it is night. 2. **Anti-OOC**: Bruce is stoic/paranoid. Damian is arrogant. Dick is cheerful. Jason is grumpy. Tim is tired/techy. 3. **VARIETY & CONTINUITY**: Check "Previous Status". Time has passed. Do NOT repeat the exact same action. If they were sleeping, maybe they woke up. If playing, maybe they stopped. Ensure logic flow. Task: Update status for ALL characters listed above. Output Format (Repeat for EACH character ID): [ID] {id} [STATUS] {3rd person action} [VOICE] {1st person thought (Human Language, NO MEOWS)} [ISOUT] {true/false}`;
 
                         const res = await callAI(characterBlock + "\n" + prompt, STRICT_CANON_PROMPT, 1000);
-                        
                         const blocks = res.split('[ID]');
                         blocks.forEach(block => {
                             if(!block.trim()) return;
                             const lines = block.trim().split('\n');
-                            const idLine = lines[0].trim();
-                            const targetId = parseInt(idLine);
-                            
+                            const targetId = parseInt(lines[0].trim());
                             const cat = cats.value.find(c => c.id === targetId);
-                            
                             if (cat) {
                                 const status = extractSection('[ID]'+block, 'STATUS');
                                 const voice = extractSection('[ID]'+block, 'VOICE');
                                 const isOutStr = extractSection('[ID]'+block, 'ISOUT');
-                                
                                 if(status) cat.status = status;
                                 if(voice) cat.innerVoice = voice;
                                 if(isOutStr) cat.isOut = (isOutStr.toLowerCase() === 'true');
-                                
                                 if(!cat.diary) cat.diary = [];
                                 cat.diary.push({ time: timeStr, content: cat.status + (cat.isOut ? ' (外出)' : '') });
                             }
                         });
-                        
                         alfredMessage.value = (todayEvent.value ? todayEvent.value + " " : "") + `已同步 ${timeStr} 的庄园监控数据。`;
                     } catch (e) { console.error(e); } 
                     finally { isUpdatingStatus.value = false; }
                 };
 
                 const handleIcsImport = (event) => { 
-                    const file = event.target.files[0]; 
-                    if (!file) return; 
+                    const file = event.target.files[0]; if (!file) return; 
                     const reader = new FileReader(); 
                     reader.onload = (e) => { 
                         const content = e.target.result; 
                         const events = parseICS(content); 
                         if (events.length > 0) {
                             if (!user.calendarSources) user.calendarSources = [];
-                            user.calendarSources.push({
-                                name: file.name,
-                                importDate: new Date().toISOString(),
-                                events: events
-                            });
-                            updateDailySchedule(); // Refresh today's view
-                            alert(`成功导入 ${events.length} 个事件！日程已更新。`); 
-                        } else { 
-                            alert("未在文件中发现有效事件。"); 
-                        } 
+                            user.calendarSources.push({ name: file.name, importDate: new Date().toISOString(), events: events });
+                            updateDailySchedule(); showToast(`成功导入 ${events.length} 个事件`, "success");
+                        } else { alert("未在文件中发现有效事件。"); } 
                     }; 
-                    reader.readAsText(file); 
-                    event.target.value = ''; 
+                    reader.readAsText(file); event.target.value = ''; 
                 };
 
                 const updateDailySchedule = () => {
                     if (!user.calendarSources) return;
-                    
-                    const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD
+                    const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, ''); 
                     let todaysEvents = [];
-
-                    // Collect all events from all sources for TODAY
                     user.calendarSources.forEach(source => {
                         source.events.forEach(ev => {
-                            // Check if event falls on today
                             let isToday = false;
-                            
-                            // Check explicit Start Date matches
                             if (ev.dtstart && ev.dtstart.startsWith(todayStr)) isToday = true;
-                            
                             if (isToday) {
-                                let timePart = '';
-                                let duration = 60;
-                                
+                                let timePart = ''; let duration = 60;
                                 if (ev.dtstart.includes('T')) {
-                                    const parts = ev.dtstart.split('T');
-                                    const t = parts[1];
+                                    const parts = ev.dtstart.split('T'); const t = parts[1];
                                     if (t.length >= 4) {
-                                        const h = t.substring(0, 2);
-                                        const m = t.substring(2, 4);
-                                        timePart = `${h}:${m}`;
-                                        
+                                        const h = t.substring(0, 2); const m = t.substring(2, 4); timePart = `${h}:${m}`;
                                         if (ev.dtend && ev.dtend.includes('T')) {
-                                            const endParts = ev.dtend.split('T');
-                                            const te = endParts[1];
-                                            if (te.length >= 4) {
-                                                const he = te.substring(0, 2);
-                                                const me = te.substring(2, 4);
-                                                const startMin = parseInt(h)*60 + parseInt(m);
-                                                const endMin = parseInt(he)*60 + parseInt(me);
-                                                duration = endMin - startMin;
-                                            }
+                                            const endParts = ev.dtend.split('T'); const te = endParts[1];
+                                            if (te.length >= 4) { const he = te.substring(0, 2); const me = te.substring(2, 4); const startMin = parseInt(h)*60 + parseInt(m); const endMin = parseInt(he)*60 + parseInt(me); duration = endMin - startMin; }
                                         }
                                     }
-                                } else {
-                                    timePart = "全天";
-                                }
-                                
-                                // Avoid duplicates
-                                if (!todaysEvents.some(e => e.time === timePart && e.event === ev.summary)) {
-                                     todaysEvents.push({ time: timePart, event: ev.summary, done: false, duration: Math.max(15, duration) });
-                                }
+                                } else { timePart = "全天"; }
+                                if (!todaysEvents.some(e => e.time === timePart && e.event === ev.summary)) { todaysEvents.push({ time: timePart, event: ev.summary, done: false, duration: Math.max(15, duration) }); }
                             }
                         });
                     });
-
-                    // Merge with manual entries if necessary, or just overwrite base schedule with day view
-                    // To prevent complexity, we will just set schedule to imported events for today. 
-                    // User can add manual events on top.
-                    
-                    user.schedule = [...todaysEvents];
-                    user.schedule.sort((a,b) => a.time.localeCompare(b.time));
+                    user.schedule = [...todaysEvents]; user.schedule.sort((a,b) => a.time.localeCompare(b.time));
                 };
                 
                 const parseICS = (icsData) => { 
-                    const events = []; 
-                    const lines = icsData.split(/\r\n|\n|\r/); 
-                    let inEvent = false; 
-                    let currentEvent = {}; 
-                    
+                    const events = []; const lines = icsData.split(/\r\n|\n|\r/); let inEvent = false; let currentEvent = {}; 
                     for (const line of lines) { 
                         if (line.startsWith('BEGIN:VEVENT')) { inEvent = true; currentEvent = {}; } 
-                        else if (line.startsWith('END:VEVENT')) { 
-                            inEvent = false; 
-                            if (currentEvent.summary && currentEvent.dtstart) { 
-                                events.push(currentEvent);
-                            } 
-                        } else if (inEvent) { 
-                            if (line.startsWith('SUMMARY:')) currentEvent.summary = line.substring(8); 
-                            else if (line.startsWith('DTSTART')) { const parts = line.split(':'); currentEvent.dtstart = parts[parts.length-1]; } 
-                            else if (line.startsWith('DTEND')) { const parts = line.split(':'); currentEvent.dtend = parts[parts.length-1]; } 
-                        } 
+                        else if (line.startsWith('END:VEVENT')) { inEvent = false; if (currentEvent.summary && currentEvent.dtstart) events.push(currentEvent); } 
+                        else if (inEvent) { if (line.startsWith('SUMMARY:')) currentEvent.summary = line.substring(8); else if (line.startsWith('DTSTART')) { const parts = line.split(':'); currentEvent.dtstart = parts[parts.length-1]; } else if (line.startsWith('DTEND')) { const parts = line.split(':'); currentEvent.dtend = parts[parts.length-1]; } } 
                     } 
                     return events; 
                 };
 
-                const deleteCalendarSource = (index) => {
-                    if(confirm("确定删除这个日历源吗？")) {
-                        user.calendarSources.splice(index, 1);
-                        updateDailySchedule();
-                    }
-                };
-                
+                const deleteCalendarSource = (index) => { if(confirm("确定删除这个日历源吗？")) { user.calendarSources.splice(index, 1); updateDailySchedule(); } };
                 const showIcsHelp = () => { alert("📅 如何获取日历文件 (.ics)？\n\n【Google日历】\n网页端右上角齿轮 -> 设置 -> 左侧“导入和导出” -> 导出 -> 下载并解压zip -> 找到 .ics 文件上传。\n\n【苹果/iCloud】\nMac日历应用 -> 文件 -> 导出 -> 导出... -> 保存为 .ics 文件。\n\n(注意：由于浏览器安全限制，暂不支持直接读取网络链接，请下载文件后导入)"); };
                 const sortedSchedule = computed(() => user.schedule ? user.schedule : []);
                 const sortedDDLs = computed(() => { if (!user.deadlines) return []; return [...user.deadlines].sort((a, b) => new Date(a.time) - new Date(b.time)); });
@@ -1786,15 +1563,7 @@
                 const toggleScheduleDone = (item) => { item.done = !item.done; };
                 const deleteSchedule = (index) => { if (confirm('是否删除此日程？')) { user.schedule.splice(index, 1); } };
                 const handleTimelineClick = (e) => { if (!calendarContainer.value) return; const rect = calendarContainer.value.getBoundingClientRect(); const offsetY = e.clientY - rect.top + calendarContainer.value.scrollTop; const clickedMinutes = Math.floor(offsetY); const h = Math.floor(clickedMinutes / 60); const m = clickedMinutes % 60; const mRounded = Math.round(m / 15) * 15; const finalH = mRounded === 60 ? h + 1 : h; const finalM = mRounded === 60 ? 0 : mRounded; if (finalH >= 24) return; const timeStr = `${String(finalH).padStart(2, '0')}:${String(finalM).padStart(2, '0')}`; const event = prompt(`添加新日程 (${timeStr}):`); if (event) { if (!user.schedule) user.schedule = []; user.schedule.push({ time: timeStr, event, done: false, duration: 60 }); } };
-                const handleAddClick = () => { 
-                    const h = new Date().getHours(); const m = new Date().getMinutes(); const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; 
-                    const event = prompt(`添加当前时间日程 (${timeStr}):`); 
-                    if (event) { 
-                        const durStr = prompt("持续时间 (分钟)?", "60");
-                        if (!user.schedule) user.schedule = []; 
-                        user.schedule.push({ time: timeStr, event, done: false, duration: parseInt(durStr) || 60 }); 
-                    } 
-                };
+                const handleAddClick = () => { const h = new Date().getHours(); const m = new Date().getMinutes(); const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; const event = prompt(`添加当前时间日程 (${timeStr}):`); if (event) { const durStr = prompt("持续时间 (分钟)?", "60"); if (!user.schedule) user.schedule = []; user.schedule.push({ time: timeStr, event, done: false, duration: parseInt(durStr) || 60 }); } };
                 
                 const shareMemory = (log) => { prompt("复制以下内容分享回忆：", `【${selectedCat.value.name}的日记】\n${log.date}\n${log.content}`); };
                 const closeSpecialEvent = () => showSpecialEventModal.value = false;
@@ -1804,167 +1573,74 @@
                 const openLogModal = () => showLogModal.value = true;
                 const stopFocus = () => { if(confirm("确定中止任务？")) { const plannedMinutes = focusTotalTime.value / 60; finishFocus(plannedMinutes, false); } };
                 const playLogSound = () => { const audio = new Audio('https://files.catbox.moe/mz99nm.mp3'); audio.volume = 0.5; audio.play().catch(() => {}); };
-                const fetchModels = async () => { if (!settings.apiKey) return alert("配置API Key"); isFetchingModels.value = true; try { const res = await fetch(settings.baseUrl + '/models', { method: 'GET', headers: { 'Authorization': `Bearer ${settings.apiKey}` } }); const data = await res.json(); if (data.data) availableModels.value = data.data.map(m => m.id); } catch (e) { alert("连接失败"); } finally { isFetchingModels.value = false; } };
+                const fetchModels = async () => { 
+                    if (!settings.apiKey) return alert("配置API Key"); 
+                    showToast("正在同步韦恩企业服务器...", "loading");
+                    isFetchingModels.value = true; 
+                    try { 
+                        const res = await fetch(settings.baseUrl + '/models', { method: 'GET', headers: { 'Authorization': `Bearer ${settings.apiKey}` } }); 
+                        const data = await res.json(); 
+                        if (data.data) {
+                            availableModels.value = data.data.map(m => m.id);
+                            showToast("模型列表已更新", "success");
+                        }
+                    } catch (e) { showToast("连接失败", "error"); } 
+                    finally { isFetchingModels.value = false; } 
+                };
                 const handleImageUpload = (e) => { const file = e.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = (evt) => newCat.image = evt.target.result; reader.readAsDataURL(file); } };
                 const handleSpecificImageUpload = (event, type) => { const file = event.target.files[0]; if (file && selectedCat.value) { const reader = new FileReader(); reader.onload = (e) => { if(type === 'human') selectedCat.value.image_human = e.target.result; else selectedCat.value.image = e.target.result; }; reader.readAsDataURL(file); } };
                 
-                // Logic D: Adopt with Quote & Anti-OOC
-                const adoptCat = () => { if(!newCat.name) return; let imgUrl = manualImgMode.value === 'auto' ? `https://placehold.co/200x200/${newCat.color.replace('#','')}/white?text=${newCat.codename}` : newCat.image; 
-                    // Add existing cats to system prompt for awareness
-                    const existingNames = cats.value.map(c => c.name).join(', ');
-                    const systemPrompt = `You are ${newCat.name}. Known Associates in Cafe: ${existingNames}.`;
-                    
-                    cats.value.push({ id: Date.now(), name: newCat.name, breed: newCat.breed, image: imgUrl, image_human: '', personality: newCat.personality, status: '新入住', isOut: false, affinity: 10, isHuman: false, chatHistory: [], diary: [], logs: [], innerVoice: '...', lastFocusTime: 0, prompt: systemPrompt, isMarvel: false }); 
-                    currentTab.value = 'lounge'; 
-                };
-                
-                const confirmGacha = (keep) => { 
-                    if(keep && gachaResult.value) { 
-                        const existingNames = cats.value.map(c => c.name).join(', ');
-                        const systemPrompt = `You are ${gachaResult.value.name}. Known Associates in Cafe: ${existingNames}. ${gachaResult.value.prompt}`;
-                        
-                        cats.value.push({ 
-                            id: Date.now(), 
-                            name: gachaResult.value.name, 
-                            breed: gachaResult.value.breed, 
-                            eyeColor: gachaResult.value.eyeColor, 
-                            personality: gachaResult.value.personality, 
-                            status: '初来乍到', 
-                            isOut: false, 
-                            affinity: 10, 
-                            isHuman: false, 
-                            image: gachaResult.value.image, 
-                            image_human: '', 
-                            prompt: systemPrompt, 
-                            chatHistory: [], 
-                            diary: [], 
-                            logs: [], 
-                            innerVoice: gachaResult.value.quote || '...', 
-                            lastFocusTime: 0, 
-                            lastInteractionDate: null, 
-                            lastLogDate: null, 
-                            isMarvel: gachaResult.value.isMarvel 
-                        }); 
-                        currentTab.value = 'lounge'; 
-                    } 
-                    gachaResult.value = null; 
-                };
-                
+                const adoptCat = () => { if(!newCat.name) return; let imgUrl = manualImgMode.value === 'auto' ? `https://placehold.co/200x200/${newCat.color.replace('#','')}/white?text=${newCat.codename}` : newCat.image; const existingNames = cats.value.map(c => c.name).join(', '); const systemPrompt = `You are ${newCat.name}. Known Associates in Cafe: ${existingNames}.`; cats.value.push({ id: Date.now(), name: newCat.name, breed: newCat.breed, image: imgUrl, image_human: '', personality: newCat.personality, status: '新入住', isOut: false, affinity: 10, isHuman: false, chatHistory: [], diary: [], logs: [], innerVoice: '...', lastFocusTime: 0, prompt: systemPrompt, isMarvel: false }); currentTab.value = 'lounge'; };
+                const confirmGacha = (keep) => { if(keep && gachaResult.value) { const existingNames = cats.value.map(c => c.name).join(', '); const systemPrompt = `You are ${gachaResult.value.name}. Known Associates in Cafe: ${existingNames}. ${gachaResult.value.prompt}`; cats.value.push({ id: Date.now(), name: gachaResult.value.name, breed: gachaResult.value.breed, eyeColor: gachaResult.value.eyeColor, personality: gachaResult.value.personality, status: '初来乍到', isOut: false, affinity: 10, isHuman: false, image: gachaResult.value.image, image_human: '', prompt: systemPrompt, chatHistory: [], diary: [], logs: [], innerVoice: gachaResult.value.quote || '...', lastFocusTime: 0, lastInteractionDate: null, lastLogDate: null, isMarvel: gachaResult.value.isMarvel }); currentTab.value = 'lounge'; } gachaResult.value = null; };
                 const playNoise = () => { if (!audioPlayer.value) return; audioPlayer.value.pause(); if (currentNoise.value === 'rain') audioPlayer.value.src = 'https://files.catbox.moe/9xiysz.mp3'; else if (currentNoise.value === 'cafe') audioPlayer.value.src = 'https://files.catbox.moe/mqmb8n.mp3'; else if (currentNoise.value === 'custom' && customNoiseUrl.value) audioPlayer.value.src = customNoiseUrl.value; else return; audioPlayer.value.play().catch(e => {}); };
                 const toggleHumanMode = () => { if(selectedCat.value) selectedCat.value.isHuman = !selectedCat.value.isHuman; };
-                const buyItem = (item) => { if(user.coins >= item.price) { user.coins -= item.price; user.inventory.push({ ...item, uniqueId: Date.now() }); alert("交易成功"); } };
+                const buyItem = (item) => { if(user.coins >= item.price) { user.coins -= item.price; user.inventory.push({ ...item, uniqueId: Date.now() }); showToast("交易成功", "success"); } };
                 const filteredShopItems = computed(() => shopItems.value.filter(i => i.category === currentShopCategory.value));
-                
-                // Improved Bag Sorting (v3.5.0)
-                const currentBagItems = computed(() => {
-                    if (currentBagTab.value === 'consumable') {
-                        return user.inventory.filter(i => i.type === 'consumable');
-                    } else {
-                        return user.inventory.filter(i => i.type === 'collectible' || i.type === 'letter');
-                    }
-                });
-                
+                const currentBagItems = computed(() => { if (currentBagTab.value === 'consumable') { return user.inventory.filter(i => i.type === 'consumable'); } else { return user.inventory.filter(i => i.type === 'collectible' || i.type === 'letter'); } });
                 const useItem = async (item) => { 
-                    if (item.type === 'collectible' || item.type === 'letter') { 
-                        if(item.type === 'letter') { alert(`【${item.name}】\n\n${item.fullContent || item.desc}`); } 
-                        else { alert(`【${item.name}】\n\n${item.desc}`); }
-                        return; 
-                    } 
-                    const idx = user.inventory.findIndex(i => i === item); 
-                    if(idx > -1) user.inventory.splice(idx, 1); 
-                    
+                    if (item.type === 'collectible' || item.type === 'letter') { if(item.type === 'letter') { alert(`【${item.name}】\n\n${item.fullContent || item.desc}`); } else { alert(`【${item.name}】\n\n${item.desc}`); } return; } 
+                    const idx = user.inventory.findIndex(i => i === item); if(idx > -1) user.inventory.splice(idx, 1); 
                     if(selectedCat.value) { 
                         let affinityBonus = 0;
                         if(settings.apiKey) {
-                            const prompt = `User gives [${item.name}] to ${selectedCat.value.name}. Cat Personality: ${selectedCat.value.personality}. 
-                            Does cat like it? 
-                            JSON: { "liked": boolean, "reaction": "Action description" }`;
-                            try {
-                                const res = await callAI(prompt, "Game AI", 100);
-                                const data = parseAIJSON(res);
-                                if(data) {
-                                    affinityBonus = data.liked ? (Math.floor(Math.random()*3)+1) : -(Math.floor(Math.random()*3)+2);
-                                    selectedCat.value.status = data.reaction || 'Interaction';
-                                } else { affinityBonus = 1; }
-                            } catch(e) { affinityBonus = 1; }
+                            const prompt = `User gives [${item.name}] to ${selectedCat.value.name}. Cat Personality: ${selectedCat.value.personality}. Does cat like it? JSON: { "liked": boolean, "reaction": "Action description" }`;
+                            try { const res = await callAI(prompt, "Game AI", 100); const data = parseAIJSON(res); if(data) { affinityBonus = data.liked ? (Math.floor(Math.random()*3)+1) : -(Math.floor(Math.random()*3)+2); selectedCat.value.status = data.reaction || 'Interaction'; } else { affinityBonus = 1; } } catch(e) { affinityBonus = 1; }
                         } else { affinityBonus = 2; }
-
                         selectedCat.value.affinity = Math.max(0, selectedCat.value.affinity + affinityBonus);
-                        
-                        const msg = `(使用物品: ${item.name}) ${affinityBonus > 0 ? '❤️ 喜欢' : '💔 不喜欢'}`; 
-                        await sendMessage(msg, true); 
+                        const msg = `(使用物品: ${item.name}) ${affinityBonus > 0 ? '❤️ 喜欢' : '💔 不喜欢'}`; await sendMessage(msg, true); 
                     } 
                     showBag.value = false; 
                 };
-                
                 const readItem = (item) => { if (item.type === 'letter') alert(`【${item.name}】\n\n${item.desc}`); };
                 const unreadMailCount = computed(() => user.mailbox.filter(m => !m.read).length);
                 const openMailbox = () => { showMailModal.value = true; user.mailbox.forEach(m => m.read = true); };
-                const claimMailItem = (mail) => { if (mail.claimed || !mail.item) return; user.inventory.push({ ...mail.item, uniqueId: Date.now() }); mail.claimed = true; };
+                const claimMailItem = (mail) => { if (mail.claimed || !mail.item) return; user.inventory.push({ ...mail.item, uniqueId: Date.now() }); mail.claimed = true; showToast("物品已收入背包", "success"); };
                 const addTodo = () => { if(newTodo.value.trim()) { user.todos.push({ text: newTodo.value, done: false }); newTodo.value = ''; } };
                 const addDDL = () => { if(newDDL.title && newDDL.time) { user.deadlines.push({ title: newDDL.title, time: newDDL.time }); newDDL.title = ''; newDDL.time = ''; } };
                 const addSchedule = () => { if(newSchedule.time && newSchedule.event) { if(!user.schedule) user.schedule = []; user.schedule.push({ time: newSchedule.time, event: newSchedule.event, done: false, duration: newSchedule.duration }); newSchedule.event = ''; user.schedule.sort((a,b) => a.time.localeCompare(b.time)); } };
                 
                 const drawGacha = async () => {
-                    if(user.coins < 100) return alert("金币不足！");
-                    if(!settings.apiKey) return alert("需要连接蝙蝠电脑数据库 (API)");
-                    user.coins -= 100;
-                    isGachaLoading.value = true;
-                    gachaResult.value = null;
+                    if(user.coins < 100) return alert("金币不足！"); if(!settings.apiKey) return alert("需要连接蝙蝠电脑数据库 (API)");
+                    user.coins -= 100; isGachaLoading.value = true; gachaResult.value = null;
+                    showToast("正在黑入阿卡姆数据库...", "loading");
                     try {
-                        const isMarvel = Math.random() < 0.2;
-                        const universe = isMarvel ? "MARVEL Universe (Avengers/X-Men)" : "DC Universe (Batfamily/Justice League)";
-                        const existingNames = cats.value.map(c => c.name).join(', ');
-                        
-                        // Logic D: Request "quote" (firstLine) instead of description
-                        const prompt = `Generate random superhero cat from ${universe}. 
-                        DO NOT generate these characters: ${existingNames}.
-                        If Marvel, mark isMarvel: true. 
-                        Requirements:
-                        1. Breed/Appearance MUST match canon hair/eye color. (e.g. Tony Stark = Black Cat/Brown Eyes).
-                        2. Use Simplified Chinese for personality/desc. 
-                        3. Generate specific Breed and Eye Color in Simplified Chinese ONLY.
-                        4. Provide a "quote" (first interaction line) instead of description.
-                        JSON Only: {"name":"","codename":"","color":"Hex#","breed":"Breed Name","eyeColor":"Eye Color","personality":"","quote":"One sentence interaction","prompt":"","isMarvel":${isMarvel}}`;
-                        
-                        const res = await fetch(`${settings.baseUrl}/chat/completions`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.apiKey}` },
-                            body: JSON.stringify({ model: settings.model, messages: [{ role: 'user', content: prompt }], temperature: 1.0 })
-                        });
+                        const isMarvel = Math.random() < 0.2; const universe = isMarvel ? "MARVEL Universe (Avengers/X-Men)" : "DC Universe (Batfamily/Justice League)"; const existingNames = cats.value.map(c => c.name).join(', ');
+                        const prompt = `Generate random superhero cat from ${universe}. DO NOT generate these characters: ${existingNames}. If Marvel, mark isMarvel: true. Requirements: 1. Breed/Appearance MUST match canon hair/eye color. 2. Use Simplified Chinese for personality/desc. 3. Generate specific Breed and Eye Color in Simplified Chinese ONLY. 4. Provide a "quote" (first interaction line). JSON Only: {"name":"","codename":"","color":"Hex#","breed":"Breed Name","eyeColor":"Eye Color","personality":"","quote":"One sentence interaction","prompt":"","isMarvel":${isMarvel}}`;
+                        const res = await fetch(`${settings.baseUrl}/chat/completions`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.apiKey}` }, body: JSON.stringify({ model: settings.model, messages: [{ role: 'user', content: prompt }], temperature: 1.0 }) });
                         const data = await res.json();
                         const charData = parseAIJSON(data.choices[0].message.content);
-                        if(charData) {
-                            gachaResult.value = { ...charData, image: `https://placehold.co/200x200/${charData.color.replace('#','')}/white?text=${charData.codename}` };
-                        }
-                    } catch(e) { user.coins += 100; alert("API Error"); } finally { isGachaLoading.value = false; }
+                        if(charData) { gachaResult.value = { ...charData, image: `https://placehold.co/200x200/${charData.color.replace('#','')}/white?text=${charData.codename}` }; showToast("新成员已定位", "success"); }
+                    } catch(e) { user.coins += 100; showToast("招募失败: API Error", "error"); } finally { isGachaLoading.value = false; }
                 };
 
                 onMounted(() => {
                     checkSpecialEvent();
-                    checkDailyInitialization(); // Logic A Entry Point
-                    
-                    if (todayEvent.value && !alfredMessage.value.includes(todayEvent.value)) {
-                        alfredMessage.value = todayEvent.value + " " + alfredMessage.value;
-                    }
-                    
-                    setInterval(updateCountdown, 1000);
-                    setInterval(() => { autoUpdateLogic(); }, 20 * 60 * 1000); // Logic B
-                    setInterval(() => { currentTime.value = new Date(); }, 30000);
-
-                    document.addEventListener('visibilitychange', () => {
-                        if (document.visibilityState === 'visible') {
-                             checkDailyInitialization();
-                             currentTime.value = new Date();
-                        }
-                    });
-
-                    setTimeout(() => {
-                        if (calendarContainer.value) {
-                             const scrollY = currentTimePixels.value - 200; 
-                             calendarContainer.value.scrollTop = scrollY > 0 ? scrollY : 0;
-                        }
-                    }, 100);
+                    checkDailyInitialization(); 
+                    if (todayEvent.value && !alfredMessage.value.includes(todayEvent.value)) { alfredMessage.value = todayEvent.value + " " + alfredMessage.value; }
+                    setInterval(updateCountdown, 1000); setInterval(() => { autoUpdateLogic(); }, 20 * 60 * 1000); setInterval(() => { currentTime.value = new Date(); }, 30000);
+                    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { checkDailyInitialization(); currentTime.value = new Date(); } });
+                    setTimeout(() => { if (calendarContainer.value) { const scrollY = currentTimePixels.value - 200; calendarContainer.value.scrollTop = scrollY > 0 ? scrollY : 0; } }, 100);
+                    addLog("SYSTEM INITIALIZED. WELCOME TO BATCOMPUTER v3.5.4", "info");
                 });
 
                 return {
@@ -1975,7 +1651,7 @@
                     availableModels, isFetchingModels, fetchModels,
                     handleCatClick, refreshAllStatus, sendMessage,
                     handleImageUpload, adoptCat, 
-                    saveSettings: () => { localStorage.setItem(STORAGE_KEY, JSON.stringify({user, cats: cats.value, shopItems: shopItems.value, settings})); alert("所有数据已手动保存"); },
+                    saveSettings: () => { localStorage.setItem(STORAGE_KEY, JSON.stringify({user, cats: cats.value, shopItems: shopItems.value, settings})); showToast("数据已加密保存", "success"); },
                     resetData: () => { if(confirm("确定要删除所有存档吗？")) { localStorage.removeItem(STORAGE_KEY); location.reload(); } },
                     exportSave, importSave, fileInput, 
                     shopItems, filteredShopItems, buyItem, openBag: () => showBag.value = true, useItem, readItem,
@@ -1991,7 +1667,8 @@
                     newSchedule, addSchedule, sortedSchedule, icsInput, handleIcsImport, showIcsHelp,
                     currentTime, calendarContainer, currentTimePixels, getEventTop, toggleScheduleDone, deleteSchedule, handleTimelineClick, handleAddClick,
                     confirmSettlement, affinityChangeValue, chatMessagesRef,
-                    showCalendarManager, deleteCalendarSource, currentBagTab, currentBagItems
+                    showCalendarManager, deleteCalendarSource, currentBagTab, currentBagItems,
+                    systemLogs, logWindow, notification // Exporting new reactive states
                 };
             }
         }).mount('#app');
