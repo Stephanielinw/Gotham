@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>哥谭喵喵馆 v3.4.4</title>
+    <title>哥谭喵喵馆 v3.5.3</title>
     
     <link rel="icon" type="image/png" href="https://files.catbox.moe/e15qui.png">
     <link rel="apple-touch-icon" href="https://files.catbox.moe/e15qui.png">
@@ -41,18 +41,16 @@
             position: relative;
         }
         
-        /* UI FIX v3.4.4: 
-           Precision padding. 
-           Nav Bar Height = 50px.
-           Padding Bottom = 52px (Nav + 2px Visual Gap).
-           Note: padding-bottom overrides the bottom part of padding: 16px.
+        /* 
+           UI LOGIC FIX:
+           padding-bottom is handled dynamically via Vue :style to account for
+           Nav Bar (50px) vs Nav Bar + Input Bar (50px + 54px = ~104px).
         */
         .content-area {
             flex: 1;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             padding: 16px;
-            padding-bottom: calc(52px + env(safe-area-inset-bottom)); 
             width: 100%;
         }
 
@@ -197,11 +195,9 @@
             animation: pulse 2s infinite;
         }
         
-        /* Modal Animation */
         .modal-enter-active, .modal-leave-active { transition: opacity 0.3s ease; }
         .modal-enter-from, .modal-leave-to { opacity: 0; }
         
-        /* Chat UI Container - Fixed Height for interaction stability */
         .chat-container {
             display: flex;
             flex-direction: column;
@@ -210,7 +206,7 @@
             border-radius: 0.75rem;
             border: 1px solid #27272a;
             position: relative;
-            height: 500px; /* Fixed height requested for stability */
+            height: 500px; 
             min-height: 400px;
         }
         .chat-messages {
@@ -253,8 +249,9 @@
             </div>
         </div>
 
-        <!-- Main Content Area - SCROLLABLE (Reverted to v3.3.2) -->
-        <div class="content-area" ref="contentArea">
+        <!-- Main Content Area -->
+        <!-- Logic Fix: Dynamic padding to handle Nav Bar (50px) vs Nav+Input (104px) -->
+        <div class="content-area" ref="contentArea" :style="{ paddingBottom: currentTab === 'detail' ? 'calc(115px + env(safe-area-inset-bottom))' : 'calc(55px + env(safe-area-inset-bottom))' }">
             
             <!-- MISSION TAB -->
             <div v-if="currentTab === 'mission'" class="space-y-6">
@@ -291,6 +288,7 @@
                              <div class="text-[10px] text-gray-400">{{ new Date().toLocaleDateString() }}</div>
                         </div>
                         <div class="flex items-center gap-2">
+                             <button @click="showCalendarManager=true" class="bg-zinc-700 hover:bg-zinc-600 text-gray-300 text-[10px] px-2 py-1 rounded border border-zinc-600 transition flex items-center"><i class="fas fa-cog mr-1"></i> 管理日历</button>
                              <button @click="showIcsHelp" class="text-gray-500 hover:text-yellow-500 text-xs px-1" title="如何获取文件？"><i class="fas fa-question-circle"></i></button>
                              <button @click="$refs.icsInput.click()" class="bg-zinc-700 hover:bg-zinc-600 text-gray-300 text-[10px] px-2 py-1 rounded border border-zinc-600 transition flex items-center"><i class="fas fa-file-import mr-1"></i> 导入</button>
                              <input type="file" ref="icsInput" @change="handleIcsImport" accept=".ics" class="hidden">
@@ -337,7 +335,7 @@
                 </div>
             </div>
 
-            <!-- LOUNGE TAB (UI FIX: Removed ALL padding classes) -->
+            <!-- LOUNGE TAB -->
             <div v-if="currentTab === 'lounge'">
                 <div class="grid grid-cols-2 gap-4">
                     <div class="col-span-2 flex space-x-2">
@@ -378,7 +376,7 @@
                 </div>
             </div>
 
-            <!-- DETAIL TAB (UI FIX: Removed pb-16, reduced mb to 0, adjusted spacer to 55px) -->
+            <!-- DETAIL TAB -->
             <div v-if="currentTab === 'detail' && selectedCat" class="flex flex-col min-h-full">
                 <button @click="currentTab = 'lounge'" class="mb-4 text-left text-gray-500 hover:text-white flex items-center shrink-0">
                     <i class="fas fa-chevron-left mr-1"></i> 返回大厅
@@ -410,7 +408,6 @@
                     <button @click="openBag" :disabled="selectedCat.isOut" class="col-span-4 bg-zinc-800 p-3 rounded-lg text-xs mt-1 border border-zinc-600 hover:bg-zinc-700 flex justify-center items-center" :class="{'btn-disabled': selectedCat.isOut}"><i class="fas fa-briefcase mr-2"></i> 打开背包喂食</button>
                 </div>
 
-                <!-- Chat Area with Reduced Margin -->
                 <div class="chat-container mx-2 mb-0 shadow-inner">
                     <div class="chat-messages custom-scrollbar" ref="chatMessagesRef">
                         <div v-if="selectedCat.chatHistory.length === 0" class="text-center text-gray-600 text-xs mt-10 italic">
@@ -427,9 +424,6 @@
                     </div>
                 </div>
                 
-                <!-- Spacer for Fixed Input (55px) -->
-                <div style="height: 55px;"></div>
-
                 <!-- Fixed Input Bar -->
                 <div class="fixed-input-bar">
                     <textarea v-model="chatInput" @keydown.enter.prevent="sendMessage" :placeholder="selectedCat.isOut ? '他可能很忙...' : '发送消息...'" class="flex-1 shadow-lg bg-zinc-800 border-zinc-700 text-sm resize-none custom-scrollbar" rows="1" style="min-height: 42px; max-height: 100px;"></textarea>
@@ -563,23 +557,47 @@
             </div>
         </div>
 
-        <!-- Bag Modal -->
+        <!-- Bag Modal (Improved Sorting) -->
         <div v-if="showBag" class="fixed inset-0 bg-black/95 z-[200] p-6 flex flex-col" style="padding-top: calc(30px + env(safe-area-inset-top));">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold text-gray-200">背包</h2>
                 <button @click="showBag = false" class="text-gray-400"><i class="fas fa-times"></i></button>
             </div>
             <div class="flex space-x-2 mb-4">
-                <button class="flex-1 bg-zinc-800 py-2 rounded text-xs text-gray-300 hover:bg-zinc-700">消耗品</button>
-                <button class="flex-1 bg-zinc-800 py-2 rounded text-xs text-gray-300 hover:bg-zinc-700">收藏品</button>
+                <button @click="currentBagTab='consumable'" class="flex-1 py-2 rounded text-xs font-bold transition-colors" :class="currentBagTab==='consumable'?'bg-yellow-700 text-white':'bg-zinc-800 text-gray-400 hover:bg-zinc-700'">消耗品</button>
+                <button @click="currentBagTab='collectible'" class="flex-1 py-2 rounded text-xs font-bold transition-colors" :class="currentBagTab==='collectible'?'bg-yellow-700 text-white':'bg-zinc-800 text-gray-400 hover:bg-zinc-700'">收藏品</button>
             </div>
-            <div class="grid grid-cols-3 gap-3 overflow-y-auto custom-scrollbar">
-                <div v-for="item in user.inventory" :key="item.uniqueId" @click="useItem(item)" class="bg-zinc-800 p-2 rounded flex flex-col items-center justify-center border border-zinc-700 aspect-square cursor-pointer hover:border-yellow-600">
-                    <div class="text-2xl mb-1">{{ item.icon }}</div>
-                    <div class="text-[10px] text-center text-gray-300 leading-tight">{{ item.name }}</div>
-                    <div class="text-[8px] text-gray-500 mt-1 scale-90">{{ item.type === 'consumable' ? '点击使用' : '查看' }}</div>
+            <div class="flex-1 overflow-y-auto custom-scrollbar">
+                <div v-if="currentBagItems.length === 0" class="text-center text-gray-600 py-10">该分类下没有物品</div>
+                <div class="grid grid-cols-3 gap-3">
+                    <div v-for="item in currentBagItems" :key="item.uniqueId" @click="useItem(item)" class="bg-zinc-800 p-2 rounded flex flex-col items-center justify-center border border-zinc-700 aspect-square cursor-pointer hover:border-yellow-600 relative">
+                        <div class="text-2xl mb-1">{{ item.icon }}</div>
+                        <div class="text-[10px] text-center text-gray-300 leading-tight">{{ item.name }}</div>
+                        <div class="text-[8px] text-gray-500 mt-1 scale-90">{{ item.type === 'consumable' ? '点击使用' : '查看详情' }}</div>
+                        <div v-if="item.type === 'letter'" class="absolute top-1 right-1 text-pink-500 text-[8px]"><i class="fas fa-heart"></i></div>
+                    </div>
                 </div>
-                <div v-if="user.inventory.length === 0" class="col-span-3 text-center text-gray-600 py-10">背包空空如也</div>
+            </div>
+        </div>
+
+        <!-- Calendar Manager Modal -->
+        <div v-if="showCalendarManager" class="fixed inset-0 bg-black/95 z-[200] p-6 flex flex-col items-center justify-center">
+            <div class="bg-zinc-900 w-full max-w-sm p-5 rounded-xl border border-zinc-600 relative">
+                <button @click="showCalendarManager=false" class="absolute top-3 right-3 text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
+                <h3 class="font-bold text-white mb-4 flex items-center"><i class="fas fa-calendar-check mr-2"></i> 已导入日历源</h3>
+                <div class="max-h-60 overflow-y-auto custom-scrollbar mb-4 space-y-2">
+                    <div v-if="user.calendarSources.length === 0" class="text-xs text-gray-500 text-center py-4">暂无导入文件</div>
+                    <div v-for="(source, idx) in user.calendarSources" :key="idx" class="bg-zinc-800 p-3 rounded flex justify-between items-center border border-zinc-700">
+                        <div class="flex-1 overflow-hidden mr-2">
+                             <div class="text-xs text-gray-200 truncate">{{ source.name }}</div>
+                             <div class="text-[10px] text-gray-500">{{ source.events.length }} 个事件</div>
+                        </div>
+                        <button @click="deleteCalendarSource(idx)" class="text-red-500 hover:text-red-400 px-2"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                </div>
+                <p class="text-[10px] text-gray-500 leading-relaxed bg-black/20 p-2 rounded">
+                    提示：每日打开应用时会自动根据当前日期从源文件中提取今日日程。如果日程没有刷新，请尝试重新导入最新的 .ics 文件。
+                </p>
             </div>
         </div>
 
@@ -734,6 +752,8 @@
                 const showEditCatModal = ref(false);
                 const currentShopCategory = ref('food');
                 const isReleasing = ref(false);
+                
+                const currentBagTab = ref('consumable'); 
 
                 const showSpecialEventModal = ref(false);
                 const currentSpecialEventContent = ref('');
@@ -752,6 +772,7 @@
                 const ddlCountdownStr = ref('');
                 const fileInput = ref(null); 
                 const icsInput = ref(null); 
+                const showCalendarManager = ref(false);
 
                 const currentTime = ref(new Date());
                 const calendarContainer = ref(null);
@@ -791,6 +812,7 @@
                     coins: 100, inventory: [], nickname: '哥谭市民', gender: 'Secret', birthday: '', 
                     job: '', 
                     schedule: [], 
+                    calendarSources: [], // New for v3.5.0
                     missionReports: [], mailbox: [], todos: [], deadlines: [], 
                     dailyMailCount: 0, lastMailDate: '', 
                     lastReportDate: '', 
@@ -885,6 +907,7 @@
                 if (!user.todos) user.todos = [];
                 if (!user.deadlines) user.deadlines = [];
                 if (!user.schedule) user.schedule = [];
+                if (!user.calendarSources) user.calendarSources = [];
                 if (!user.mailbox) user.mailbox = [];
                 if (!user.missionReports) user.missionReports = [];
                 if (!user.inventory) user.inventory = [];
@@ -1143,34 +1166,50 @@
                     } catch(e) { selectedCat.value.affinity += 10; }
                 };
 
-                // LOGIC A Implementation (Advanced)
+                // --- REFACTORED LOGIC A Implementation (v3.5.0) ---
                 const checkDailyInitialization = async () => {
                     const todayStr = new Date().toDateString(); // "Mon Jan 01 2024"
                     const now = Date.now();
                     const lastSyncTime = parseInt(localStorage.getItem('last_sync_time') || '0');
-                    const lastLoginDate = localStorage.getItem('last_login_date') || ''; // String date
+                    const lastLoginDate = localStorage.getItem('last_login_date') || ''; 
 
-                    // Re-check event on every initialization to be safe
+                    // 1. Always update Daily Context
                     checkSpecialEvent();
+                    
+                    // 2. Refresh Schedule based on calendar sources
+                    updateDailySchedule();
 
                     const isNewDay = lastLoginDate !== todayStr;
                     const isOverOneHour = (now - lastSyncTime) > (60 * 60 * 1000);
 
                     if (isNewDay) {
-                        console.log("Logic A: New Day Detected. Full Update.");
+                        console.log("Logic A: New Day Detected. Starting Full Logic.");
+                        
                         if (settings.apiKey) {
-                            // Order matters
+                            // Order: Alfred Report (Yesterday) -> Diaries (Yesterday) -> Clean -> Refresh Status (Today)
+                            
+                            // 4. Alfred Report
                             await generateAlfredReport(); 
+                            
+                            // 5. Diaries
                             await generateAllCatDiaries(); 
+                            
+                            // 6. Global Status Update for Today
                             await refreshAllStatus(true);
+                        } else {
+                            // If no API key, we still need to clear done tasks and reset logs
+                             user.todos = user.todos.filter(t => !t.done);
                         }
+
                         user.dailyMailCount = 0;
                         localStorage.setItem('last_login_date', todayStr);
                         user.lastLogin = now;
                     } 
                     else if (isOverOneHour) {
-                        console.log("Logic A: >1 Hour Detected. Status Update.");
-                        await refreshAllStatus(true);
+                        console.log("Logic A: >1 Hour Detected. Status Update Only.");
+                        if (settings.apiKey) {
+                             await refreshAllStatus(true);
+                        }
                         await checkMailboxLogic();
                     } else {
                         console.log("Logic A: Throttled. Using Cache.");
@@ -1178,7 +1217,7 @@
                 };
 
                 const generateAlfredReport = async () => {
-                    // Logic 4: Alfred Daily Summary
+                    // Logic: Summarize Yesterday
                     const doneTasks = user.todos.filter(t => t.done);
                     const pendingTasks = user.todos.filter(t => !t.done);
                     
@@ -1186,16 +1225,15 @@
                     const pendingStr = pendingTasks.map(t => t.text).join(', ');
                     
                     const prompt = `Role: Alfred Pennyworth. 
-                    Task: Write a daily summary briefing for the User (call them "Master" or "Miss" based on context, DO NOT call them Bruce Wayne unless specified).
+                    Task: Write a daily summary briefing for the User based on YESTERDAY'S activity.
                     Context: 
-                    Yesterday's Completed Tasks: ${doneStr || 'None'}.
-                    Pending Tasks remaining: ${pendingStr || 'None'}.
+                    Completed Tasks: ${doneStr || 'None'}.
+                    Pending Tasks: ${pendingStr || 'None'}.
                     Output: 100 words summary. Polite, efficient. Language: Simplified Chinese.`;
                     
                     try {
-                        const summary = await callAI(prompt, "You are Alfred Pennyworth. User is NOT Batman (unless implied). User is 'Young Master/Miss'.", 200);
+                        const summary = await callAI(prompt, "You are Alfred Pennyworth.", 200);
                         
-                        // Archive logic
                         user.missionReports.push({ 
                             missionName: '昨日总结报告', 
                             date: new Date(Date.now() - 86400000).toLocaleDateString(), 
@@ -1206,20 +1244,20 @@
                             status: 'COMPLETED' 
                         });
                         
-                        // Logic 4: Delete done tasks automatically
+                        // Cleanup completed tasks
                         user.todos = pendingTasks; 
                         
                     } catch (e) { console.error("Alfred Report Error", e); }
                 };
 
                 const generateAllCatDiaries = async () => {
-                    // Logic 5: Cat Diaries
+                    // Logic: Generate Diary -> Then Clear Logs
                     for (const cat of cats.value) {
-                         // Only generate if there's interaction or custom logs
+                         // Condition: Only generate if there was meaningful interaction or monitoring logs yesterday
                          const hasInteraction = cat.chatHistory.length > 0 || cat.diary.some(d => !d.content.includes("监控数据"));
                          
                          if (hasInteraction) {
-                             const logsText = cat.diary.map(d => d.content).join('; ');
+                             const logsText = cat.diary.map(d => `[${d.time}] ${d.content}`).join('; ');
                              const chatText = cat.chatHistory.map(c => `${c.role}: ${c.content}`).join('; ');
                              
                              const prompt = `Character: ${cat.name}. Task: Write a diary entry (200-300 words). 
@@ -1230,10 +1268,14 @@
                                  const res = await callAI(prompt, STRICT_CANON_PROMPT, 400);
                                  cat.logs.push({ date: new Date(Date.now() - 86400000).toLocaleDateString(), content: cleanText(res) });
                                  
-                                 // Logic 5: Clear logs after summary
+                                 // Logic: CLEAR DATA AFTER SUCCESSFUL GENERATION
                                  cat.chatHistory = []; 
                                  cat.diary = [];
                              } catch(e) { console.error(e); }
+                         } else {
+                             // Just clear if nothing interesting happened
+                             cat.chatHistory = [];
+                             cat.diary = [];
                          }
                     }
                 };
@@ -1278,6 +1320,9 @@
 
                     thinkingStates[sendingCat.id] = true; 
                     
+                    // Logic C -> E: Trigger background refresh for OTHER cats to react
+                    refreshAllStatus(true, `User is interacting with ${sendingCat.name}.`, sendingCat.id);
+
                     try {
                         const now = Date.now();
                         let recentHistory = "";
@@ -1534,7 +1579,8 @@
                      }
                 };
 
-                const refreshAllStatus = async (forceUpdate = false, additionalContext = "", focusCatId = null, focusCatLastAction = "") => {
+                // REFACTORED Status Refresh (Variety + Logic E)
+                const refreshAllStatus = async (forceUpdate = false, additionalContext = "", activeCatId = null, focusCatLastAction = "") => {
                     if (!settings.apiKey) return;
                     localStorage.setItem('last_sync_time', Date.now());
                     
@@ -1551,17 +1597,22 @@
                     try {
                         let characterBlock = "";
                         catsToUpdate.forEach(c => {
+                            // SKIP the active cat if we are in chat mode (activeCatId provided)
+                            if (activeCatId && c.id === activeCatId) return;
+
                             let specificContext = "";
-                            if(c.id === focusCatId) {
+                            if(c.id === activeCatId) { // Logic E: Match focus cat state
                                 specificContext = `(Must align with last action: ${focusCatLastAction})`;
                             }
+                            
                             characterBlock += `
                             --- CHARACTER ---
                             ID: ${c.id}
                             Name: ${c.name} (${c.breed})
                             Traits: ${c.personality}
-                            Current Status: ${c.status} ${specificContext}
+                            Previous Status: ${c.status}
                             Is Currently Out: ${c.isOut}
+                            ${specificContext}
                             `;
                         });
 
@@ -1572,7 +1623,7 @@
                         [GLOBAL SCENARIO RULES]:
                         1. **MINIMUM 2 CATS AT HOME**: You MUST ensure that at least 2 cats in this list stay home ([ISOUT] false). Do NOT send everyone on patrol, even if it is night.
                         2. **Anti-OOC**: Bruce is stoic/paranoid. Damian is arrogant. Dick is cheerful. Jason is grumpy. Tim is tired/techy.
-                        3. **Form**: They are cats. Status = 3rd person action. Voice = 1st person thought (Human Language).
+                        3. **VARIETY & CONTINUITY**: Check "Previous Status". Time has passed. Do NOT repeat the exact same action. If they were sleeping, maybe they woke up. If playing, maybe they stopped. Ensure logic flow.
                         
                         Task: Update status for ALL characters listed above.
                         
@@ -1613,11 +1664,90 @@
                     finally { isUpdatingStatus.value = false; }
                 };
 
-                const handleIcsImport = (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { const content = e.target.result; const events = parseICS(content); if (events.length > 0) { if (!user.schedule) user.schedule = []; events.forEach(ev => { if (!user.schedule.some(s => s.time === ev.time && s.event === ev.event)) { user.schedule.push(ev); } }); user.schedule.sort((a,b) => a.time.localeCompare(b.time)); alert(`成功导入 ${events.length} 个今日日程！`); } else { alert("未在文件中发现今天的日程。"); } }; reader.readAsText(file); event.target.value = ''; };
+                const handleIcsImport = (event) => { 
+                    const file = event.target.files[0]; 
+                    if (!file) return; 
+                    const reader = new FileReader(); 
+                    reader.onload = (e) => { 
+                        const content = e.target.result; 
+                        const events = parseICS(content); 
+                        if (events.length > 0) {
+                            if (!user.calendarSources) user.calendarSources = [];
+                            user.calendarSources.push({
+                                name: file.name,
+                                importDate: new Date().toISOString(),
+                                events: events
+                            });
+                            updateDailySchedule(); // Refresh today's view
+                            alert(`成功导入 ${events.length} 个事件！日程已更新。`); 
+                        } else { 
+                            alert("未在文件中发现有效事件。"); 
+                        } 
+                    }; 
+                    reader.readAsText(file); 
+                    event.target.value = ''; 
+                };
+
+                const updateDailySchedule = () => {
+                    if (!user.calendarSources) return;
+                    
+                    const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD
+                    let todaysEvents = [];
+
+                    // Collect all events from all sources for TODAY
+                    user.calendarSources.forEach(source => {
+                        source.events.forEach(ev => {
+                            // Check if event falls on today
+                            let isToday = false;
+                            
+                            // Check explicit Start Date matches
+                            if (ev.dtstart && ev.dtstart.startsWith(todayStr)) isToday = true;
+                            
+                            if (isToday) {
+                                let timePart = '';
+                                let duration = 60;
+                                
+                                if (ev.dtstart.includes('T')) {
+                                    const parts = ev.dtstart.split('T');
+                                    const t = parts[1];
+                                    if (t.length >= 4) {
+                                        const h = t.substring(0, 2);
+                                        const m = t.substring(2, 4);
+                                        timePart = `${h}:${m}`;
+                                        
+                                        if (ev.dtend && ev.dtend.includes('T')) {
+                                            const endParts = ev.dtend.split('T');
+                                            const te = endParts[1];
+                                            if (te.length >= 4) {
+                                                const he = te.substring(0, 2);
+                                                const me = te.substring(2, 4);
+                                                const startMin = parseInt(h)*60 + parseInt(m);
+                                                const endMin = parseInt(he)*60 + parseInt(me);
+                                                duration = endMin - startMin;
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    timePart = "全天";
+                                }
+                                
+                                // Avoid duplicates
+                                if (!todaysEvents.some(e => e.time === timePart && e.event === ev.summary)) {
+                                     todaysEvents.push({ time: timePart, event: ev.summary, done: false, duration: Math.max(15, duration) });
+                                }
+                            }
+                        });
+                    });
+
+                    // Merge with manual entries if necessary, or just overwrite base schedule with day view
+                    // To prevent complexity, we will just set schedule to imported events for today. 
+                    // User can add manual events on top.
+                    
+                    user.schedule = [...todaysEvents];
+                    user.schedule.sort((a,b) => a.time.localeCompare(b.time));
+                };
                 
                 const parseICS = (icsData) => { 
-                    const today = new Date(); 
-                    const todayStr = today.toISOString().slice(0, 10).replace(/-/g, ''); 
                     const events = []; 
                     const lines = icsData.split(/\r\n|\n|\r/); 
                     let inEvent = false; 
@@ -1628,36 +1758,7 @@
                         else if (line.startsWith('END:VEVENT')) { 
                             inEvent = false; 
                             if (currentEvent.summary && currentEvent.dtstart) { 
-                                if (currentEvent.dtstart.includes(todayStr)) { 
-                                    let timePart = ''; 
-                                    let duration = 60; // Default
-                                    
-                                    // Parse Start Time
-                                    if (currentEvent.dtstart.includes('T')) { 
-                                        const parts = currentEvent.dtstart.split('T'); 
-                                        const t = parts[1]; 
-                                        if (t.length >= 4) { 
-                                            const h = t.substring(0, 2); 
-                                            const m = t.substring(2, 4); 
-                                            timePart = `${h}:${m}`; 
-                                            
-                                            // Calculate Duration if End Time exists
-                                            if (currentEvent.dtend) {
-                                                const endParts = currentEvent.dtend.split('T');
-                                                const te = endParts[1];
-                                                if (te.length >= 4) {
-                                                    const he = te.substring(0, 2);
-                                                    const me = te.substring(2, 4);
-                                                    const startMin = parseInt(h)*60 + parseInt(m);
-                                                    const endMin = parseInt(he)*60 + parseInt(me);
-                                                    duration = endMin - startMin;
-                                                }
-                                            }
-                                        } 
-                                    } else { timePart = "全天"; } 
-                                    
-                                    events.push({ time: timePart, event: currentEvent.summary, done: false, duration: Math.max(15, duration) }); 
-                                } 
+                                events.push(currentEvent);
                             } 
                         } else if (inEvent) { 
                             if (line.startsWith('SUMMARY:')) currentEvent.summary = line.substring(8); 
@@ -1666,6 +1767,13 @@
                         } 
                     } 
                     return events; 
+                };
+
+                const deleteCalendarSource = (index) => {
+                    if(confirm("确定删除这个日历源吗？")) {
+                        user.calendarSources.splice(index, 1);
+                        updateDailySchedule();
+                    }
                 };
                 
                 const showIcsHelp = () => { alert("📅 如何获取日历文件 (.ics)？\n\n【Google日历】\n网页端右上角齿轮 -> 设置 -> 左侧“导入和导出” -> 导出 -> 下载并解压zip -> 找到 .ics 文件上传。\n\n【苹果/iCloud】\nMac日历应用 -> 文件 -> 导出 -> 导出... -> 保存为 .ics 文件。\n\n(注意：由于浏览器安全限制，暂不支持直接读取网络链接，请下载文件后导入)"); };
@@ -1746,12 +1854,20 @@
                 const toggleHumanMode = () => { if(selectedCat.value) selectedCat.value.isHuman = !selectedCat.value.isHuman; };
                 const buyItem = (item) => { if(user.coins >= item.price) { user.coins -= item.price; user.inventory.push({ ...item, uniqueId: Date.now() }); alert("交易成功"); } };
                 const filteredShopItems = computed(() => shopItems.value.filter(i => i.category === currentShopCategory.value));
-                const consumableItems = computed(() => user.inventory.filter(i => i.type === 'consumable'));
-                const collectibleItems = computed(() => user.inventory.filter(i => i.type === 'collectible' || i.type === 'letter'));
+                
+                // Improved Bag Sorting (v3.5.0)
+                const currentBagItems = computed(() => {
+                    if (currentBagTab.value === 'consumable') {
+                        return user.inventory.filter(i => i.type === 'consumable');
+                    } else {
+                        return user.inventory.filter(i => i.type === 'collectible' || i.type === 'letter');
+                    }
+                });
                 
                 const useItem = async (item) => { 
-                    if (item.type === 'collectible') { 
+                    if (item.type === 'collectible' || item.type === 'letter') { 
                         if(item.type === 'letter') { alert(`【${item.name}】\n\n${item.fullContent || item.desc}`); } 
+                        else { alert(`【${item.name}】\n\n${item.desc}`); }
                         return; 
                     } 
                     const idx = user.inventory.findIndex(i => i === item); 
@@ -1868,13 +1984,14 @@
                     formatTime: (s) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`,
                     startFocusSetup, stopFocus, focusMessage, currentNoise, customNoiseUrl, playNoise, audioPlayer, harassCat, currentFocusLog,
                     toggleHumanMode, handleSpecificImageUpload, releaseCat, shareMemory,
-                    currentSettlement, unreadMailCount, openMailbox, claimMailItem, consumableItems, collectibleItems, todayEvent,
+                    currentSettlement, unreadMailCount, openMailbox, claimMailItem, todayEvent,
                     addTodo, newTodo, addDDL, newDDL, ddlCountdownStr, sortedDDLs, nearestDDL, isGeneratingReport, 
                     adoptMode, drawGacha, confirmGacha, isGachaLoading, gachaResult,
                     newItem, isSubmittingItem, submitShopItem, manualImgMode,
                     newSchedule, addSchedule, sortedSchedule, icsInput, handleIcsImport, showIcsHelp,
                     currentTime, calendarContainer, currentTimePixels, getEventTop, toggleScheduleDone, deleteSchedule, handleTimelineClick, handleAddClick,
-                    confirmSettlement, affinityChangeValue, chatMessagesRef
+                    confirmSettlement, affinityChangeValue, chatMessagesRef,
+                    showCalendarManager, deleteCalendarSource, currentBagTab, currentBagItems
                 };
             }
         }).mount('#app');
