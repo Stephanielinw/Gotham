@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>哥谭喵喵馆 v3.5.6</title>
+    <title>哥谭喵喵馆 v3.5.7</title>
     
     <link rel="icon" type="image/png" href="https://files.catbox.moe/e15qui.png">
     <link rel="apple-touch-icon" href="https://files.catbox.moe/e15qui.png">
@@ -537,6 +537,8 @@
                     </div>
                     <button @click="resetData" class="bg-red-900/80 border border-red-700 text-red-200 w-full py-3 rounded-lg font-bold shadow-lg hover:bg-red-800 transition-colors mt-2 text-xs flex items-center justify-center"><i class="fas fa-trash-alt mr-2"></i> 清除所有数据 (慎重)</button>
                  </div>
+                 <!-- ADMIN BUTTON -->
+                 <button @click="openAdmin" class="w-full text-center text-gray-700 text-[10px] mt-4 pb-4 hover:text-gray-500 transition-colors flex items-center justify-center"><i class="fas fa-tools mr-1"></i> 🔧 系统管理员入口</button>
             </div>
             
             <!-- CREATE TAB -->
@@ -774,6 +776,46 @@
             </div>
         </div>
         
+        <!-- Admin Login Modal -->
+        <div v-if="showAdminLogin" class="fixed inset-0 bg-black/95 z-[999] flex flex-col items-center justify-center p-6">
+            <div class="bg-zinc-900 p-6 rounded-xl border-2 border-red-800 shadow-[0_0_20px_rgba(255,0,0,0.2)] w-full max-w-sm text-center">
+                <i class="fas fa-user-secret text-4xl text-red-700 mb-4"></i>
+                <h2 class="text-xl font-bold text-red-500 mb-2">RESTRICTED ACCESS</h2>
+                <p class="text-xs text-gray-500 mb-4 font-mono">蝙蝠电脑系统管理员认证</p>
+                <input type="password" v-model="adminPassword" placeholder="输入访问密钥" class="bg-black border border-red-900 text-center text-red-500 font-mono tracking-widest mb-4">
+                <div class="flex gap-2">
+                    <button @click="showAdminLogin=false" class="flex-1 bg-zinc-800 text-gray-400 py-2 rounded text-xs hover:bg-zinc-700">取消</button>
+                    <button @click="checkAdminPassword" class="flex-1 bg-red-900 text-white py-2 rounded text-xs font-bold hover:bg-red-800">验证身份</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Panel Modal -->
+        <div v-if="showAdminPanel" class="fixed inset-0 bg-black/95 z-[999] flex flex-col p-6" style="padding-top: calc(30px + env(safe-area-inset-top));">
+            <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
+                <h2 class="text-xl font-bold text-green-500 font-mono"><i class="fas fa-terminal mr-2"></i> ADMIN_PANEL</h2>
+                <button @click="showAdminPanel=false" class="text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="flex gap-2 mb-4">
+                <button @click="cats.forEach(c => c.affinity = 100)" class="bg-blue-900 text-blue-200 px-3 py-2 rounded text-xs flex-1">Set All 100</button>
+                <button @click="cats.forEach(c => c.affinity = 0)" class="bg-red-900 text-red-200 px-3 py-2 rounded text-xs flex-1">Set All 0</button>
+            </div>
+            <div class="flex-1 overflow-y-auto custom-scrollbar space-y-2">
+                <div v-for="cat in cats" :key="cat.id" class="bg-zinc-900 p-3 rounded border border-zinc-700 flex items-center gap-3">
+                    <img :src="cat.image" class="w-10 h-10 rounded-full border border-gray-600">
+                    <div class="flex-1 min-w-0">
+                        <div class="text-xs font-bold text-gray-300 truncate">{{ cat.name }}</div>
+                        <div class="flex items-center gap-2 mt-1">
+                            <input type="range" v-model.number="cat.affinity" min="0" max="100" class="w-full h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-green-500">
+                        </div>
+                    </div>
+                    <div class="w-12">
+                        <input type="number" v-model.number="cat.affinity" class="w-full bg-black border border-zinc-700 text-green-500 text-center text-xs p-1 rounded font-mono">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <audio ref="audioPlayer" loop style="display:none;"></audio>
 
         <div v-if="!isFocusing" class="nav-bar">
@@ -861,6 +903,12 @@
                 const systemLogs = ref([]);
                 const logWindow = ref(null);
                 const notification = reactive({ message: '', type: 'info', visible: false });
+
+                // Admin Refs
+                const showAdminLogin = ref(false);
+                const showAdminPanel = ref(false);
+                const adminPassword = ref('');
+                const isAdmin = ref(false);
 
                 // Auto-scroll chat
                 watch(currentTab, () => {
@@ -1676,6 +1724,26 @@
                     addLog("SYSTEM INITIALIZED. WELCOME TO BATCOMPUTER v3.5.6", "info");
                 });
 
+                // ADMIN FUNCTIONS
+                const openAdmin = () => {
+                    if (isAdmin.value) {
+                        showAdminPanel.value = true;
+                    } else {
+                        showAdminLogin.value = true;
+                    }
+                };
+                const checkAdminPassword = () => {
+                    if (adminPassword.value === '20010316') {
+                        isAdmin.value = true;
+                        showAdminLogin.value = false;
+                        showAdminPanel.value = true;
+                        showToast("管理员权限已获取", "success");
+                    } else {
+                        showToast("访问被拒绝", "error");
+                    }
+                    adminPassword.value = '';
+                };
+
                 return {
                     currentTab, contentArea, alfredMessage, cats, selectedCat, user, settings, newCat, cleanText,
                     chatInput, thinkingStates, isInteracting, isUpdatingStatus, showBag, showDiaryModal, showReportModal, showMissionSettlementModal, showMailModal,
@@ -1701,7 +1769,8 @@
                     currentTime, calendarContainer, currentTimePixels, getEventTop, toggleScheduleDone, deleteSchedule, handleTimelineClick, handleAddClick,
                     confirmSettlement, affinityChangeValue, chatMessagesRef,
                     showCalendarManager, deleteCalendarSource, currentBagTab, currentBagItems,
-                    systemLogs, logWindow, notification // Exporting new reactive states
+                    systemLogs, logWindow, notification,
+                    showAdminLogin, showAdminPanel, adminPassword, isAdmin, openAdmin, checkAdminPassword // Exporting Admin States
                 };
             }
         }).mount('#app');
