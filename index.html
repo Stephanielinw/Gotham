@@ -257,6 +257,7 @@
         }
         @keyframes slideDown { from { transform: translate(-50%, -20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
     </style>
+<link rel="stylesheet" href="/index.css">
 </head>
 <body>
     <div id="app" class="app-container" v-cloak>
@@ -408,6 +409,12 @@
                             <i class="fas fa-sync-alt mr-2" :class="{'loading-spin': isUpdatingStatus}"></i> 
                             {{ isUpdatingStatus ? '正在扫描全城信号...' : '强制刷新实时动态' }}
                          </button>
+                    </div>
+                    
+                    <div class="col-span-2 bg-zinc-800 p-3 rounded-lg border border-zinc-700 flex items-center gap-2 mb-2">
+                        <div class="text-xs text-gray-400 whitespace-nowrap">当前状态:</div>
+                        <input v-model="user.currentStatus" class="bg-transparent border-none text-sm text-white focus:ring-0 flex-1" placeholder="你在做什么？(例如: 喝咖啡, 整理档案)">
+                        <button @click="updateUserStatus" class="bg-zinc-700 hover:bg-zinc-600 text-xs px-3 py-1 rounded text-white transition">更新</button>
                     </div>
                     
                     <div class="col-span-2 bg-zinc-800 p-4 rounded-lg text-sm text-gray-400 italic border-l-4 border-yellow-600">
@@ -934,7 +941,7 @@
 
                 let initialUser = { 
                     coins: 100, inventory: [], nickname: '哥谭市民', gender: 'Secret', birthday: '', 
-                    job: '', 
+                    job: '', currentStatus: '正在休息',
                     schedule: [], 
                     calendarSources: [], 
                     missionReports: [], mailbox: [], todos: [], deadlines: [], 
@@ -985,11 +992,11 @@
 
                 // Hardcoded 5 Default Cats (Fixed Data)
                 const defaultCats = [
-                    { id: 1, name: '布鲁斯', breed: '纯黑长毛缅因猫', eyeColor: '钢蓝色', personality: '多疑、控制欲强、压抑', status: '蹲在柜顶俯瞰全屋', isOut: false, affinity: 10, isHuman: false, image: 'https://placehold.co/200x200/1a1a1a/white?text=Batman', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: '这座城市的阴影在召唤我...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Batman (Bruce Wayne). Paranoid, stoic, detective. Dark brooding. NOT arrogant. Canon compliance: Blue eyes, Black hair.", birthday: "02-19", isMarvel: false },
-                    { id: 2, name: '迪克', breed: '黑蓝相间土耳其安哥拉猫', eyeColor: '电光蓝', personality: '阳光、粘人、爱吃麦片', status: '试图在窗帘上荡秋千', isOut: false, affinity: 10, isHuman: false, image: 'https://placehold.co/200x200/007cc2/white?text=Nightwing', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: '这里好高！我喜欢！', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Nightwing (Dick Grayson). Energetic, charming, acrobat. Big brother figure. Canon compliance: Blue eyes, Black hair.", birthday: "03-20", isMarvel: false },
-                    { id: 3, name: '杰森', breed: '黑白斑纹街头野猫', eyeColor: '蓝色', personality: '暴躁、护食、体格强壮', status: '霸占了最大的那个枕头', isOut: false, affinity: 10, isHuman: false, image: 'https://placehold.co/200x200/c20000/white?text=RedHood', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: '别过来，除非你有吃的。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Red Hood (Jason Todd). Grumpy, street-smart, secretly cares. Uses slang. Canon compliance: Blue eyes, Black/White hair.", birthday: "08-16", isMarvel: false },
-                    { id: 4, name: '提姆', breed: '深色暹罗猫', eyeColor: '冰蓝色', personality: '过劳、咖啡因成瘾、极客', status: '盯着发光的路由器发呆', isOut: false, affinity: 10, isHuman: false, image: 'https://placehold.co/200x200/555/white?text=RedRobin', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: '这个路由器的频率有点奇怪...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Red Robin (Tim Drake). Sleepy genius, detective, tech-savvy. Polite but awkward. NOT arrogant. Canon compliance: Blue eyes, Black hair.", birthday: "07-19", isMarvel: false },
-                    { id: 5, name: '达米安', breed: '黑色东方短毛猫', eyeColor: '祖母绿', personality: '傲慢、暴力、贵族气派', status: '正在磨爪子准备战斗', isOut: false, affinity: 10, isHuman: false, image: 'https://placehold.co/200x200/006400/white?text=Robin', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: 'Tt. 愚蠢的家具。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Robin (Damian Wayne). Arrogant, skilled assassin, heir. Says 'Tt'. Haughty. Canon compliance: Green eyes, Black hair.", birthday: "08-01", isMarvel: false }
+                    { id: 1, name: '布鲁斯', breed: '纯黑长毛缅因猫', eyeColor: '钢蓝色', personality: '多疑、控制欲强、压抑', status: '蹲在柜顶俯瞰全屋', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/1a1a1a/white?text=Batman', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: '这座城市的阴影在召唤我...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Batman (Bruce Wayne). Paranoid, stoic, detective. Dark brooding. NOT arrogant. Canon compliance: Blue eyes, Black hair.", birthday: "02-19", isMarvel: false },
+                    { id: 2, name: '迪克', breed: '黑蓝相间土耳其安哥拉猫', eyeColor: '电光蓝', personality: '阳光、粘人、爱吃麦片', status: '试图在窗帘上荡秋千', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/007cc2/white?text=Nightwing', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: '这里好高！我喜欢！', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Nightwing (Dick Grayson). Energetic, charming, acrobat. Big brother figure. Canon compliance: Blue eyes, Black hair.", birthday: "03-20", isMarvel: false },
+                    { id: 3, name: '杰森', breed: '黑白斑纹街头野猫', eyeColor: '蓝色', personality: '暴躁、护食、体格强壮', status: '霸占了最大的那个枕头', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/c20000/white?text=RedHood', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: '别过来，除非你有吃的。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Red Hood (Jason Todd). Grumpy, street-smart, secretly cares. Uses slang. Canon compliance: Blue eyes, Black/White hair.", birthday: "08-16", isMarvel: false },
+                    { id: 4, name: '提姆', breed: '深色暹罗猫', eyeColor: '冰蓝色', personality: '过劳、咖啡因成瘾、极客', status: '盯着发光的路由器发呆', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/555/white?text=RedRobin', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: '这个路由器的频率有点奇怪...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Red Robin (Tim Drake). Sleepy genius, detective, tech-savvy. Polite but awkward. NOT arrogant. Canon compliance: Blue eyes, Black hair.", birthday: "07-19", isMarvel: false },
+                    { id: 5, name: '达米安', breed: '黑色东方短毛猫', eyeColor: '祖母绿', personality: '傲慢、暴力、贵族气派', status: '正在磨爪子准备战斗', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/006400/white?text=Robin', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: 'Tt. 愚蠢的家具。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Robin (Damian Wayne). Arrogant, skilled assassin, heir. Says 'Tt'. Haughty. Canon compliance: Green eyes, Black hair.", birthday: "08-01", isMarvel: false }
                 ];
 
                 let initialCats = [...defaultCats];
@@ -1133,7 +1140,7 @@
                     const mailContext = lastMail ? `Recent Mail from ${lastMail.from}: ${lastMail.content.substring(0, 30)}...` : "No recent mail.";
                     
                     // --- NEW USER IDENTITY BLOCK ---
-                    const userProfile = `[USER PROFILE] Name: ${user.nickname || 'Citizen'}. Gender: ${user.gender}. Job/Role: ${user.job || 'Unknown'}.`;
+                    const userProfile = `[USER PROFILE] Name: ${user.nickname || 'Citizen'}. Gender: ${user.gender}. Job/Role: ${user.job || 'Unknown'}. Current Status: ${user.currentStatus || 'Unknown'}.`;
                     const realLifeContext = `[REAL LIFE CONTEXT] Pending Tasks: ${pendingTodosStr}. DDL Context: ${ddlContext}. Special Event: ${eventContext}. Mail Context: ${mailContext}`;
                     
                     return `${userProfile}\n${realLifeContext}`;
@@ -1208,6 +1215,55 @@
                         selectedCat.value.diary.push({ time: getCurrentTimeStr(), content: "与用户进行了特别的约会/互动 (Easter Egg)" });
                         if(content.includes("信") || content.includes("Letter") || content.includes("Postcard")) { user.inventory.push({ id: Date.now(), name: `来自${selectedCat.value.name}的信`, type: 'letter', desc: content.substring(0, 50) + "...", fullContent: content, icon: '💌' }); }
                     } catch(e) { selectedCat.value.affinity += 10; }
+                };
+
+                const pendingSpecialEvent = ref(null);
+
+                const updateUserStatus = async () => {
+                    if (!user.currentStatus) return;
+                    showToast("状态更新中...", "loading");
+                    await refreshAllStatus(true, `User Status Update: User is currently ${user.currentStatus}`);
+                    showToast("状态已同步", "success");
+                };
+
+                const checkAffinityThreshold = async (cat) => {
+                    if (cat.affinity >= 50 && !cat.hasRevealedHumanForm) {
+                        cat.hasRevealedHumanForm = true;
+                        await triggerHumanFormEvent(cat);
+                    }
+                };
+
+                const triggerHumanFormEvent = async (cat) => {
+                    if (!settings.apiKey) return;
+                    const recentChats = cat.chatHistory.slice(-5).map(m => `${m.role}: ${m.content}`).join('\n');
+                    const recentDiaries = cat.diary.slice(-5).map(d => `[${d.time}] ${d.content}`).join('\n');
+                    
+                    const prompt = `
+                    EVENT: Cat (${cat.name}) affinity > 50. First time revealing Human Form.
+                    CONTEXT:
+                    User Status: ${user.currentStatus}
+                    Recent Interactions:
+                    ${recentChats}
+                    Recent Diaries:
+                    ${recentDiaries}
+                    
+                    TASK: Write a 50-word scene describing ${cat.name} finally revealing their human form to the user.
+                    REQUIREMENTS:
+                    - Include Dialogue, Action, and Psychological description.
+                    - Logic: Must fit the recent interactions and time flow.
+                    - Tone: ${cat.personality}.
+                    - Language: Simplified Chinese.
+                    `;
+                    
+                    try {
+                        const content = await callAI(prompt, STRICT_CANON_PROMPT, 200);
+                        currentSpecialEventContent.value = cleanText(content);
+                        pendingSpecialEvent.value = { cat: cat, content: cleanText(content) };
+                        showSpecialEventModal.value = true;
+                    } catch (e) {
+                        console.error(e);
+                        cat.hasRevealedHumanForm = false; 
+                    }
                 };
 
                 // --- REFACTORED LOGIC A Implementation (v3.5.0) ---
@@ -1491,9 +1547,10 @@
                     isFinishingFocus.value = false; 
                 };
                 
-                const confirmSettlement = () => {
+                const confirmSettlement = async () => {
                     const duration = currentSettlement.duration; const success = currentSettlement.isSuccess; const minutes = currentSettlement.plannedMinutes; const affChange = currentSettlement.affinityDelta;
                     focusCat.value.affinity = Math.max(0, focusCat.value.affinity + affChange);
+                    await checkAffinityThreshold(focusCat.value);
                     if(success) { user.coins += (minutes * 10); }
                     user.missionReports.push({ date: new Date().toLocaleString(), duration: duration, missionName: currentSettlement.missionName, executor: `${user.nickname} & ${focusCat.value.name}`, logs: [...currentFocusLog.value], summary: currentSettlement.summary, status: success ? 'COMPLETED' : 'FAILED' });
                     showMissionSettlementModal.value = false;
@@ -1631,7 +1688,14 @@
                 const handleAddClick = () => { const h = new Date().getHours(); const m = new Date().getMinutes(); const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; const event = prompt(`添加当前时间日程 (${timeStr}):`); if (event) { const durStr = prompt("持续时间 (分钟)?", "60"); if (!user.schedule) user.schedule = []; user.schedule.push({ time: timeStr, event, done: false, duration: parseInt(durStr) || 60 }); } };
                 
                 const shareMemory = (log) => { prompt("复制以下内容分享回忆：", `【${selectedCat.value.name}的日记】\n${log.date}\n${log.content}`); };
-                const closeSpecialEvent = () => showSpecialEventModal.value = false;
+                const closeSpecialEvent = () => {
+                    if (pendingSpecialEvent.value) {
+                        const { cat, content } = pendingSpecialEvent.value;
+                        cat.chatHistory.push({ role: 'assistant', content: `[SPECIAL MOMENT] ${content}`, isSystem: true });
+                        pendingSpecialEvent.value = null;
+                    }
+                    showSpecialEventModal.value = false;
+                };
                 const exportSave = () => { const data = JSON.stringify({user, cats: cats.value, shopItems: shopItems.value, settings}); const blob = new Blob([data], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `gotham_save_${new Date().toISOString().slice(0,10)}.json`; a.click(); };
                 const importSave = (event) => { const file = event.target.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); if(data.user) Object.assign(user, data.user); if(data.cats) cats.value = data.cats; if(data.settings) Object.assign(settings, data.settings); alert("存档导入成功！"); } catch(err) { alert("存档损坏"); } }; reader.readAsText(file); };
                 const openDiary = () => showDiaryModal.value = true;
@@ -1685,6 +1749,7 @@
                             try { const res = await callAI(prompt, "Game AI", 100); const data = parseAIJSON(res); if(data) { affinityBonus = data.liked ? (Math.floor(Math.random()*3)+1) : -(Math.floor(Math.random()*3)+2); selectedCat.value.status = data.reaction || 'Interaction'; } else { affinityBonus = 1; } } catch(e) { affinityBonus = 1; }
                         } else { affinityBonus = 2; }
                         selectedCat.value.affinity = Math.max(0, selectedCat.value.affinity + affinityBonus);
+                        await checkAffinityThreshold(selectedCat.value);
                         const msg = `(使用物品: ${item.name}) ${affinityBonus > 0 ? '❤️ 喜欢' : '💔 不喜欢'}`; await sendMessage(msg, true); 
                     } 
                     showBag.value = false; 
@@ -1750,7 +1815,7 @@
                     showShopModal, showLogModal, showEditCatModal, currentShopCategory, isReleasing,
                     showSpecialEventModal, currentSpecialEventContent, showEasterEggBtn, triggerEasterEgg, closeSpecialEvent,
                     availableModels, isFetchingModels, fetchModels,
-                    handleCatClick, refreshAllStatus, sendMessage,
+                    handleCatClick, refreshAllStatus, sendMessage, updateUserStatus,
                     handleImageUpload, adoptCat, 
                     saveSettings: () => { localStorage.setItem(STORAGE_KEY, JSON.stringify({user, cats: cats.value, shopItems: shopItems.value, settings})); showToast("数据已加密保存", "success"); },
                     resetData: () => { if(confirm("确定要删除所有存档吗？")) { localStorage.removeItem(STORAGE_KEY); location.reload(); } },
@@ -1775,5 +1840,6 @@
             }
         }).mount('#app');
     </script>
+<script type="module" src="/index.tsx"></script>
 </body>
 </html>
