@@ -117,6 +117,82 @@
             padding: 12px 14px;
             border-radius: 8px; width: 100%;
         }
+        
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 16px;
+            width: 100%;
+        }
+
+        .nav-bar {
+            background-color: var(--gotham-dark);
+            border-top: 1px solid #333;
+            height: 50px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+            padding-bottom: env(safe-area-inset-bottom);
+            box-sizing: content-box; 
+        }
+        .nav-item { 
+            color: #666; text-align: center; font-size: 10px; transition: color 0.3s; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 100%; height: 100%; cursor: pointer;
+        }
+        .nav-item.active { color: var(--bat-yellow); }
+        .nav-item i { font-size: 20px; display: block; margin-bottom: 2px; }
+        
+        .fixed-input-bar {
+            position: fixed; 
+            bottom: calc(50px + env(safe-area-inset-bottom)); 
+            left: 0; 
+            width: 100%;
+            background-color: var(--gotham-black); 
+            border-top: 1px solid #333;
+            padding: 8px 16px; 
+            z-index: 40; 
+            display: flex; 
+            align-items: flex-end; 
+            gap: 10px;
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.3);
+            min-height: 54px; 
+            box-sizing: border-box;
+        }
+
+        .cat-card {
+            background: #252525; border-radius: 12px; overflow: hidden;
+            position: relative; transition: transform 0.2s; display: flex; flex-direction: column;
+            align-items: center; border: 1px solid #333;
+        }
+        .cat-card:active { transform: scale(0.98); }
+        .cat-card.out-on-patrol { opacity: 0.6; filter: grayscale(0.9); border: 1px dashed #555; }
+        .cat-card.out-on-patrol::after {
+            content: '🦇 夜巡中'; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: var(--bat-yellow);
+            padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: bold;
+            border: 1px solid var(--bat-yellow); white-space: nowrap; z-index: 10;
+        }
+        
+        .chat-bubble {
+            max-width: 85%; padding: 12px 16px; border-radius: 18px; margin-bottom: 12px;
+            font-size: 14px; line-height: 1.5; word-wrap: break-word; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .chat-user { background: var(--nightwing-blue); align-self: flex-end; border-bottom-right-radius: 4px; color: white; }
+        .chat-ai { background: #333; align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid #444; }
+        .chat-system { background: transparent; color: #666; font-size: 12px; align-self: center; text-align: center; box-shadow: none; font-style: italic; border: 1px dashed #333; }
+        .chat-thinking { opacity: 0.7; font-style: italic; color: #aaa; animation: pulse 1.5s infinite; }
+
+        input, select, textarea {
+            background: #2a2a2a; border: 1px solid #444; color: #eee; 
+            padding: 12px 14px;
+            border-radius: 8px; width: 100%;
+        }
         input:focus, select:focus, textarea:focus { outline: none; border-color: var(--bat-yellow); }
         
         .todo-item { display: flex; align-items: center; padding: 12px; background: #222; border-bottom: 1px solid #333; }
@@ -505,6 +581,7 @@
             <!-- SETTINGS TAB -->
             <div v-if="currentTab === 'settings'" class="space-y-6">
                 <h2 class="text-xl font-bold mb-4 text-gray-200">系统协议</h2>
+                
                 <div class="bg-zinc-800 p-5 rounded-xl border border-zinc-700 shadow-lg">
                     <h3 class="font-bold mb-4 text-green-500 flex items-center"><i class="fas fa-satellite-dish mr-2"></i> 自动化协议</h3>
                     <div class="flex items-center justify-between mb-2">
@@ -934,7 +1011,7 @@
                 });
 
                 let initialUser = { 
-                    coins: 100, inventory: [], nickname: '哥谭市民', gender: 'Secret', birthday: '', 
+                    coins: 500, inventory: [], nickname: '哥谭市民', gender: 'Secret', birthday: '', 
                     job: '', currentStatus: '正在休息',
                     schedule: [], 
                     calendarSources: [], 
