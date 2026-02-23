@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>哥谭喵喵馆 v3.5.7</title>
+    <title>哥谭喵喵馆 v4.0</title>
     
     <link rel="icon" type="image/png" href="https://files.catbox.moe/e15qui.png">
     <link rel="apple-touch-icon" href="https://files.catbox.moe/e15qui.png">
@@ -427,7 +427,7 @@
                         <div class="relative w-full aspect-square mb-3 group">
                              <img :src="cat.isHuman ? (cat.image_human || cat.image) : cat.image" class="w-full h-full object-cover rounded-lg shadow-inner" :style="cat.isHuman ? 'border: 2px solid #ec4899' : ''">
                              <span v-if="cat.isHuman" class="absolute top-1 right-1 bg-pink-600 text-white text-[10px] px-1.5 py-0.5 rounded shadow">猫耳模式</span>
-                             <span v-if="cat.isMarvel" class="absolute bottom-1 right-1 bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded shadow">Foreign</span>
+                             <span v-if="cat.isMarvel" class="absolute bottom-1 right-1 bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded shadow">{{ cat.origin || 'Foreign' }}</span>
                         </div>
                         <h3 class="font-bold text-gray-200">{{ cat.name }}</h3>
                         <div class="text-[9px] bg-zinc-800 px-2 py-0.5 rounded text-gray-400 mb-1 border border-zinc-700 text-center truncate w-full">{{ cat.breed || '哥谭本地猫' }}</div>
@@ -551,26 +551,20 @@
             <!-- CREATE TAB -->
             <div v-if="currentTab === 'create'" class="space-y-4">
                 <div class="flex space-x-2 border-b border-zinc-700 pb-2 mb-2">
-                    <button @click="adoptMode='manual'" class="flex-1 py-2 text-sm font-bold" :class="adoptMode==='manual'?'text-white bg-zinc-700 rounded':'text-gray-500'">手动登记</button>
+                    <button @click="adoptMode='manual'" class="flex-1 py-2 text-sm font-bold" :class="adoptMode==='manual'?'text-white bg-zinc-700 rounded':'text-gray-500'">许愿领养</button>
                     <button @click="adoptMode='gacha'" class="flex-1 py-2 text-sm font-bold" :class="adoptMode==='gacha'?'text-yellow-500 bg-zinc-700 rounded':'text-gray-500'">联系中间人 (抽卡)</button>
                 </div>
                 <div v-if="adoptMode === 'manual'">
-                    <h2 class="text-xl font-bold mb-2">DNA 录入</h2>
-                    <input v-model="newCat.name" placeholder="代号/名字" class="mb-2">
-                    <input v-model="newCat.codename" placeholder="英文代号 (如 Batman)" class="mb-2">
-                    <div class="flex items-center gap-2 mb-2"><label class="text-xs text-gray-400">代表色:</label><input type="color" v-model="newCat.color" class="h-8 w-16 p-0 border-0"><span class="text-xs text-gray-500 font-mono">{{ newCat.color }}</span></div>
-                    <input v-model="newCat.breed" placeholder="品种/外貌 (如: 黑猫 蓝眼)" class="mb-2">
-                    <input v-model="newCat.personality" placeholder="心理侧写" class="mb-2">
-                    <textarea v-model="newCat.prompt" placeholder="深度指令 (Prompt)..." class="h-24 mb-2 text-sm"></textarea>
-                    <div class="bg-zinc-800 p-4 rounded mb-2 border border-zinc-700">
-                        <label class="block text-xs mb-3 text-gray-400 font-bold border-b border-zinc-700 pb-1">外观设置 (二选一)</label>
-                        <div class="flex flex-col gap-3">
-                            <label class="flex items-center bg-zinc-900 p-3 rounded cursor-pointer border border-zinc-700 hover:border-yellow-600 transition"><input type="radio" v-model="manualImgMode" value="auto" class="mr-3 w-4 h-4 accent-yellow-600"> <div><div class="text-sm text-gray-200">自动生成 (推荐)</div><div class="text-[10px] text-gray-500 mt-0.5">根据代号和颜色自动生成标准立绘</div></div></label>
-                            <label class="flex items-center bg-zinc-900 p-3 rounded cursor-pointer border border-zinc-700 hover:border-yellow-600 transition"><input type="radio" v-model="manualImgMode" value="upload" class="mr-3 w-4 h-4 accent-yellow-600"> <div><div class="text-sm text-gray-200">上传文件</div><div class="text-[10px] text-gray-500 mt-0.5">从设备相册选择图片</div></div></label>
-                        </div>
-                        <input v-if="manualImgMode === 'upload'" type="file" @change="handleImageUpload" accept="image/*" class="mt-3 text-xs w-full bg-zinc-900 p-2 rounded">
-                    </div>
-                    <button @click="adoptCat" class="bg-nightwing-blue w-full py-3 rounded-lg font-bold mt-4 shadow-lg">确认领养</button>
+                    <h2 class="text-xl font-bold mb-2">许愿领养 (500 <i class="fas fa-coins text-yellow-500"></i>)</h2>
+                    <p class="text-xs text-gray-400 mb-4">向许愿井投入金币，召唤来自多元宇宙的伙伴...</p>
+                    <input v-model="newCat.name" placeholder="名字 (如: 蜘蛛侠)" class="mb-2">
+                    <input v-model="newCat.codename" placeholder="代号 (如: Spider-Man)" class="mb-2">
+                    <input v-model="newCat.origin" placeholder="出自作品 (如: Marvel / Star Wars)" class="mb-2">
+                    
+                    <button @click="wishAdoptCat" :disabled="isWishLoading" class="bg-indigo-600 w-full py-3 rounded-lg font-bold mt-4 shadow-lg flex justify-center items-center">
+                        <i v-if="isWishLoading" class="fas fa-spinner fa-spin mr-2"></i>
+                        {{ isWishLoading ? '正在回应召唤...' : '开始许愿 (-500 G)' }}
+                    </button>
                 </div>
                 <div v-if="adoptMode === 'gacha'" class="flex flex-col items-center">
                     <div class="w-full h-48 bg-zinc-800 rounded-xl flex items-center justify-center border-2 border-zinc-700 mb-4 overflow-hidden relative">
@@ -1050,9 +1044,10 @@
 
                 const availableModels = ref([]);
                 const isFetchingModels = ref(false);
-                const newCat = reactive({ name: '', personality: '', prompt: '', image: '', codename: '', color: '#555555', breed: '' }); 
+                const newCat = reactive({ name: '', personality: '', prompt: '', image: '', codename: '', color: '#555555', breed: '', origin: '' }); 
                 const currentSettlement = reactive({ missionName: '', duration: 0, summary: '', status: 'success' });
                 const nextRandomEventTime = ref(0); 
+                const isWishLoading = ref(false);
 
                 watch([user, cats, shopItems, settings], () => {
                     const dataToSave = {
@@ -1593,11 +1588,18 @@
                         catsToUpdate.forEach(c => {
                             if (activeCatId && c.id === activeCatId) return;
                             let specificContext = "";
+                            
+                            // Time Logic
+                            const lastUpdate = c.lastStatusUpdateTime || (Date.now() - 3600000); // Default 1 hour ago
+                            const diffMs = Date.now() - lastUpdate;
+                            const diffHours = (diffMs / (1000 * 60 * 60)).toFixed(1);
+                            const timeContext = `(Last Status Update: ${diffHours} hours ago)`;
+
                             if(c.id === activeCatId) { specificContext = `(Must align with last action: ${focusCatLastAction})`; }
-                            characterBlock += `\n--- CHARACTER ---\nID: ${c.id}\nName: ${c.name} (${c.breed})\nTraits: ${c.personality}\nPrevious Status: ${c.status}\nIs Currently Out: ${c.isOut}\n${specificContext}\n`;
+                            characterBlock += `\n--- CHARACTER ---\nID: ${c.id}\nName: ${c.name} (${c.breed})\nTraits: ${c.personality}\nPrevious Status: ${c.status} ${timeContext}\nIs Currently Out: ${c.isOut}\n${specificContext}\n`;
                         });
 
-                        const prompt = `Current Time: ${timeStr}. ${isNight ? 'Night Time (Patrol Likely)' : 'Day Time (Rest Likely)'}. User Context: ${userContext} [GLOBAL SCENARIO RULES]: 1. **MINIMUM 2 CATS AT HOME**: You MUST ensure that at least 2 cats in this list stay home ([ISOUT] false). Do NOT send everyone on patrol, even if it is night. 2. **Anti-OOC**: Bruce is stoic/paranoid. Damian is arrogant. Dick is cheerful. Jason is grumpy. Tim is tired/techy. 3. **VARIETY & CONTINUITY**: Check "Previous Status". Time has passed. Do NOT repeat the exact same action. If they were sleeping, maybe they woke up. If playing, maybe they stopped. Ensure logic flow. Task: Update status for ALL characters listed above. Output Format (Repeat for EACH character ID): [ID] {id} [STATUS] {3rd person action} [VOICE] {1st person thought (Human Language, NO MEOWS)} [ISOUT] {true/false}`;
+                        const prompt = `Current Time: ${timeStr}. ${isNight ? 'Night Time (Patrol Likely)' : 'Day Time (Rest Likely)'}. User Context: ${userContext} [GLOBAL SCENARIO RULES]: 1. **MINIMUM 2 CATS AT HOME**: You MUST ensure that at least 2 cats in this list stay home ([ISOUT] false). Do NOT send everyone on patrol, even if it is night. 2. **Anti-OOC**: Bruce is stoic/paranoid. Damian is arrogant. Dick is cheerful. Jason is grumpy. Tim is tired/techy. 3. **TIME CONTINUITY LOGIC**: Check "Last Status Update". If > 4 hours, status MUST change significantly (e.g. wake up if sleeping). If < 1 hour, maintain continuity (e.g. still sleeping). 4. **VARIETY**: Do NOT repeat the exact same action word for word. Task: Update status for ALL characters listed above. Output Format (Repeat for EACH character ID): [ID] {id} [STATUS] {3rd person action} [VOICE] {1st person thought (Human Language, NO MEOWS)} [ISOUT] {true/false}`;
 
                         const res = await callAI(characterBlock + "\n" + prompt, STRICT_CANON_PROMPT, 1000);
                         const blocks = res.split('[ID]');
@@ -1615,6 +1617,7 @@
                                 if(isOutStr) cat.isOut = (isOutStr.toLowerCase() === 'true');
                                 if(!cat.diary) cat.diary = [];
                                 cat.diary.push({ time: timeStr, content: cat.status + (cat.isOut ? ' (外出)' : '') });
+                                cat.lastStatusUpdateTime = Date.now();
                             }
                         });
                         alfredMessage.value = (todayEvent.value ? todayEvent.value + " " : "") + `已同步 ${timeStr} 的庄园监控数据。`;
@@ -1719,6 +1722,80 @@
                 const handleImageUpload = (e) => { const file = e.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = (evt) => newCat.image = evt.target.result; reader.readAsDataURL(file); } };
                 const handleSpecificImageUpload = (event, type) => { const file = event.target.files[0]; if (file && selectedCat.value) { const reader = new FileReader(); reader.onload = (e) => { if(type === 'human') selectedCat.value.image_human = e.target.result; else selectedCat.value.image = e.target.result; }; reader.readAsDataURL(file); } };
                 
+                const wishAdoptCat = async () => {
+                    if (user.coins < 500) return showToast("金币不足 (需要 500 G)", "error");
+                    if (!newCat.name || !newCat.codename || !newCat.origin) return showToast("请填写完整许愿信息", "error");
+                    if (!settings.apiKey) return showToast("需要连接 API", "error");
+
+                    user.coins -= 500;
+                    isWishLoading.value = true;
+
+                    const prompt = `
+                    Task: Generate a Cat Character based on User Wish.
+                    User Wish: Name: ${newCat.name}, Codename: ${newCat.codename}, Origin: ${newCat.origin}.
+                    
+                    Requirements:
+                    1. Adapt the character into a CAT based on their traits.
+                    2. Determine if Origin is "DC Universe". If NOT, mark isExternal = true.
+                    3. Generate appearance (Breed, Eye Color, Color Hex).
+                    4. Generate Personality and a System Prompt for roleplay.
+                    5. Language: Simplified Chinese.
+                    
+                    Output JSON:
+                    {
+                        "breed": "...",
+                        "eyeColor": "...",
+                        "color": "#HEX",
+                        "personality": "...",
+                        "status": "Initial status...",
+                        "innerVoice": "First thought...",
+                        "prompt": "System prompt...",
+                        "isExternal": boolean,
+                        "origin": "${newCat.origin}"
+                    }
+                    `;
+
+                    try {
+                        const res = await callAI(prompt, "Character Generator", 500);
+                        const data = parseAIJSON(res);
+                        if (data) {
+                            const imgUrl = `https://placehold.co/200x200/${data.color.replace('#','')}/white?text=${newCat.codename}`;
+                            cats.value.push({
+                                id: Date.now(),
+                                name: newCat.name,
+                                codename: newCat.codename,
+                                breed: data.breed,
+                                eyeColor: data.eyeColor,
+                                personality: data.personality,
+                                status: data.status,
+                                innerVoice: data.innerVoice,
+                                isOut: false,
+                                affinity: 10,
+                                isHuman: false,
+                                hasRevealedHumanForm: false,
+                                image: imgUrl,
+                                image_human: '',
+                                chatHistory: [],
+                                diary: [],
+                                logs: [],
+                                lastFocusTime: 0,
+                                lastStatusUpdateTime: Date.now(),
+                                prompt: data.prompt,
+                                isMarvel: data.isExternal,
+                                origin: data.origin
+                            });
+                            showToast("许愿成功！新伙伴已加入。", "success");
+                            currentTab.value = 'lounge';
+                            newCat.name = ''; newCat.codename = ''; newCat.origin = '';
+                        }
+                    } catch (e) {
+                        user.coins += 500; 
+                        showToast("许愿失败，金币已退回", "error");
+                    } finally {
+                        isWishLoading.value = false;
+                    }
+                };
+
                 const adoptCat = () => { if(!newCat.name) return; let imgUrl = manualImgMode.value === 'auto' ? `https://placehold.co/200x200/${newCat.color.replace('#','')}/white?text=${newCat.codename}` : newCat.image; const existingNames = cats.value.map(c => c.name).join(', '); const systemPrompt = `You are ${newCat.name}. Known Associates in Cafe: ${existingNames}.`; cats.value.push({ id: Date.now(), name: newCat.name, breed: newCat.breed, image: imgUrl, image_human: '', personality: newCat.personality, status: '新入住', isOut: false, affinity: 10, isHuman: false, chatHistory: [], diary: [], logs: [], innerVoice: '...', lastFocusTime: 0, prompt: systemPrompt, isMarvel: false }); currentTab.value = 'lounge'; };
                 
                 const confirmGacha = (keep) => { if(keep && gachaResult.value) { const existingNames = cats.value.map(c => c.name).join(', '); const systemPrompt = `You are ${gachaResult.value.name}. Known Associates in Cafe: ${existingNames}. ${gachaResult.value.prompt}`; cats.value.push({ id: Date.now(), name: gachaResult.value.name, breed: gachaResult.value.breed, eyeColor: gachaResult.value.eyeColor, personality: gachaResult.value.personality, status: '初来乍到', isOut: false, affinity: 10, isHuman: false, image: gachaResult.value.image, image_human: '', prompt: systemPrompt, chatHistory: [], diary: [], logs: [], innerVoice: gachaResult.value.quote || '...', lastFocusTime: 0, lastInteractionDate: null, lastLogDate: null, isMarvel: gachaResult.value.isMarvel }); currentTab.value = 'lounge'; } gachaResult.value = null; };
@@ -1816,7 +1893,7 @@
                     showSpecialEventModal, currentSpecialEventContent, showEasterEggBtn, triggerEasterEgg, closeSpecialEvent,
                     availableModels, isFetchingModels, fetchModels,
                     handleCatClick, refreshAllStatus, sendMessage, updateUserStatus,
-                    handleImageUpload, adoptCat, 
+                    handleImageUpload, adoptCat, wishAdoptCat, isWishLoading, 
                     saveSettings: () => { localStorage.setItem(STORAGE_KEY, JSON.stringify({user, cats: cats.value, shopItems: shopItems.value, settings})); showToast("数据已加密保存", "success"); },
                     resetData: () => { if(confirm("确定要删除所有存档吗？")) { localStorage.removeItem(STORAGE_KEY); location.reload(); } },
                     exportSave, importSave, fileInput, 
