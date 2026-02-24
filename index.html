@@ -489,7 +489,7 @@
                     
                     <div class="col-span-2 bg-zinc-800 p-3 rounded-lg border border-zinc-700 flex items-center gap-2 mb-2">
                         <div class="text-xs text-gray-400 whitespace-nowrap">当前状态:</div>
-                        <input v-model="user.currentStatus" class="bg-transparent border-none text-sm text-white focus:ring-0 flex-1" placeholder="你在做什么？(例如: 喝咖啡, 整理档案)">
+                        <input v-model="tempUserStatus" @keydown.enter="updateUserStatus" class="bg-transparent border-none text-sm text-white focus:ring-0 flex-1" placeholder="你在做什么？(例如: 喝咖啡, 整理档案)">
                         <button @click="updateUserStatus" class="bg-zinc-700 hover:bg-zinc-600 text-xs px-3 py-1 rounded text-white transition">更新</button>
                     </div>
                     
@@ -1291,10 +1291,22 @@
 
                 const pendingSpecialEvent = ref(null);
 
+                const tempUserStatus = ref('');
+
+                // Watcher for User Status
+                watch(() => user.currentStatus, async (newVal, oldVal) => {
+                    if (newVal !== oldVal) {
+                        tempUserStatus.value = newVal;
+                        // Debounce or check if it's a real change to avoid loops
+                        if (newVal && newVal !== oldVal) {
+                             await refreshAllStatus(true, `User Status Changed: ${newVal}`);
+                        }
+                    }
+                });
+
                 const updateUserStatus = async () => {
-                    if (!user.currentStatus) return;
-                    showToast("状态更新中...", "loading");
-                    await refreshAllStatus(true, `User Status Update: User is currently ${user.currentStatus}`);
+                    if (!tempUserStatus.value) return;
+                    user.currentStatus = tempUserStatus.value;
                     showToast("状态已同步", "success");
                 };
 
@@ -1433,7 +1445,7 @@
                     }
 
                     thinkingStates[sendingCat.id] = true; 
-                    refreshAllStatus(true, `User is interacting with ${sendingCat.name}.`, sendingCat.id);
+                    // refreshAllStatus(true, `User is interacting with ${sendingCat.name}.`, sendingCat.id); // Removed to avoid double refresh with watcher
 
                     try {
                         const now = Date.now();
@@ -1471,6 +1483,7 @@
                         [STATUS] Update status based on interaction. (3rd Person, Action only).
                         [VOICE] Inner thoughts. (1st Person). MUST BE HUMAN LANGUAGE (Simplified Chinese). NO MEOWS IN THOUGHTS.
                         [REPLY] Output to user. (50-100 words). IF CAT FORM: Meows/Purrs + Actions only. IF HUMAN FORM: Human speech allowed.
+                        [USER_STATUS] Summarize User's current action/status based on this interaction (Max 10 chars).
                         `;
 
                         const responseRaw = await callAI(prompt, STRICT_CANON_PROMPT, 300);
@@ -1480,6 +1493,7 @@
 
                         const status = extractSection(responseRaw, 'STATUS');
                         const voice = extractSection(responseRaw, 'VOICE');
+                        const userStatus = extractSection(responseRaw, 'USER_STATUS');
                         let reply = extractSection(responseRaw, 'REPLY');
 
                         if(!reply) {
@@ -1496,6 +1510,7 @@
 
                         if(status) sendingCat.status = status;
                         if(voice) sendingCat.innerVoice = voice;
+                        if(userStatus) user.currentStatus = userStatus.substring(0, 10);
                         sendingCat.chatHistory.push({ role: 'assistant', content: reply });
                         await checkMailboxLogic(); 
                         
@@ -1676,7 +1691,7 @@
                             characterBlock += `\n--- CHARACTER ---\nID: ${c.id}\nName: ${c.name} (${c.breed})\nTraits: ${c.personality}\nPrevious Status: ${c.status} ${timeContext}\nIs Currently Out: ${c.isOut}\n${specificContext}\n`;
                         });
 
-                        const prompt = `Current Time: ${timeStr}. ${isNight ? 'Night Time (Patrol Likely)' : 'Day Time (Rest Likely)'}. User Context: ${userContext} [GLOBAL SCENARIO RULES]: 1. **MINIMUM 2 CATS AT HOME**: You MUST ensure that at least 2 cats in this list stay home ([ISOUT] false). Do NOT send everyone on patrol, even if it is night. 2. **Anti-OOC**: Bruce is stoic/paranoid. Damian is arrogant. Dick is cheerful. Jason is grumpy. Tim is tired/techy. 3. **TIME CONTINUITY LOGIC**: Check "Last Status Update". If > 4 hours, status MUST change significantly (e.g. wake up if sleeping). If < 1 hour, maintain continuity (e.g. still sleeping). 4. **VARIETY**: Do NOT repeat the exact same action word for word. Task: Update status for ALL characters listed above. Output Format (Repeat for EACH character ID): [ID] {id} [STATUS] {3rd person action} [VOICE] {1st person thought (Human Language, NO MEOWS)} [ISOUT] {true/false}`;
+                        const prompt = `Current Time: ${timeStr}. ${isNight ? 'Night Time (Patrol Likely)' : 'Day Time (Rest Likely)'}. User Context: ${userContext} [GLOBAL SCENARIO RULES]: 1. **MINIMUM 2 CATS AT HOME**: You MUST ensure that at least 2 cats in this list stay home ([ISOUT] false). Do NOT send everyone on patrol, even if it is night. 2. **Anti-OOC**: Bruce is stoic/paranoid. Damian is arrogant. Dick is cheerful. Jason is grumpy. Tim is tired/techy. 3. **TIME CONTINUITY LOGIC**: Check "Last Status Update". If > 4 hours, status MUST change significantly (e.g. wake up if sleeping). If < 1 hour, maintain continuity (e.g. still sleeping). 4. **VARIETY**: Do NOT repeat the exact same action word for word. 5. **CORRELATION (IMPORTANT)**: For cats that are AT HOME (isOut=false), their statuses MUST be related to each other and the user's current status: '${user.currentStatus}'. They should be reacting to the user or interacting with each other in the same room. Task: Update status for ALL characters listed above. Output Format (Repeat for EACH character ID): [ID] {id} [STATUS] {3rd person action} [VOICE] {1st person thought (Human Language, NO MEOWS)} [ISOUT] {true/false}`;
 
                         const res = await callAI(characterBlock + "\n" + prompt, STRICT_CANON_PROMPT, 1000);
                         const blocks = res.split('[ID]');
@@ -1934,6 +1949,7 @@
                 };
 
                 onMounted(() => {
+                    tempUserStatus.value = user.currentStatus;
                     checkSpecialEvent();
                     checkDailyInitialization(); 
                     if (todayEvent.value && !alfredMessage.value.includes(todayEvent.value)) { alfredMessage.value = todayEvent.value + " " + alfredMessage.value; }
