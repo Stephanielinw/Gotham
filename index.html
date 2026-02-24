@@ -1474,7 +1474,7 @@
                         [STATUS] Update status based on interaction. (3rd Person, Action only).
                         [VOICE] Inner thoughts. (1st Person). MUST BE HUMAN LANGUAGE (Simplified Chinese). NO MEOWS IN THOUGHTS.
                         [REPLY] Output to user. (50-100 words). IF CAT FORM: Meows/Purrs + Actions only. IF HUMAN FORM: Human speech allowed.
-                        [USER_STATUS] Summarize User's current action/status based on this interaction (Max 10 chars).
+                        [USER_STATUS] Summarize User's current action/status based on this interaction. MUST include ${sendingCat.name}'s name (e.g. "正在和${sendingCat.name}玩耍"). (Max 15 chars).
                         `;
 
                         const responseRaw = await callAI(prompt, STRICT_CANON_PROMPT, 300);
@@ -1502,7 +1502,7 @@
                         if(status) sendingCat.status = status;
                         if(voice) sendingCat.innerVoice = voice;
                         if(userStatus) {
-                            user.currentStatus = userStatus.substring(0, 10);
+                            user.currentStatus = userStatus.substring(0, 15);
                             tempUserStatus.value = user.currentStatus;
                         }
                         sendingCat.chatHistory.push({ role: 'assistant', content: reply });
@@ -1675,9 +1675,12 @@
 
                     try {
                         let characterBlock = "";
+                        let activeCatName = "";
                         catsToUpdate.forEach(c => {
-                            if (activeCatId && c.id === activeCatId) return;
-                            let specificContext = "";
+                            if (activeCatId && c.id === activeCatId) {
+                                activeCatName = c.name;
+                                return; // Skip adding to characterBlock for AI to update
+                            }
                             
                             // Time Logic
                             const lastUpdate = c.lastStatusUpdateTime || (Date.now() - 3600000); // Default 1 hour ago
@@ -1685,11 +1688,12 @@
                             const diffHours = (diffMs / (1000 * 60 * 60)).toFixed(1);
                             const timeContext = `(Last Status Update: ${diffHours} hours ago)`;
 
-                            if(c.id === activeCatId) { specificContext = `(Must align with last action: ${focusCatLastAction})`; }
-                            characterBlock += `\n--- CHARACTER ---\nID: ${c.id}\nName: ${c.name} (${c.breed})\nTraits: ${c.personality}\nPrevious Status: ${c.status} ${timeContext}\nIs Currently Out: ${c.isOut}\n${specificContext}\n`;
+                            characterBlock += `\n--- CHARACTER ---\nID: ${c.id}\nName: ${c.name} (${c.breed})\nTraits: ${c.personality}\nPrevious Status: ${c.status} ${timeContext}\nIs Currently Out: ${c.isOut}\n`;
                         });
 
-                        const prompt = `Current Time: ${timeStr}. ${isNight ? 'Night Time (Patrol Likely)' : 'Day Time (Rest Likely)'}. User Context: ${userContext} [GLOBAL SCENARIO RULES]: 1. **MINIMUM 2 CATS AT HOME**: You MUST ensure that at least 2 cats in this list stay home ([ISOUT] false). Do NOT send everyone on patrol, even if it is night. 2. **Anti-OOC**: Bruce is stoic/paranoid. Damian is arrogant. Dick is cheerful. Jason is grumpy. Tim is tired/techy. 3. **TIME CONTINUITY LOGIC**: Check "Last Status Update". If > 4 hours, status MUST change significantly (e.g. wake up if sleeping). If < 1 hour, maintain continuity (e.g. still sleeping). 4. **VARIETY**: Do NOT repeat the exact same action word for word. 5. **CORRELATION (IMPORTANT)**: For cats that are AT HOME (isOut=false), their statuses MUST be related to each other and the user's current status: '${user.currentStatus}'. They should be reacting to the user or interacting with each other in the same room. Task: Update status for ALL characters listed above. Output Format (Repeat for EACH character ID): [ID] {id} [STATUS] {3rd person action} [VOICE] {1st person thought (Human Language, NO MEOWS)} [ISOUT] {true/false}`;
+                        let activeCatContext = activeCatId ? `\n[CRITICAL CONTEXT]: The user is currently interacting with ${activeCatName}. ${activeCatName}'s current status is: "${focusCatLastAction}". Other cats should observe this, react to it, or do their own things in the same room. DO NOT assume the user is interacting with the other cats.` : "";
+
+                        const prompt = `Current Time: ${timeStr}. ${isNight ? 'Night Time (Patrol Likely)' : 'Day Time (Rest Likely)'}. User Context: ${userContext} ${activeCatContext} [GLOBAL SCENARIO RULES]: 1. **MINIMUM 2 CATS AT HOME**: You MUST ensure that at least 2 cats in this list stay home ([ISOUT] false). Do NOT send everyone on patrol, even if it is night. 2. **Anti-OOC**: Bruce is stoic/paranoid. Damian is arrogant. Dick is cheerful. Jason is grumpy. Tim is tired/techy. 3. **TIME CONTINUITY LOGIC**: Check "Last Status Update". If > 4 hours, status MUST change significantly (e.g. wake up if sleeping). If < 1 hour, maintain continuity (e.g. still sleeping). 4. **VARIETY**: Do NOT repeat the exact same action word for word. 5. **CORRELATION (IMPORTANT)**: For cats that are AT HOME (isOut=false), their statuses MUST be related to each other and the user's current status: '${user.currentStatus}'. If the user is interacting with a specific cat, the OTHER cats should be watching, reacting, or doing their own things nearby. DO NOT make other cats think the user is interacting with them. Task: Update status for ALL characters listed above. Output Format (Repeat for EACH character ID): [ID] {id} [STATUS] {3rd person action} [VOICE] {1st person thought (Human Language, NO MEOWS)} [ISOUT] {true/false}`;
 
                         const res = await callAI(characterBlock + "\n" + prompt, STRICT_CANON_PROMPT, 1000);
                         const blocks = res.split('[ID]');
