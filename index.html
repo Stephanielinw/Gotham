@@ -1293,20 +1293,11 @@
 
                 const tempUserStatus = ref('');
 
-                // Watcher for User Status
-                watch(() => user.currentStatus, async (newVal, oldVal) => {
-                    if (newVal !== oldVal) {
-                        tempUserStatus.value = newVal;
-                        // Debounce or check if it's a real change to avoid loops
-                        if (newVal && newVal !== oldVal) {
-                             await refreshAllStatus(true, `User Status Changed: ${newVal}`);
-                        }
-                    }
-                });
-
                 const updateUserStatus = async () => {
                     if (!tempUserStatus.value) return;
                     user.currentStatus = tempUserStatus.value;
+                    showToast("状态更新中...", "loading");
+                    await refreshAllStatus(true, `User Status Changed: ${user.currentStatus}`);
                     showToast("状态已同步", "success");
                 };
 
@@ -1510,8 +1501,15 @@
 
                         if(status) sendingCat.status = status;
                         if(voice) sendingCat.innerVoice = voice;
-                        if(userStatus) user.currentStatus = userStatus.substring(0, 10);
+                        if(userStatus) {
+                            user.currentStatus = userStatus.substring(0, 10);
+                            tempUserStatus.value = user.currentStatus;
+                        }
                         sendingCat.chatHistory.push({ role: 'assistant', content: reply });
+                        
+                        // Explicitly refresh all other cats' status based on the new interaction
+                        await refreshAllStatus(true, `User is interacting with ${sendingCat.name}. User Status: ${user.currentStatus}`, sendingCat.id, status);
+                        
                         await checkMailboxLogic(); 
                         
                         sendingCat.lastInteractionTimestamp = Date.now();
