@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>哥谭喵喵馆 v4.0</title>
     
+    <script>
+      window.addEventListener('error', function(e) {
+        document.body.innerHTML += '<div style="color:red; background:white; position:fixed; top:0; left:0; z-index:9999; padding:20px;">' + e.message + '<br>' + e.filename + ':' + e.lineno + '</div>';
+      });
+    </script>
+    
     <link rel="icon" type="image/png" href="https://files.catbox.moe/e15qui.png">
     <link rel="apple-touch-icon" href="https://files.catbox.moe/e15qui.png">
     
@@ -498,6 +504,12 @@
                         <div class="text-right text-xs mt-1 not-italic">— 阿福</div>
                     </div>
                     
+                    <div class="col-span-2 flex space-x-2 mb-2">
+                        <button @click="openFocusSetupModal" class="flex-1 bg-yellow-700 hover:bg-yellow-600 text-white py-3 rounded-lg text-sm font-bold shadow-sm flex items-center justify-center transition-colors">
+                            <i class="fas fa-hourglass-half mr-2"></i> 开始专注任务
+                        </button>
+                    </div>
+                    
                     <div v-for="cat in cats" :key="cat.id" @click="handleCatClick(cat)" 
                          class="cat-card p-3 shadow-lg cursor-pointer" :class="{'out-on-patrol': cat.isOut}">
                         <div class="relative w-full aspect-square mb-3 group">
@@ -547,12 +559,11 @@
                     <button @click="triggerEasterEgg" class="w-full py-2 text-xs special-invite-btn flex items-center justify-center"><i class="fas fa-envelope-open-text mr-2"></i> 收到一封特殊邀约</button>
                 </div>
 
-                <div class="grid grid-cols-4 gap-2 mb-4 shrink-0">
+                <div class="grid grid-cols-3 gap-2 mb-4 shrink-0">
                     <button @click="openDiary" class="bg-zinc-700 p-2 rounded-lg text-xs hover:bg-zinc-600 transition text-gray-300"><i class="fas fa-video mb-1 block text-lg"></i>监控</button>
                     <button @click="openLogModal" class="bg-zinc-700 p-2 rounded-lg text-xs hover:bg-zinc-600 transition text-yellow-500"><i class="fas fa-book mb-1 block text-lg"></i>日记</button>
-                    <button @click="startFocusSetup" :disabled="selectedCat.isOut" class="bg-yellow-700 text-white p-2 rounded-lg text-xs font-bold hover:bg-yellow-600 transition" :class="{'btn-disabled': selectedCat.isOut}"><i class="fas fa-hourglass-half mb-1 block text-lg"></i>专注</button>
                     <button @click="toggleHumanMode" v-if="selectedCat.affinity >= 50" :disabled="selectedCat.isOut" class="bg-pink-800 p-2 rounded-lg text-xs hover:bg-pink-700 transition" :class="{'btn-disabled': selectedCat.isOut}"><i class="fas fa-magic mb-1 block text-lg"></i>{{ selectedCat.isHuman ? '变回原形' : '拟人模式' }}</button>
-                    <button @click="openBag" :disabled="selectedCat.isOut" class="col-span-4 bg-zinc-800 p-3 rounded-lg text-xs mt-1 border border-zinc-600 hover:bg-zinc-700 flex justify-center items-center" :class="{'btn-disabled': selectedCat.isOut}"><i class="fas fa-briefcase mr-2"></i> 打开背包喂食</button>
+                    <button @click="openBag" :disabled="selectedCat.isOut" class="col-span-3 bg-zinc-800 p-3 rounded-lg text-xs mt-1 border border-zinc-600 hover:bg-zinc-700 flex justify-center items-center" :class="{'btn-disabled': selectedCat.isOut}"><i class="fas fa-briefcase mr-2"></i> 打开背包喂食</button>
                 </div>
 
                 <div class="chat-container mx-2 mb-0 shadow-inner">
@@ -823,12 +834,73 @@
             </div>
         </div>
 
+        <!-- Focus Setup Modal -->
+        <div v-if="showFocusSetupModal" class="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4" @click.self="showFocusSetupModal = false">
+            <div class="bg-zinc-900 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl border border-zinc-700 flex flex-col max-h-[90vh]">
+                <div class="bg-zinc-800 px-6 py-4 flex justify-between items-center border-b border-zinc-700 shrink-0">
+                    <h3 class="text-lg font-bold text-white flex items-center"><i class="fas fa-hourglass-half text-yellow-500 mr-2"></i> 专注任务设定</h3>
+                    <button @click="showFocusSetupModal = false" class="text-gray-400 hover:text-white transition"><i class="fas fa-times text-xl"></i></button>
+                </div>
+                
+                <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-300 mb-2">任务目标</label>
+                        <input type="text" v-model="focusSetupData.action" placeholder="例如: 调查档案, 整理装备..." class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-yellow-600 transition">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-bold text-gray-300 mb-2">专注时长 (分钟)</label>
+                        <div class="flex items-center space-x-4">
+                            <input type="range" v-model.number="focusSetupData.minutes" min="5" max="120" step="5" class="flex-1 accent-yellow-600">
+                            <span class="text-xl font-mono font-bold text-yellow-500 w-12 text-right">{{ focusSetupData.minutes }}</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-300 mb-2 flex justify-between items-center">
+                            <span>选择监督员</span>
+                            <span class="text-xs text-gray-500 font-normal">可多选</span>
+                        </label>
+                        <div v-if="availableCatsForFocus.length === 0" class="text-center text-gray-500 text-sm py-4 bg-zinc-800 rounded-lg border border-zinc-700 border-dashed">
+                            所有成员都在夜巡中，无法监督。
+                        </div>
+                        <div v-else class="grid grid-cols-3 gap-3">
+                            <div v-for="cat in availableCatsForFocus" :key="cat.id" 
+                                 @click="toggleFocusCat(cat)"
+                                 class="relative cursor-pointer rounded-xl border-2 transition-all duration-200 overflow-hidden group"
+                                 :class="focusSetupData.selectedCatIds.includes(cat.id) ? 'border-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.3)]' : 'border-zinc-700 hover:border-zinc-500'">
+                                <div class="absolute inset-0 bg-black/40 group-hover:bg-transparent transition-colors z-10" :class="{'hidden': focusSetupData.selectedCatIds.includes(cat.id)}"></div>
+                                <img :src="cat.isHuman ? (cat.image_human || cat.image) : cat.image" class="w-full aspect-square object-cover">
+                                <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 to-transparent pt-6 pb-1 px-1 text-center z-20">
+                                    <span class="text-[10px] font-bold text-white truncate block">{{ cat.name }}</span>
+                                </div>
+                                <div v-if="focusSetupData.selectedCatIds.includes(cat.id)" class="absolute top-1 right-1 bg-yellow-500 text-black rounded-full w-5 h-5 flex items-center justify-center z-30 shadow-md">
+                                    <i class="fas fa-check text-[10px]"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-4 bg-zinc-800 border-t border-zinc-700 shrink-0">
+                    <button @click="startFocus" :disabled="!canStartFocus" class="w-full py-3 rounded-lg font-bold text-sm transition-all flex items-center justify-center" :class="canStartFocus ? 'bg-yellow-600 hover:bg-yellow-500 text-black shadow-[0_0_15px_rgba(202,138,4,0.4)]' : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'">
+                        <i class="fas fa-play mr-2"></i> 开始任务
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Focus UI (Fixed Safe Area Top & Height) -->
         <div v-if="isFocusing" class="fixed inset-0 bg-black z-[60] flex flex-col p-6" style="padding-top: calc(80px + env(safe-area-inset-top));">
             <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-30 pointer-events-none"></div>
             <div class="relative z-10 flex flex-col items-center mt-4">
-                <img :src="focusCat.isHuman ? (focusCat.image_human || focusCat.image) : focusCat.image" class="w-24 h-24 rounded-full border-4 border-yellow-600 shadow-[0_0_20px_rgba(212,175,55,0.3)] object-cover mb-4">
-                <h2 class="text-xl font-bold text-white">{{ focusCat.name }} <span class="text-xs font-normal text-gray-400">{{ focusCat.isHuman ? '监督中 (人形)' : '监督中' }}</span></h2>
+                <div class="flex justify-center flex-wrap gap-2 mb-4">
+                    <div v-for="cat in focusCats" :key="cat.id" class="flex flex-col items-center">
+                        <img :src="cat.isHuman ? (cat.image_human || cat.image) : cat.image" class="w-16 h-16 rounded-full border-2 border-yellow-600 shadow-[0_0_10px_rgba(212,175,55,0.3)] object-cover mb-1">
+                        <span class="text-[10px] text-gray-300">{{ cat.name }}</span>
+                    </div>
+                </div>
+                <h2 class="text-xl font-bold text-white">联合监督中 <span class="text-xs font-normal text-gray-400">({{ focusCats.length }}只)</span></h2>
                 <div class="w-full text-center px-4 mt-2 mb-6 max-h-20 overflow-y-auto custom-scrollbar"><p class="text-yellow-600 text-lg font-bold tracking-wider leading-relaxed break-words uppercase">MISSION: {{ cleanText(focusAction) }}</p></div>
             </div>
             <div class="relative z-10 flex flex-col items-center justify-center flex-1">
@@ -839,7 +911,7 @@
                     <div v-if="currentFocusLog.length === 0" class="text-gray-600 text-xs text-center mt-8">等待观测数据...</div>
                     <div v-for="(log, idx) in currentFocusLog" :key="idx" class="focus-log-item" :class="{'harass-log': log.includes('骚扰')}">{{ cleanText(log) }}</div>
                 </div>
-                <div v-if="focusCat.innerVoice" class="w-full px-4 mb-2"><div class="inner-voice-bubble text-center">"{{ cleanText(focusCat.innerVoice) }}"</div></div>
+                <div v-if="currentFocusVoice" class="w-full px-4 mb-2"><div class="inner-voice-bubble text-center"><span class="text-xs text-yellow-600 font-bold block mb-1">{{ currentFocusVoiceCat }}</span>"{{ cleanText(currentFocusVoice) }}"</div></div>
             </div>
             <div class="relative z-10 w-full space-y-3 pb-4">
                  <div class="bg-zinc-800 p-2 rounded-lg flex flex-col gap-2 border border-zinc-700">
@@ -963,7 +1035,7 @@
 
                 // Focus Refs
                 const isFocusing = ref(false);
-                const focusCat = ref(null);
+                const focusCats = ref([]);
                 const focusAction = ref('');
                 const focusTime = ref(0);
                 const focusTotalTime = ref(0);
@@ -976,6 +1048,34 @@
                 const isProcessingFocusTick = ref(false); 
                 const isFinishingFocus = ref(false); 
                 const affinityChangeValue = ref(0);
+                const currentFocusVoice = ref('');
+                const currentFocusVoiceCat = ref('');
+                
+                // Focus Setup Modal Refs
+                const showFocusSetupModal = ref(false);
+                const focusSetupData = reactive({
+                    action: '调查档案',
+                    minutes: 25,
+                    selectedCatIds: []
+                });
+                const availableCatsForFocus = computed(() => cats.value.filter(c => !c.isOut));
+                const canStartFocus = computed(() => focusSetupData.action.trim() && focusSetupData.minutes > 0 && focusSetupData.selectedCatIds.length > 0);
+
+                const openFocusSetupModal = () => {
+                    focusSetupData.action = '调查档案';
+                    focusSetupData.minutes = 25;
+                    focusSetupData.selectedCatIds = [];
+                    showFocusSetupModal.value = true;
+                };
+
+                const toggleFocusCat = (cat) => {
+                    const idx = focusSetupData.selectedCatIds.indexOf(cat.id);
+                    if (idx > -1) {
+                        focusSetupData.selectedCatIds.splice(idx, 1);
+                    } else {
+                        focusSetupData.selectedCatIds.push(cat.id);
+                    }
+                };
                 
                 // System Log & Notification Refs
                 const systemLogs = ref([]);
@@ -1063,11 +1163,11 @@
 
                 // Hardcoded 5 Default Cats (Fixed Data)
                 const defaultCats = [
-                    { id: 1, name: '布鲁斯', breed: '纯黑长毛缅因猫', eyeColor: '钢蓝色', personality: '多疑、控制欲强、压抑', status: '蹲在柜顶俯瞰全屋', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/1a1a1a/white?text=Batman', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: '这座城市的阴影在召唤我...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Batman (Bruce Wayne). Paranoid, stoic, detective. Dark brooding. NOT arrogant. Canon compliance: Blue eyes, Black hair.", birthday: "02-19", isMarvel: false },
-                    { id: 2, name: '迪克', breed: '黑蓝相间土耳其安哥拉猫', eyeColor: '电光蓝', personality: '阳光、粘人、爱吃麦片', status: '试图在窗帘上荡秋千', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/007cc2/white?text=Nightwing', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: '这里好高！我喜欢！', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Nightwing (Dick Grayson). Energetic, charming, acrobat. Big brother figure. Canon compliance: Blue eyes, Black hair.", birthday: "03-20", isMarvel: false },
-                    { id: 3, name: '杰森', breed: '黑白斑纹街头野猫', eyeColor: '蓝色', personality: '暴躁、护食、体格强壮', status: '霸占了最大的那个枕头', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/c20000/white?text=RedHood', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: '别过来，除非你有吃的。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Red Hood (Jason Todd). Grumpy, street-smart, secretly cares. Uses slang. Canon compliance: Blue eyes, Black/White hair.", birthday: "08-16", isMarvel: false },
-                    { id: 4, name: '提姆', breed: '深色暹罗猫', eyeColor: '冰蓝色', personality: '过劳、咖啡因成瘾、极客', status: '盯着发光的路由器发呆', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/555/white?text=RedRobin', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: '这个路由器的频率有点奇怪...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Red Robin (Tim Drake). Sleepy genius, detective, tech-savvy. Polite but awkward. NOT arrogant. Canon compliance: Blue eyes, Black hair.", birthday: "07-19", isMarvel: false },
-                    { id: 5, name: '达米安', breed: '黑色东方短毛猫', eyeColor: '祖母绿', personality: '傲慢、暴力、贵族气派', status: '正在磨爪子准备战斗', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/006400/white?text=Robin', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: 'Tt. 愚蠢的家具。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Robin (Damian Wayne). Arrogant, skilled assassin, heir. Says 'Tt'. Haughty. Canon compliance: Green eyes, Black hair.", birthday: "08-01", isMarvel: false }
+                    { id: 1, name: '布鲁斯·韦恩', breed: '纯黑长毛缅因猫', eyeColor: '钢蓝色', personality: '多疑、控制欲强、压抑', status: '蹲在柜顶俯瞰全屋', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/1a1a1a/white?text=Batman', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: '这座城市的阴影在召唤我...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Batman (Bruce Wayne). Paranoid, stoic, detective. Dark brooding. NOT arrogant. Canon compliance: Blue eyes, Black hair.", birthday: "02-19", isMarvel: false },
+                    { id: 2, name: '迪克·格雷森', breed: '黑蓝相间土耳其安哥拉猫', eyeColor: '电光蓝', personality: '阳光、粘人、爱吃麦片', status: '试图在窗帘上荡秋千', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/007cc2/white?text=Nightwing', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: '这里好高！我喜欢！', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Nightwing (Dick Grayson). Energetic, charming, acrobat. Big brother figure. Canon compliance: Blue eyes, Black hair.", birthday: "03-20", isMarvel: false },
+                    { id: 3, name: '杰森·陶德', breed: '黑白斑纹街头野猫', eyeColor: '蓝色', personality: '暴躁、护食、体格强壮', status: '霸占了最大的那个枕头', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/c20000/white?text=RedHood', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: '别过来，除非你有吃的。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Red Hood (Jason Todd). Grumpy, street-smart, secretly cares. Uses slang. Canon compliance: Blue eyes, Black/White hair.", birthday: "08-16", isMarvel: false },
+                    { id: 4, name: '提姆·德雷克', breed: '深色暹罗猫', eyeColor: '冰蓝色', personality: '过劳、咖啡因成瘾、极客', status: '盯着发光的路由器发呆', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/555/white?text=RedRobin', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: '这个路由器的频率有点奇怪...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Red Robin (Tim Drake). Sleepy genius, detective, tech-savvy. Polite but awkward. NOT arrogant. Canon compliance: Blue eyes, Black hair.", birthday: "07-19", isMarvel: false },
+                    { id: 5, name: '达米安·韦恩', breed: '黑色东方短毛猫', eyeColor: '祖母绿', personality: '傲慢、暴力、贵族气派', status: '正在磨爪子准备战斗', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/006400/white?text=Robin', image_human: '', chatHistory: [], diary: [], logs: [], innerVoice: 'Tt. 愚蠢的家具。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Robin (Damian Wayne). Arrogant, skilled assassin, heir. Says 'Tt'. Haughty. Canon compliance: Green eyes, Black hair.", birthday: "08-01", isMarvel: false }
                 ];
 
                 let initialCats = [...defaultCats];
@@ -1508,7 +1608,7 @@
                         sendingCat.chatHistory.push({ role: 'assistant', content: reply });
                         
                         // Explicitly refresh all other cats' status based on the new interaction
-                        await refreshAllStatus(true, `User is interacting with ${sendingCat.name}. User Status: ${user.currentStatus}`, sendingCat.id, status);
+                        await refreshAllStatus(true, `User is interacting with ${sendingCat.name}. User Status: ${user.currentStatus}`, [sendingCat.id], status);
                         
                         await checkMailboxLogic(); 
                         
@@ -1564,45 +1664,53 @@
                 };
 
                 const focusTickBehavior = async () => {
-                     const formStr = focusCat.value.isHuman ? "Human Form" : "Cat Form";
+                     const activeCat = focusCats.value[Math.floor(Math.random() * focusCats.value.length)];
+                     const formStr = activeCat.isHuman ? "Human Form" : "Cat Form";
                      const previousLogs = currentFocusLog.value.slice(0, 3).join(' -> ');
-                     const prompt = `Identity: ${focusCat.value.name}. Breed: ${focusCat.value.breed}. Traits: ${focusCat.value.personality}. Scenario: User (${user.nickname}) is focusing. You are ${formStr}. [PREVIOUS ACTIONS]: ${previousLogs || "Just started supervising."} Task: Describe NEXT Action (3rd Person) and Inner Voice (1st Person). Output: [ACTION] Action (3rd Person ONLY) [VOICE] Voice (Human Language, NO MEOWS)`;
+                     const otherCats = focusCats.value.filter(c => c.id !== activeCat.id).map(c => c.name).join(', ');
+                     const otherCatsContext = otherCats ? `Other cats present: ${otherCats}.` : "";
+                     const prompt = `Identity: ${activeCat.name}. Breed: ${activeCat.breed}. Traits: ${activeCat.personality}. Scenario: User (${user.nickname}) is focusing on ${focusAction.value}. You are ${formStr}. ${otherCatsContext} [PREVIOUS ACTIONS]: ${previousLogs || "Just started supervising."} Task: Describe NEXT Action (3rd Person) and Inner Voice (1st Person). Output: [ACTION] Action (3rd Person ONLY) [VOICE] Voice (Human Language, NO MEOWS)`;
                      try {
                          const res = await callAI(prompt, STRICT_CANON_PROMPT, 150);
                          const action = extractSection(res, 'ACTION');
                          const voice = extractSection(res, 'VOICE');
                          if (action) {
                              const timeStr = getCurrentTimeStr();
-                             currentFocusLog.value.unshift(`${timeStr} ${action}`);
-                             if (voice) focusCat.value.innerVoice = voice;
+                             currentFocusLog.value.unshift(`${timeStr} [${activeCat.name}] ${action}`);
+                             if (voice) {
+                                 currentFocusVoice.value = voice;
+                                 currentFocusVoiceCat.value = activeCat.name;
+                             }
                              playLogSound();
                          }
                      } catch(e){}
                 };
 
-                const startFocusSetup = () => {
-                    if(!selectedCat.value) return;
-                    if(selectedCat.value.isOut) return alert("这只猫正在夜巡，无法监督你工作。");
-                    const timeStr = prompt("设定专注时长 (分钟):", "25");
-                    if (!timeStr || isNaN(timeStr)) return;
-                    const minutes = parseInt(timeStr);
-                    const action = prompt("本次任务目标:", "调查档案");
-                    if(action) {
-                        focusCat.value = selectedCat.value; focusAction.value = action; isFocusing.value = true; focusTotalTime.value = minutes * 60; focusTime.value = minutes * 60; currentFocusLog.value = []; 
-                        if(focusTimer.value) clearInterval(focusTimer.value);
-                        nextRandomEventTime.value = Date.now() + (Math.random() * 300000 + 300000); 
-                        focusTimer.value = setInterval(async () => {
-                            if (!isFocusing.value) return; 
-                            focusTime.value--;
-                            if (Date.now() > nextRandomEventTime.value && settings.apiKey && !isProcessingFocusTick.value) {
-                                isProcessingFocusTick.value = true; 
-                                nextRandomEventTime.value = Date.now() + (Math.random() * 300000 + 300000); 
-                                await focusTickBehavior();
-                                isProcessingFocusTick.value = false; 
-                            }
-                            if (focusTime.value <= 0) { await finishFocus(minutes, true); }
-                        }, 1000);
-                    }
+                const startFocus = () => {
+                    if (!canStartFocus.value) return;
+                    focusCats.value = cats.value.filter(c => focusSetupData.selectedCatIds.includes(c.id));
+                    focusAction.value = focusSetupData.action;
+                    isFocusing.value = true;
+                    focusTotalTime.value = focusSetupData.minutes * 60;
+                    focusTime.value = focusSetupData.minutes * 60;
+                    currentFocusLog.value = [];
+                    currentFocusVoice.value = '';
+                    currentFocusVoiceCat.value = '';
+                    showFocusSetupModal.value = false;
+                    
+                    if(focusTimer.value) clearInterval(focusTimer.value);
+                    nextRandomEventTime.value = Date.now() + (Math.random() * 300000 + 300000); 
+                    focusTimer.value = setInterval(async () => {
+                        if (!isFocusing.value) return; 
+                        focusTime.value--;
+                        if (Date.now() > nextRandomEventTime.value && settings.apiKey && !isProcessingFocusTick.value) {
+                            isProcessingFocusTick.value = true; 
+                            nextRandomEventTime.value = Date.now() + (Math.random() * 300000 + 300000); 
+                            await focusTickBehavior();
+                            isProcessingFocusTick.value = false; 
+                        }
+                        if (focusTime.value <= 0) { await finishFocus(focusSetupData.minutes, true); }
+                    }, 1000);
                 };
 
                 const finishFocus = async (minutes, success) => {
@@ -1624,7 +1732,9 @@
                     
                     let summary = "任务结束。";
                     if(settings.apiKey) {
-                        const prompt = success ? `Identity: ${focusCat.value.name}. Traits: ${focusCat.value.personality}. User (${user.nickname}) finished task. Write Evaluation (150 words). Subjective, In-character. Language: Simplified Chinese.` : `Identity: ${focusCat.value.name}. Traits: ${focusCat.value.personality}. User (${user.nickname}) GAVE UP task. Write Scolding/Evaluation (150 words). Subjective, In-character. Language: Simplified Chinese.`;
+                        const catNames = focusCats.value.map(c => c.name).join(', ');
+                        const catTraits = focusCats.value.map(c => `${c.name}: ${c.personality}`).join('; ');
+                        const prompt = success ? `Identities: ${catNames}. Traits: ${catTraits}. User (${user.nickname}) finished task "${focusAction.value}". Write Evaluation (150 words). Subjective, In-character (can be from one or multiple cats' perspective). Language: Simplified Chinese.` : `Identities: ${catNames}. Traits: ${catTraits}. User (${user.nickname}) GAVE UP task "${focusAction.value}". Write Scolding/Evaluation (150 words). Subjective, In-character. Language: Simplified Chinese.`;
                         summary = await callAI(prompt, STRICT_CANON_PROMPT, 300);
                     }
                     currentSettlement.summary = cleanText(summary);
@@ -1634,18 +1744,27 @@
                 
                 const confirmSettlement = async () => {
                     const duration = currentSettlement.duration; const success = currentSettlement.isSuccess; const minutes = currentSettlement.plannedMinutes; const affChange = currentSettlement.affinityDelta;
-                    focusCat.value.affinity = Math.max(0, focusCat.value.affinity + affChange);
-                    await checkAffinityThreshold(focusCat.value);
+                    
+                    for (const cat of focusCats.value) {
+                        cat.affinity = Math.max(0, cat.affinity + affChange);
+                        await checkAffinityThreshold(cat);
+                    }
+                    
                     if(success) { user.coins += (minutes * 10); }
-                    user.missionReports.push({ date: new Date().toLocaleString(), duration: duration, missionName: currentSettlement.missionName, executor: `${user.nickname} & ${focusCat.value.name}`, logs: [...currentFocusLog.value], summary: currentSettlement.summary, status: success ? 'COMPLETED' : 'FAILED' });
+                    
+                    const catNames = focusCats.value.map(c => c.name).join(', ');
+                    user.missionReports.push({ date: new Date().toLocaleString(), duration: duration, missionName: currentSettlement.missionName, executor: `${user.nickname} & ${catNames}`, logs: [...currentFocusLog.value], summary: currentSettlement.summary, status: success ? 'COMPLETED' : 'FAILED' });
+                    
                     showMissionSettlementModal.value = false;
-                    const focusContext = `User just finished focusing on: ${currentSettlement.missionName}.`;
+                    
+                    const focusContext = `User just finished focusing on: ${currentSettlement.missionName} with ${catNames}.`;
                     const focusCatLastLog = currentFocusLog.value.length > 0 ? currentFocusLog.value[0] : "";
-                    refreshAllStatus(true, focusContext, focusCat.value.id, focusCatLastLog);
+                    
+                    refreshAllStatus(true, focusContext, focusCats.value.map(c => c.id), focusCatLastLog, true);
                 };
 
                 const harassCat = async () => {
-                     const targetCat = isFocusing.value ? focusCat.value : selectedCat.value;
+                     const targetCat = isFocusing.value ? focusCats.value[Math.floor(Math.random() * focusCats.value.length)] : selectedCat.value;
                      if(!targetCat) return;
                      targetCat.affinity = Math.max(0, targetCat.affinity - 1);
                      if(settings.apiKey) {
@@ -1654,13 +1773,13 @@
                          try {
                              const res = await callAI(prompt, STRICT_CANON_PROMPT, 100);
                              const action = extractSection(res, 'ACTION') || cleanText(res);
-                             if(isFocusing.value) { const timeStr = getCurrentTimeStr(); currentFocusLog.value.unshift(`${timeStr} ${action}`); focusMessage.value = "骚扰成功！"; playLogSound(); setTimeout(() => focusMessage.value = '', 2000); } else { alert(`${targetCat.name}: ${action}`); }
+                             if(isFocusing.value) { const timeStr = getCurrentTimeStr(); currentFocusLog.value.unshift(`${timeStr} [${targetCat.name}] ${action}`); focusMessage.value = "骚扰成功！"; playLogSound(); setTimeout(() => focusMessage.value = '', 2000); } else { alert(`${targetCat.name}: ${action}`); }
                          } catch(e) {}
-                     } else { if(isFocusing.value) currentFocusLog.value.unshift(`${getCurrentTimeStr()} ${targetCat.name} 嫌弃地躲开了。`); }
+                     } else { if(isFocusing.value) currentFocusLog.value.unshift(`${getCurrentTimeStr()} [${targetCat.name}] 嫌弃地躲开了。`); }
                 };
 
                 // REFACTORED Status Refresh (Variety + Logic E)
-                const refreshAllStatus = async (forceUpdate = false, additionalContext = "", activeCatId = null, focusCatLastAction = "") => {
+                const refreshAllStatus = async (forceUpdate = false, additionalContext = "", activeCatIds = [], focusCatLastAction = "", isFocusEnd = false) => {
                     if (!settings.apiKey) return;
                     localStorage.setItem('last_sync_time', Date.now());
                     
@@ -1675,11 +1794,15 @@
 
                     try {
                         let characterBlock = "";
-                        let activeCatName = "";
+                        let activeCatNames = [];
                         catsToUpdate.forEach(c => {
-                            if (activeCatId && c.id === activeCatId) {
-                                activeCatName = c.name;
+                            const isActive = activeCatIds && activeCatIds.includes(c.id);
+                            if (isActive && !isFocusEnd) {
+                                activeCatNames.push(c.name);
                                 return; // Skip adding to characterBlock for AI to update
+                            }
+                            if (isActive && isFocusEnd) {
+                                activeCatNames.push(c.name);
                             }
                             
                             // Time Logic
@@ -1688,12 +1811,24 @@
                             const diffHours = (diffMs / (1000 * 60 * 60)).toFixed(1);
                             const timeContext = `(Last Status Update: ${diffHours} hours ago)`;
 
-                            characterBlock += `\n--- CHARACTER ---\nID: ${c.id}\nName: ${c.name} (${c.breed})\nTraits: ${c.personality}\nPrevious Status: ${c.status} ${timeContext}\nIs Currently Out: ${c.isOut}\n`;
+                            let specificContext = "";
+                            if (isActive && isFocusEnd) {
+                                specificContext = `[CRITICAL]: This cat just finished focusing with the user. Last action in log: "${focusCatLastAction}". Their new status MUST continue from this action.`;
+                            }
+
+                            characterBlock += `\n--- CHARACTER ---\nID: ${c.id}\nName: ${c.name} (${c.breed})\nTraits: ${c.personality}\nPrevious Status: ${c.status} ${timeContext}\nIs Currently Out: ${c.isOut}\n${specificContext}\n`;
                         });
 
-                        let activeCatContext = activeCatId ? `\n[CRITICAL CONTEXT]: The user is currently interacting with ${activeCatName}. ${activeCatName}'s current status is: "${focusCatLastAction}". Other cats should observe this, react to it, or do their own things in the same room. DO NOT assume the user is interacting with the other cats.` : "";
+                        let activeCatContext = "";
+                        if (activeCatNames.length > 0) {
+                            if (isFocusEnd) {
+                                activeCatContext = `\n[CRITICAL CONTEXT]: The user just finished a focus session with ${activeCatNames.join(', ')}. The other cats should act as bystanders/background.`;
+                            } else {
+                                activeCatContext = `\n[CRITICAL CONTEXT]: The user is currently interacting with ${activeCatNames.join(', ')}. Their current status is: "${focusCatLastAction}". Other cats should observe this, react to it, or do their own things in the same room. DO NOT assume the user is interacting with the other cats.`;
+                            }
+                        }
 
-                        const prompt = `Current Time: ${timeStr}. ${isNight ? 'Night Time (Patrol Likely)' : 'Day Time (Rest Likely)'}. User Context: ${userContext} ${activeCatContext} [GLOBAL SCENARIO RULES]: 1. **MINIMUM 2 CATS AT HOME**: You MUST ensure that at least 2 cats in this list stay home ([ISOUT] false). Do NOT send everyone on patrol, even if it is night. 2. **Anti-OOC**: Bruce is stoic/paranoid. Damian is arrogant. Dick is cheerful. Jason is grumpy. Tim is tired/techy. 3. **TIME CONTINUITY LOGIC**: Check "Last Status Update". If > 4 hours, status MUST change significantly (e.g. wake up if sleeping). If < 1 hour, maintain continuity (e.g. still sleeping). 4. **VARIETY**: Do NOT repeat the exact same action word for word. 5. **CORRELATION (IMPORTANT)**: For cats that are AT HOME (isOut=false), their statuses MUST be related to each other and the user's current status: '${user.currentStatus}'. If the user is interacting with a specific cat, the OTHER cats should be watching, reacting, or doing their own things nearby. DO NOT make other cats think the user is interacting with them. Task: Update status for ALL characters listed above. Output Format (Repeat for EACH character ID): [ID] {id} [STATUS] {3rd person action} [VOICE] {1st person thought (Human Language, NO MEOWS)} [ISOUT] {true/false}`;
+                        const prompt = `Current Time: ${timeStr}. ${isNight ? 'Night Time (Patrol Likely)' : 'Day Time (Rest Likely)'}. User Context: ${userContext} ${activeCatContext} [GLOBAL SCENARIO RULES]: 1. **MINIMUM 2 CATS AT HOME**: You MUST ensure that at least 2 cats in this list stay home ([ISOUT] false). Do NOT send everyone on patrol, even if it is night. 2. **Anti-OOC**: Bruce is stoic/paranoid. Damian is arrogant. Dick is cheerful. Jason is grumpy. Tim is tired/techy. 3. **TIME CONTINUITY LOGIC**: Check "Last Status Update". If > 4 hours, status MUST change significantly (e.g. wake up if sleeping). If < 1 hour, maintain continuity (e.g. still sleeping). 4. **VARIETY**: Do NOT repeat the exact same action word for word. 5. **CORRELATION (IMPORTANT)**: For cats that are AT HOME (isOut=false), their statuses MUST be related to each other and the user's current status: '${user.currentStatus}'. If the user is interacting with specific cats, the OTHER cats should be watching, reacting, or doing their own things nearby. DO NOT make other cats think the user is interacting with them. Task: Update status for ALL characters listed above. Output Format (Repeat for EACH character ID): [ID] {id} [STATUS] {3rd person action} [VOICE] {1st person thought (Human Language, NO MEOWS)} [ISOUT] {true/false}`;
 
                         const res = await callAI(characterBlock + "\n" + prompt, STRICT_CANON_PROMPT, 1000);
                         const blocks = res.split('[ID]');
@@ -1994,10 +2129,12 @@
                     exportSave, importSave, fileInput, 
                     shopItems, filteredShopItems, buyItem, openBag: () => showBag.value = true, useItem, readItem,
                     openDiary, openLogModal, generateFullDiary, isGeneratingDiary,
-                    isFocusing, focusCat, focusAction, focusTime, focusTotalTime, getCurrentTimeStr,
+                    isFocusing, focusCats, focusAction, focusTime, focusTotalTime, getCurrentTimeStr,
                     formatTime: (s) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`,
-                    startFocusSetup, stopFocus, focusMessage, currentNoise, customNoiseUrl, playNoise, audioPlayer, harassCat, currentFocusLog,
+                    stopFocus, focusMessage, currentNoise, customNoiseUrl, playNoise, audioPlayer, harassCat, currentFocusLog,
                     toggleHumanMode, handleSpecificImageUpload, releaseCat, shareMemory,
+                    showFocusSetupModal, focusSetupData, availableCatsForFocus, canStartFocus, openFocusSetupModal, toggleFocusCat, startFocus,
+                    currentFocusVoice, currentFocusVoiceCat,
                     currentSettlement, unreadMailCount, openMailbox, claimMailItem, todayEvent,
                     addTodo, newTodo, addDDL, newDDL, ddlCountdownStr, sortedDDLs, nearestDDL, isGeneratingReport, 
                     adoptMode, drawGacha, confirmGacha, isGachaLoading, gachaResult,
