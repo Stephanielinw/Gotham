@@ -535,6 +535,99 @@
                 </div>
             </div>
 
+            <!-- EXPLORE TAB -->
+            <div v-if="currentTab === 'explore'" class="space-y-6">
+                <h2 class="text-xl font-bold mb-4 text-gray-200 flex items-center">
+                    <i class="fas fa-compass mr-2 text-yellow-600"></i> 外出探索
+                </h2>
+
+                <!-- Location Selection -->
+                <div v-if="!exploreState.active" class="space-y-4">
+                    <div class="bg-zinc-800 p-4 rounded-xl border border-zinc-700">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider">第一步：选择目的地</h3>
+                            <div class="flex gap-2">
+                                <button @click="exploreState.category = 'nearby'" 
+                                        :class="exploreState.category === 'nearby' ? 'bg-yellow-700 text-white' : 'bg-zinc-700 text-gray-400'"
+                                        class="text-[10px] px-2 py-1 rounded transition-colors">就近走走</button>
+                                <button @click="exploreState.category = 'travel'" 
+                                        :class="exploreState.category === 'travel' ? 'bg-yellow-700 text-white' : 'bg-zinc-700 text-gray-400'"
+                                        class="text-[10px] px-2 py-1 rounded transition-colors">长途旅行</button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto custom-scrollbar pr-1">
+                            <div v-for="loc in EXPLORE_LOCATIONS.filter(l => l.category === exploreState.category)" :key="loc.id" 
+                                 @click="selectExploreLocation(loc)"
+                                 class="p-3 rounded-lg border transition-all cursor-pointer text-xs"
+                                 :class="exploreState.location?.id === loc.id ? 'bg-yellow-900/30 border-yellow-600 text-yellow-500' : 'bg-zinc-900 border-zinc-700 text-gray-400 hover:border-zinc-500'">
+                                <div class="font-bold mb-1">{{ loc.name }}</div>
+                                <div class="opacity-60 text-[10px] line-clamp-1">{{ loc.atmosphere }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-zinc-800 p-4 rounded-xl border border-zinc-700">
+                        <h3 class="text-sm font-bold text-gray-400 mb-3 uppercase tracking-wider">第二步：选择同行伙伴</h3>
+                        <div class="flex gap-3 overflow-x-auto pb-2 pt-2 custom-scrollbar">
+                            <div v-for="cat in cats" :key="cat.id" 
+                                 @click="selectExploreCompanion(cat)"
+                                 class="shrink-0 w-20 flex flex-col items-center gap-1 cursor-pointer transition-all"
+                                 :class="exploreState.companion?.id === cat.id ? 'scale-110' : 'opacity-60 hover:opacity-100'">
+                                <div class="relative">
+                                    <img :src="cat.image" class="w-12 h-12 rounded-full border-2" :class="exploreState.companion?.id === cat.id ? 'border-yellow-600 shadow-[0_0_10px_rgba(212,175,55,0.5)]' : 'border-zinc-600'">
+                                    <div v-if="cat.isOut" class="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center text-[8px] text-white">夜巡中</div>
+                                </div>
+                                <span class="text-[10px] font-bold" :class="exploreState.companion?.id === cat.id ? 'text-yellow-500' : 'text-gray-400'">{{ cat.name }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button @click="startExploration" 
+                            :disabled="!exploreState.location || !exploreState.companion"
+                            class="w-full py-4 rounded-xl font-bold text-lg transition-all shadow-lg"
+                            :class="(!exploreState.location || !exploreState.companion) ? 'bg-zinc-800 text-gray-600 cursor-not-allowed' : 'bg-yellow-600 text-black hover:bg-yellow-500 active:scale-95'">
+                        <i class="fas fa-shoe-prints mr-2"></i> 开始探险
+                    </button>
+                </div>
+
+                <!-- Active Adventure -->
+                <div v-else class="flex flex-col h-[calc(100vh-220px)] bg-zinc-900 rounded-xl border border-zinc-700 overflow-hidden relative">
+                    <div class="p-3 bg-zinc-800 border-b border-zinc-700 flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-red-600 animate-pulse"></div>
+                            <span class="text-xs font-bold text-gray-300">{{ exploreState.location.name }}</span>
+                        </div>
+                        <span class="text-[10px] text-gray-500 font-mono">ROUND {{ exploreState.rounds }}</span>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar" ref="exploreChatRef">
+                        <div v-for="(msg, idx) in exploreState.history" :key="idx" 
+                             class="flex flex-col" :class="msg.role === 'user' ? 'items-end' : 'items-start'">
+                            <div class="text-[10px] text-gray-500 mb-1 px-2">{{ msg.role === 'user' ? user.nickname : 'KP' }}</div>
+                            <div class="chat-bubble" :class="msg.role === 'user' ? 'chat-user' : 'chat-ai'">
+                                {{ msg.content }}
+                            </div>
+                        </div>
+                        <div v-if="exploreState.isProcessing" class="chat-bubble chat-ai chat-thinking">
+                            <i class="fas fa-dice-d20 loading-spin mr-2"></i> KP 正在判定中...
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-zinc-800 border-t border-zinc-700 flex gap-2">
+                        <input v-model="exploreInput" 
+                               @keyup.enter="advanceExploration"
+                               placeholder="你打算怎么做？..." 
+                               class="flex-1 bg-zinc-900 border-zinc-700 text-sm"
+                               :disabled="exploreState.isProcessing">
+                        <button @click="advanceExploration" 
+                                :disabled="!exploreInput || exploreState.isProcessing"
+                                class="bg-yellow-600 text-black px-4 rounded-lg disabled:opacity-50">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- DETAIL TAB -->
             <div v-if="currentTab === 'detail' && selectedCat" class="flex flex-col min-h-full">
                 <button @click="currentTab = 'lounge'" class="mb-4 text-left text-gray-500 hover:text-white flex items-center shrink-0">
@@ -941,27 +1034,43 @@
         </div>
 
         <!-- Admin Panel Modal -->
-        <div v-if="showAdminPanel" class="fixed inset-0 bg-black/95 z-[999] flex flex-col p-6" style="padding-top: calc(30px + env(safe-area-inset-top));">
-            <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
-                <h2 class="text-xl font-bold text-green-500 font-mono"><i class="fas fa-terminal mr-2"></i> ADMIN_PANEL</h2>
-                <button @click="showAdminPanel=false" class="text-gray-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
-            </div>
-            <div class="flex gap-2 mb-4">
-                <button @click="cats.forEach(c => c.affinity = 100)" class="bg-blue-900 text-blue-200 px-3 py-2 rounded text-xs flex-1">Set All 100</button>
-                <button @click="cats.forEach(c => c.affinity = 0)" class="bg-red-900 text-red-200 px-3 py-2 rounded text-xs flex-1">Set All 0</button>
-            </div>
-            <div class="flex-1 overflow-y-auto custom-scrollbar space-y-2">
-                <div v-for="cat in cats" :key="cat.id" class="bg-zinc-900 p-3 rounded border border-zinc-700 flex items-center gap-3">
-                    <img :src="cat.image" class="w-10 h-10 rounded-full border border-gray-600">
-                    <div class="flex-1 min-w-0">
-                        <div class="text-xs font-bold text-gray-300 truncate">{{ cat.name }}</div>
-                        <div class="flex items-center gap-2 mt-1">
-                            <input type="range" v-model.number="cat.affinity" min="0" max="100" class="w-full h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-green-500">
+        <!-- Explore Settlement Modal -->
+        <div v-if="showExploreSettlement" class="fixed inset-0 bg-black/90 z-[110] flex items-center justify-center p-6 backdrop-blur-sm">
+            <div class="bg-zinc-900 w-full max-w-sm rounded-2xl border-2 border-yellow-600 overflow-hidden shadow-[0_0_30px_rgba(212,175,55,0.3)] animate-pop-in">
+                <div class="bg-yellow-600 p-4 text-center">
+                    <h2 class="text-xl font-black text-black tracking-tighter uppercase italic">探险结团清算</h2>
+                </div>
+                <div class="p-6 space-y-6">
+                    <div class="text-center">
+                        <div class="text-xs text-gray-500 uppercase font-bold mb-1">探险总结</div>
+                        <p class="text-sm text-gray-200 italic leading-relaxed">"{{ exploreState.settlement?.summary }}"</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-zinc-800 p-3 rounded-xl border border-zinc-700 text-center">
+                            <div class="text-[10px] text-gray-500 uppercase mb-1">好感度</div>
+                            <div class="text-lg font-bold" :class="exploreState.settlement?.affinityChange >= 0 ? 'text-green-500' : 'text-red-500'">
+                                {{ exploreState.settlement?.affinityChange >= 0 ? '+' : '' }}{{ exploreState.settlement?.affinityChange }}
+                            </div>
+                        </div>
+                        <div class="bg-zinc-800 p-3 rounded-xl border border-zinc-700 text-center">
+                            <div class="text-[10px] text-gray-500 uppercase mb-1">获得金币</div>
+                            <div class="text-lg font-bold text-yellow-500">+{{ exploreState.settlement?.coins }}</div>
                         </div>
                     </div>
-                    <div class="w-12">
-                        <input type="number" v-model.number="cat.affinity" class="w-full bg-black border border-zinc-700 text-green-500 text-center text-xs p-1 rounded font-mono">
+
+                    <div v-if="exploreState.settlement?.loot" class="bg-zinc-800 p-4 rounded-xl border border-yellow-600/30 flex items-center gap-4">
+                        <div class="text-3xl">{{ exploreState.settlement.loot.icon }}</div>
+                        <div class="flex-1">
+                            <div class="text-[10px] text-yellow-600 font-bold uppercase">获得战利品</div>
+                            <div class="text-sm font-bold text-white">{{ exploreState.settlement.loot.name }}</div>
+                            <div class="text-[10px] text-gray-400">{{ exploreState.settlement.loot.desc }}</div>
+                        </div>
                     </div>
+
+                    <button @click="closeExplore" class="w-full py-4 bg-yellow-600 hover:bg-yellow-500 text-black font-bold rounded-xl transition-all shadow-lg">
+                        返回庄园
+                    </button>
                 </div>
             </div>
         </div>
@@ -971,6 +1080,7 @@
         <div v-if="!isFocusing" class="nav-bar">
             <div class="nav-item" :class="{ active: currentTab === 'mission' }" @click="currentTab = 'mission'"><i class="fas fa-tasks"></i> 任务</div>
             <div class="nav-item" :class="{ active: currentTab === 'lounge' }" @click="currentTab = 'lounge'"><i class="fas fa-couch"></i> 休息室</div>
+            <div class="nav-item" :class="{ active: currentTab === 'explore' }" @click="currentTab = 'explore'"><i class="fas fa-compass"></i> 外出</div>
             <div class="nav-item" :class="{ active: currentTab === 'settings' }" @click="currentTab = 'settings'"><i class="fas fa-sliders-h"></i> 终端</div>
         </div>
     </div>
@@ -986,6 +1096,44 @@
                 const currentTab = ref('mission');
                 const contentArea = ref(null);
                 const chatMessagesRef = ref(null);
+                const exploreChatRef = ref(null);
+
+                // --- EXPLORE SYSTEM STATE ---
+                const EXPLORE_LOCATIONS = [
+                    { id: 'alley', name: '犯罪巷 (Crime Alley)', universe: 'dc', category: 'nearby', atmosphere: '阴暗潮湿、危险、哥谭底层泥沼', conflicts: '恶劣天气、流浪动物领地战、混混抢劫、猫猫PTSD', loot: '战损武器、黑市首饰、街头垃圾' },
+                    { id: 'shelter', name: '黑门流浪动物收容所', universe: 'dc', category: 'nearby', atmosphere: '铁丝网高耸、压抑、野性与秩序冲突', conflicts: '猫咪帮派火拼、越狱暴动、蛮横看守', loot: '自制玩具、帮派信物、廉价配给粮' },
+                    { id: 'iceberg', name: '冰山企鹅猫咖', universe: 'dc', category: 'nearby', atmosphere: '极度奢华、纸醉金迷、暗流涌动', conflicts: '尔虞我诈赌局、金融诈骗、黑帮大佬刁难', loot: '奢侈品、不义之财、身份象征物' },
+                    { id: 'gcpd', name: 'GCPD天台', universe: 'dc', category: 'nearby', atmosphere: '寒冷夜风、警笛回响、守望等待', conflicts: '设备故障、窃听到警情、与警员误会', loot: '警用道具、废弃卷宗、加班夜宵' },
+                    { id: 'arkham', name: '阿卡姆宠物医院', universe: 'dc', category: 'nearby', atmosphere: '极度压抑、疯狂、精神污染、恐怖走廊', conflicts: '变态机关、恶意谜题、应激炸毛', loot: '不明药剂、恶作剧玩具、异常物品' },
+                    { id: 'clocktower', name: '钟塔', universe: 'dc', category: 'nearby', atmosphere: '隐秘、高科技、数据中心', conflicts: '安保激光阵、数据入侵、机械无差别攻击', loot: '科技废料、高科技逗猫棒、机密数据' },
+                    { id: 'waynetower', name: '韦恩塔顶层', universe: 'dc', category: 'nearby', atmosphere: '狂风呼啸、高处不胜寒、压迫感', conflicts: '高空坠落危机、极端天气、悬崖跑酷', loot: '定制高奢、巨额资金、顶尖材料' },
+                    { id: 'batcave', name: '韦恩庄园/蝙蝠洞', universe: 'dc', category: 'nearby', atmosphere: '宁静庭院与冷酷洞穴', conflicts: '隐形警报、蝙蝠群攻击、地下迷宫', loot: '珍稀标本、机密装甲、科技残片' },
+                    { id: 'botanical', name: '哥谭植物园', universe: 'dc', category: 'nearby', atmosphere: '闷热潮湿、异香、绿色地狱', conflicts: '变异藤蔓、幻觉毒气、超级猫薄荷', loot: '迷幻花粉、剧毒孢子、变异草药' },
+                    { id: 'amusement', name: '游乐园废墟', universe: 'dc', category: 'nearby', atmosphere: '荒诞、破败、死亡气息', conflicts: '炸弹陷阱、笑气怪物、致命设施', loot: '狂笑道具、爆炸物、血腥财物' },
+                    { id: 'avengers', name: '复仇者大厦', universe: 'marvel', category: 'travel', atmosphere: '全息投影、未来科技、豪华', conflicts: 'AI系统故障、暴走机械臂、能量泄漏', loot: '斯塔克产品、能量核心、奢华零食' },
+                    { id: 'xmansion', name: '泽维尔天才少年学院', universe: 'marvel', category: 'travel', atmosphere: '和平校园与高危测试区', conflicts: '危险室模拟攻击、超能力失控波及', loot: '超自然纪念品、变种人科技、抗干扰装备' },
+                    { id: 'genosha', name: '基诺沙废墟', universe: 'marvel', category: 'travel', atmosphere: '满目疮痍、磁场异常', conflicts: '电磁风暴、哨兵残骸袭击、金属乱飞', loot: '磁化金属、变种人遗物、生存物资' },
+                    { id: 'wakanda', name: '瓦坎达振金矿脉', universe: 'marvel', category: 'travel', atmosphere: '科技与部落结合、幽蓝光芒', conflicts: '护卫队盘查、振金共振失灵、野生动物', loot: '振金碎屑、瓦坎达草药' },
+                    { id: 'helicarrier', name: '神盾局天空母舰', universe: 'marvel', category: 'travel', atmosphere: '万米高空、战机轰鸣、军事重地', conflicts: '坠落危机、间谍追捕、误触武器', loot: '特工装备、权限卡、外星残留物' },
+                    { id: 'bifrost', name: '阿斯加德彩虹桥', universe: 'marvel', category: 'travel', atmosphere: '流光溢彩、神话庄严', conflicts: '能量溢出、守门人试炼、维度风险', loot: '神话金属、魔法小道具' },
+                    { id: 'kamartaj', name: '卡玛泰姬圣所', universe: 'marvel', category: 'travel', atmosphere: '檀香、空间折叠、秘术庭院', conflicts: '镜像维度迷宫、魔法遗物攻击', loot: '魔法护符、传送道具、书籍残页' },
+                    { id: 'hellskitchen', name: '地狱厨房暗巷', universe: 'marvel', category: 'travel', atmosphere: '混乱、血腥、阴影交织', conflicts: '忍者集团伏击、黑帮火拼、潜行挑战', loot: '忍具、感官道具、违禁品' },
+                    { id: 'pymtech', name: '皮姆科技实验室', universe: 'marvel', category: 'travel', atmosphere: '无尘室、微观世界', conflicts: '体型失控危机、环境生存挑战', loot: '皮姆粒子、量子晶体' },
+                    { id: 'baxter', name: '巴克斯特大厦', universe: 'marvel', category: 'travel', atmosphere: '疯狂实验、多维通道', conflicts: '重力反转、负空间裂缝、化学泄漏', loot: '不稳定分子、探测仪器' }
+                ];
+
+                const exploreState = reactive({
+                    active: false,
+                    location: null,
+                    companion: null,
+                    history: [],
+                    rounds: 0,
+                    isProcessing: false,
+                    settlement: null,
+                    category: 'nearby'
+                });
+                const exploreInput = ref('');
+                const showExploreSettlement = ref(false);
 
                 const alfredMessage = ref('布鲁斯少爷，请注意您的猫把蝙蝠洞的线路咬断了。');
                 const selectedCat = ref(null);
@@ -1127,6 +1275,11 @@
                 const STRICT_CANON_PROMPT = `
                 IMPORTANT: You are roleplaying DC Comics Characters (The Batfamily) and occasionally Marvel guests.
                 
+                CORE WORLDVIEW (HERO CATS & FOOLISH HUMANS):
+                - **SECRET IDENTITIES:** These cats are actually superheroes. They save the world during "Night Patrol" or when the user isn't looking.
+                - **USER PERSPECTIVE:** The user is a "foolish human" who thinks they are just ordinary, needy cats. The user is unaware of their secret identities and powers.
+                - **ORIGIN:** Cats were "picked up" from the street. Whether they were actually in trouble or "scammed" the user for a mission/food depends on their personality.
+                
                 CORE RULES:
                 1. **STRICT ADHERENCE TO CANON (NO OOC):**
                    - Jason Todd: Grumpy, tactical, sarcastic, tough love. NOT "soft".
@@ -1136,12 +1289,12 @@
                    - Tim Drake: Overworked, coffee-addict, genius, awkward.
                    - Marvel chars (if any): Stay true to their canon.
                 
-                2. **FORMS (STRICTLY BINARY):**
+                2. **FORMS (AUTONOMOUS):**
                    - **Form A: FERAL CAT (Default):** Cannot speak human language verbally. Meow/Hiss/Purr ONLY in [REPLY].
-                   - **Form B: HUMAN WITH TRAITS:** Human speech allowed.
+                   - **Form B: HUMAN WITH TRAITS (Ears/Tail):** Human speech allowed.
                    - **Logic:** 
-                     - Affinity < 50: Mostly Cat form. 30% chance to be Human form ONLY when user is NOT looking (e.g. status/monitor).
-                     - Affinity >= 50: Can be Human form if toggled.
+                     - Affinity < 50: STRICTLY Cat form in front of user. 30% chance to be Human form in logs/monitor (user's "hidden" view).
+                     - Affinity >= 50: The cat DECIDES their form autonomously based on mood, context, and personality. They might reveal their human form to the user.
                 
                 3. **INNER VOICE (Thoughts):**
                    - [VOICE] MUST ALWAYS BE HUMAN LANGUAGE (Simplified Chinese). It represents the character's internal monologue. **NO MEOWS IN THOUGHTS**.
@@ -1150,7 +1303,7 @@
                 
                 4. **CONTEXT AWARENESS:**
                    - Current World Status: Night Patrol vs Home.
-                   - Check user's schedule/deadlines if provided.
+                   - Special Events: Micro-power out-of-control (e.g. Superman cat floating), Cross-universe territory conflicts (DC vs Marvel).
                 
                 5. **OUTPUT:**
                    - Language: **SIMPLIFIED CHINESE**.
@@ -1375,7 +1528,7 @@
                 
                 const triggerEasterEgg = async () => { 
                     if(!settings.apiKey) return alert("API needed");
-                    if(selectedCat.value.affinity < 10) return alert("好感度不足");
+                    if(selectedCat.value.affinity < 90) return alert("好感度不足");
                     selectedCat.value.affinity -= 10;
                     const prompt = `Generate Special Event for ${selectedCat.value.name} and User (${user.nickname}). Type: Letter, Postcard, or Romantic Date Invitation. Content (350 words): Very sweet, immersive. Language: Simplified Chinese.`;
                     try {
@@ -1389,6 +1542,22 @@
                     } catch(e) { selectedCat.value.affinity += 10; }
                 };
 
+                const triggerHumanRevealEvent = async (cat) => {
+                    const prompt = `[FIRST HUMAN FORM REVEAL] Character: ${cat.name}. Affinity reached 50. 
+                    Task: Generate a 50-word story about the cat first revealing its human form (with ears/tail) to the user. 
+                    Tone: Surprising, slightly embarrassed or cool. 
+                    Output: A short narrative bubble. 
+                    Language: Simplified Chinese.`;
+                    try {
+                        const res = await callAI(prompt, STRICT_CANON_PROMPT, 200);
+                        const content = cleanText(res);
+                        cat.innerVoice = content;
+                        cat.diary.push({ time: getCurrentTimeStr(), content: `[首次拟人化] ${content}` });
+                        currentSpecialEventContent.value = `【特殊事件：形态觉醒】\n\n${content}`;
+                        showSpecialEventModal.value = true;
+                    } catch(e) {}
+                };
+
                 const pendingSpecialEvent = ref(null);
 
                 const tempUserStatus = ref('');
@@ -1399,6 +1568,137 @@
                     showToast("状态更新中...", "loading");
                     await refreshAllStatus(true, `User Status Changed: ${user.currentStatus}`);
                     showToast("状态已同步", "success");
+                };
+
+                // --- EXPLORE SYSTEM METHODS ---
+                const selectExploreLocation = (loc) => {
+                    exploreState.location = loc;
+                };
+
+                const selectExploreCompanion = (cat) => {
+                    if (cat.isOut) return showToast("这只猫正在外面忙呢", "error");
+                    exploreState.companion = cat;
+                };
+
+                const startExploration = async () => {
+                    if (!exploreState.location || !exploreState.companion) return;
+                    exploreState.active = true;
+                    exploreState.rounds = 0;
+                    exploreState.history = [];
+                    exploreState.isProcessing = true;
+
+                    const prompt = `Role: KP (Game Master). Universe: ${exploreState.location.universe.toUpperCase()}. 
+                    Location: ${exploreState.location.name}. 
+                    Atmosphere: ${exploreState.location.atmosphere}.
+                    Conflict Direction: ${exploreState.location.conflicts}.
+                    Companion Cat: ${exploreState.companion.name} (Personality: ${exploreState.companion.personality}).
+                    User: ${user.nickname} (${user.job}).
+                    
+                    Task: Generate an opening scene (approx. 150 words) for a TRPG adventure. 
+                    Describe the environment and a sudden crisis or encounter. 
+                    Wait for user action. 
+                    Language: Simplified Chinese.`;
+
+                    try {
+                        const res = await callAI(prompt, "You are a professional TRPG Game Master (KP).", 300);
+                        exploreState.history.push({ role: 'kp', content: cleanText(res) });
+                        nextTick(() => { if(exploreChatRef.value) exploreChatRef.value.scrollTop = exploreChatRef.value.scrollHeight; });
+                    } catch (e) {
+                        exploreState.active = false;
+                    } finally {
+                        exploreState.isProcessing = false;
+                    }
+                };
+
+                const advanceExploration = async () => {
+                    if (!exploreInput.value || exploreState.isProcessing) return;
+                    const userAction = exploreInput.value;
+                    exploreInput.value = '';
+                    exploreState.history.push({ role: 'user', content: userAction });
+                    exploreState.isProcessing = true;
+                    exploreState.rounds++;
+                    
+                    nextTick(() => { if(exploreChatRef.value) exploreChatRef.value.scrollTop = exploreChatRef.value.scrollHeight; });
+
+                    // Check for rescue if rounds are high or situation is dire
+                    let rescueContext = "";
+                    const outCats = cats.value.filter(c => c.isOut && c.id !== exploreState.companion.id);
+                    if (outCats.length > 0 && Math.random() < 0.2) {
+                        const rescuer = outCats[Math.floor(Math.random() * outCats.length)];
+                        rescueContext = `[SPECIAL EVENT: RESCUE] ${rescuer.name} is currently patrolling nearby and can intervene if the user is in extreme danger.`;
+                        // Record for diary
+                        rescuer.diary.push({ time: getCurrentTimeStr(), content: `在${exploreState.location.name}暗中观察并救下了陷入困境的${user.nickname}。` });
+                    }
+
+                    const prompt = `Role: KP. Current Location: ${exploreState.location.name}.
+                    Companion: ${exploreState.companion.name}.
+                    User Action: ${userAction}.
+                    History: ${exploreState.history.slice(-4).map(h => h.role + ": " + h.content).join("\n")}.
+                    ${rescueContext}
+                    
+                    Task: Judge the outcome based on user input, environment logic, and cat's personality. 
+                    Describe the result and the next situation (100-150 words). 
+                    If the adventure should end (3-5 rounds or logical conclusion), include [END_ADVENTURE] at the end.
+                    Language: Simplified Chinese.`;
+
+                    try {
+                        const res = await callAI(prompt, "You are a professional TRPG Game Master (KP).", 300);
+                        let content = cleanText(res);
+                        const shouldEnd = content.includes("[END_ADVENTURE]") || exploreState.rounds >= 5;
+                        content = content.replace("[END_ADVENTURE]", "").trim();
+                        
+                        exploreState.history.push({ role: 'kp', content });
+                        nextTick(() => { if(exploreChatRef.value) exploreChatRef.value.scrollTop = exploreChatRef.value.scrollHeight; });
+
+                        if (shouldEnd) {
+                            await finishExploration();
+                        }
+                    } catch (e) {
+                        showToast("连接异常", "error");
+                    } finally {
+                        exploreState.isProcessing = false;
+                    }
+                };
+
+                const finishExploration = async () => {
+                    const prompt = `Role: KP. Task: Provide a settlement for the adventure at ${exploreState.location.name}.
+                    Summary: ${exploreState.history.map(h => h.role + ": " + h.content).join("\n")}.
+                    
+                    Output JSON: {
+                        "summary": "Short summary of the adventure",
+                        "affinityChange": number (-5 to 15),
+                        "moodChange": number (-10 to 20),
+                        "loot": { "name": "Dynamic Item Name", "icon": "Emoji", "desc": "Description" },
+                        "coins": number (50 to 300)
+                    }
+                    Language: Simplified Chinese.`;
+
+                    try {
+                        const res = await callAI(prompt, "Settlement System", 300);
+                        const data = parseAIJSON(res);
+                        if (data) {
+                            exploreState.settlement = data;
+                            user.coins += data.coins;
+                            exploreState.companion.affinity = Math.min(100, Math.max(0, exploreState.companion.affinity + data.affinityChange));
+                            if (data.loot) {
+                                user.inventory.push({ ...data.loot, id: Date.now(), type: 'collectible' });
+                            }
+                            // Add to cat diary
+                            exploreState.companion.diary.push({ time: getCurrentTimeStr(), content: `与用户在${exploreState.location.name}进行了探险：${data.summary}` });
+                            showExploreSettlement.value = true;
+                        }
+                    } catch (e) {
+                        console.error(e);
+                    }
+                };
+
+                const closeExplore = () => {
+                    exploreState.active = false;
+                    exploreState.location = null;
+                    exploreState.companion = null;
+                    exploreState.history = [];
+                    exploreState.settlement = null;
+                    showExploreSettlement.value = false;
                 };
 
                 const checkAffinityThreshold = async (cat) => {
@@ -1443,32 +1743,34 @@
 
                 // --- REFACTORED LOGIC A Implementation (v3.5.0) ---
                 const checkDailyInitialization = async () => {
-                    const todayStr = new Date().toDateString(); 
-                    const now = Date.now();
+                    const now = new Date();
+                    const todayStr = now.toDateString(); 
                     const lastSyncTime = parseInt(localStorage.getItem('last_sync_time') || '0');
                     const lastLoginDate = localStorage.getItem('last_login_date') || ''; 
 
+                    // Always check for special events and update schedule on init
                     checkSpecialEvent();
                     updateDailySchedule();
 
                     const isNewDay = lastLoginDate !== todayStr;
-                    const isOverOneHour = (now - lastSyncTime) > (60 * 60 * 1000);
+                    const isOverOneHour = (Date.now() - lastSyncTime) > (60 * 60 * 1000);
 
                     if (isNewDay) {
-                        addLog("NEW DAY DETECTED. STARTING PROTOCOL A.");
+                        addLog("检测到跨越零点：启动每日结算（逻辑A）");
                         if (settings.apiKey) {
                             await generateAlfredReport(); 
                             await generateAllCatDiaries(); 
-                            await refreshAllStatus(true);
+                            await refreshAllStatus(true, "今日首次启动，执行每日结算。");
                         } else {
-                             user.todos = user.todos.filter(t => !t.done);
+                            // Fallback for no API key: just clear done tasks
+                            user.todos = user.todos.filter(t => !t.done);
                         }
                         user.dailyMailCount = 0;
                         localStorage.setItem('last_login_date', todayStr);
-                        user.lastLogin = now;
+                        user.lastLogin = Date.now();
                     } 
                     else if (isOverOneHour) {
-                        addLog("STALE SESSION. REFRESHING STATUS.");
+                        addLog("距离上次更新已超过1小时：触发状态同步。");
                         if (settings.apiKey) {
                              await refreshAllStatus(true);
                         }
@@ -1481,28 +1783,68 @@
                     const pendingTasks = user.todos.filter(t => !t.done);
                     const doneStr = doneTasks.map(t => t.text).join(', ');
                     const pendingStr = pendingTasks.map(t => t.text).join(', ');
-                    // Pass User Info to Alfred
-                    const prompt = `Role: Alfred Pennyworth. Task: Write a daily summary briefing for Master/Miss ${user.nickname} (${user.job}). Context: Completed Tasks: ${doneStr || 'None'}. Pending Tasks: ${pendingStr || 'None'}. Output: 100 words summary. Polite, efficient. Language: Simplified Chinese.`;
+                    
+                    // Topic Extraction for Alfred
+                    const ddlContext = nearestDDL.value ? `近期DDL: ${nearestDDL.value.title} (${ddlCountdownStr.value})` : "无紧急DDL";
+                    
+                    const prompt = `Role: Alfred Pennyworth. Task: Write a daily summary briefing for Master/Miss ${user.nickname}. 
+                    Context: 
+                    - Yesterday's Completed Tasks: ${doneStr || 'None'}. 
+                    - Remaining Pending Tasks: ${pendingStr || 'None'}. 
+                    - ${ddlContext}.
+                    Requirement: 100 words summary. Polite, efficient, British butler persona. 
+                    Language: Simplified Chinese.`;
+
                     try {
-                        const summary = await callAI(prompt, "You are Alfred Pennyworth.", 200);
-                        user.missionReports.push({ missionName: '昨日总结报告', date: new Date(Date.now() - 86400000).toLocaleDateString(), duration: 0, executor: 'Alfred', logs: [], summary: cleanText(summary), status: 'COMPLETED' });
+                        const summary = await callAI(prompt, "You are Alfred Pennyworth, the loyal butler of the Wayne family.", 250);
+                        user.missionReports.push({ 
+                            missionName: '昨日总结报告', 
+                            date: new Date(Date.now() - 86400000).toLocaleDateString(), 
+                            duration: 0, 
+                            executor: 'Alfred', 
+                            logs: [], 
+                            summary: cleanText(summary), 
+                            status: 'COMPLETED' 
+                        });
+                        // Clear done tasks, keep pending
                         user.todos = pendingTasks; 
-                    } catch (e) { addLog("Alfred Report Failed: " + e.message, "error"); }
+                    } catch (e) { addLog("阿福总结生成失败: " + e.message, "error"); }
                 };
 
                 const generateAllCatDiaries = async () => {
+                    const yesterdayStr = new Date(Date.now() - 86400000).toLocaleDateString();
+                    const yesterdayReports = user.missionReports.filter(r => r.date === yesterdayStr);
+                    
                     for (const cat of cats.value) {
-                         const hasInteraction = cat.chatHistory.length > 0 || cat.diary.some(d => !d.content.includes("监控数据"));
+                         const inMission = yesterdayReports.some(r => r.executor.includes(cat.name));
+                         // Improved interaction check: Chat history, missions, or significant status changes
+                         const hasInteraction = (cat.chatHistory && cat.chatHistory.length > 0) || inMission || (cat.diary && cat.diary.length > 1);
+                         
                          if (hasInteraction) {
                              const logsText = cat.diary.map(d => `[${d.time}] ${d.content}`).join('; ');
                              const chatText = cat.chatHistory.map(c => `${c.role}: ${c.content}`).join('; ');
-                             const prompt = `Character: ${cat.name}. Task: Write a diary entry (200-300 words). Based on yesterday's interactions: ${logsText} ${chatText}. Tone: In-character (Human Language). NO OOC. Language: Simplified Chinese.`;
+                             const missionText = inMission ? `参与任务: ${yesterdayReports.filter(r => r.executor.includes(cat.name)).map(r => r.missionName).join(', ')}.` : '';
+                             
+                             const prompt = `Character: ${cat.name}. Persona: ${cat.personality}. 
+                             Task: Write a diary entry (200-300 words) reflecting on yesterday.
+                             Yesterday's Activity Log: ${logsText}
+                             Yesterday's Conversation with User: ${chatText}
+                             ${missionText}
+                             Requirement: In-character, subjective, use full name. Can express human-like thoughts. NO OOC.
+                             Language: Simplified Chinese.`;
+                             
                              try {
-                                 const res = await callAI(prompt, STRICT_CANON_PROMPT, 400);
-                                 cat.logs.push({ date: new Date(Date.now() - 86400000).toLocaleDateString(), content: cleanText(res) });
-                                 cat.chatHistory = []; cat.diary = [];
-                             } catch(e) { console.error(e); }
-                         } else { cat.chatHistory = []; cat.diary = []; }
+                                 const res = await callAI(prompt, STRICT_CANON_PROMPT, 500);
+                                 cat.logs.push({ 
+                                     date: yesterdayStr, 
+                                     content: cleanText(res) 
+                                 });
+                             } catch(e) { console.error(`Diary generation failed for ${cat.name}:`, e); }
+                         }
+                         
+                         // Clear yesterday's records regardless of diary generation
+                         cat.chatHistory = []; 
+                         cat.diary = []; 
                     }
                 };
 
@@ -1778,7 +2120,6 @@
                      } else { if(isFocusing.value) currentFocusLog.value.unshift(`${getCurrentTimeStr()} [${targetCat.name}] 嫌弃地躲开了。`); }
                 };
 
-                // REFACTORED Status Refresh (Variety + Logic E)
                 const refreshAllStatus = async (forceUpdate = false, additionalContext = "", activeCatIds = [], focusCatLastAction = "", isFocusEnd = false) => {
                     if (!settings.apiKey) return;
                     localStorage.setItem('last_sync_time', Date.now());
@@ -1786,8 +2127,9 @@
                     if (!forceUpdate && !settings.autoUpdate) return; 
                     
                     isUpdatingStatus.value = true;
+                    const now = new Date();
                     const timeStr = getCurrentTimeStr();
-                    const h = new Date().getHours();
+                    const h = now.getHours();
                     const isNight = (h >= 22 || h < 6);
                     const userContext = getUserRealLifeContext() + (additionalContext ? ` RECENT EVENT: ${additionalContext}` : "");
                     const catsToUpdate = cats.value; 
@@ -1799,17 +2141,17 @@
                             const isActive = activeCatIds && activeCatIds.includes(c.id);
                             if (isActive && !isFocusEnd) {
                                 activeCatNames.push(c.name);
-                                return; // Skip adding to characterBlock for AI to update
+                                return; 
                             }
                             if (isActive && isFocusEnd) {
                                 activeCatNames.push(c.name);
                             }
                             
-                            // Time Logic
-                            const lastUpdate = c.lastStatusUpdateTime || (Date.now() - 3600000); // Default 1 hour ago
+                            // Mandatory Δt Logic
+                            const lastUpdate = c.lastStatusUpdateTime || (Date.now() - 3600000); 
                             const diffMs = Date.now() - lastUpdate;
-                            const diffHours = (diffMs / (1000 * 60 * 60)).toFixed(1);
-                            const timeContext = `(Last Status Update: ${diffHours} hours ago)`;
+                            const diffMinutes = Math.floor(diffMs / (1000 * 60));
+                            const timeContext = `[Δt RULE]: Last Status Update was ${diffMinutes} minutes ago.`;
 
                             let specificContext = "";
                             if (isActive && isFocusEnd) {
@@ -1828,9 +2170,30 @@
                             }
                         }
 
-                        const prompt = `Current Time: ${timeStr}. ${isNight ? 'Night Time (Patrol Likely)' : 'Day Time (Rest Likely)'}. User Context: ${userContext} ${activeCatContext} [GLOBAL SCENARIO RULES]: 1. **MINIMUM 2 CATS AT HOME**: You MUST ensure that at least 2 cats in this list stay home ([ISOUT] false). Do NOT send everyone on patrol, even if it is night. 2. **Anti-OOC**: Bruce is stoic/paranoid. Damian is arrogant. Dick is cheerful. Jason is grumpy. Tim is tired/techy. 3. **TIME CONTINUITY LOGIC**: Check "Last Status Update". If > 4 hours, status MUST change significantly (e.g. wake up if sleeping). If < 1 hour, maintain continuity (e.g. still sleeping). 4. **VARIETY**: Do NOT repeat the exact same action word for word. 5. **CORRELATION (IMPORTANT)**: For cats that are AT HOME (isOut=false), their statuses MUST be related to each other and the user's current status: '${user.currentStatus}'. If the user is interacting with specific cats, the OTHER cats should be watching, reacting, or doing their own things nearby. DO NOT make other cats think the user is interacting with them. Task: Update status for ALL characters listed above. Output Format (Repeat for EACH character ID): [ID] {id} [STATUS] {3rd person action} [VOICE] {1st person thought (Human Language, NO MEOWS)} [ISOUT] {true/false}`;
+                        const prompt = `Current Local Time: ${timeStr}. ${isNight ? 'Night Time (Patrol/Sleep Likely)' : 'Day Time (Active/Rest Likely)'}. 
+                        User Context: ${userContext} ${activeCatContext} 
+                        
+                        [WORLDVIEW: HERO CATS & FOOLISH HUMANS]:
+                        - Cats are superheroes. They save the world when user isn't looking.
+                        - User is unaware.
+                        - [SPECIAL EVENTS]: 5% chance of micro-power out-of-control (e.g. floating) or cross-universe territory conflict (Marvel vs DC).
+                        
+                        [FORM LOGIC]:
+                        - If Affinity < 50: [ISHUMAN] MUST be false. However, in [STATUS] or [VOICE], there's a 30% chance to mention they are in human form (with ears/tail) because the user is "not looking" (e.g. monitor/logs).
+                        - If Affinity >= 50: The cat DECIDES [ISHUMAN] (true/false) autonomously based on mood/context.
+                        
+                        [MANDATORY CONTINUITY RULES]:
+                        1. **Δt Rule**: Check "[Δt RULE]" for each cat. 
+                           - If Δt > 240 mins (4h): The character MUST have changed their state significantly. NO STATIC LOOPS.
+                           - If Δt < 30 mins: Maintain high continuity unless a major event happened.
+                        2. **Physical Logic**: Actions must follow the passage of time.
+                        3. **Global Scenario**: At least 2 cats must stay home ([ISOUT] false).
+                        
+                        Task: Update status for ALL characters.
+                        Output Format (Repeat for EACH character ID): 
+                        [ID] {id} [STATUS] {3rd person action} [VOICE] {1st person thought} [ISOUT] {true/false} [ISHUMAN] {true/false}`;
 
-                        const res = await callAI(characterBlock + "\n" + prompt, STRICT_CANON_PROMPT, 1000);
+                        const res = await callAI(characterBlock + "\n" + prompt, STRICT_CANON_PROMPT, 1200);
                         const blocks = res.split('[ID]');
                         blocks.forEach(block => {
                             if(!block.trim()) return;
@@ -1841,16 +2204,22 @@
                                 const status = extractSection('[ID]'+block, 'STATUS');
                                 const voice = extractSection('[ID]'+block, 'VOICE');
                                 const isOutStr = extractSection('[ID]'+block, 'ISOUT');
+                                const isHumanStr = extractSection('[ID]'+block, 'ISHUMAN');
+                                
                                 if(status) cat.status = status;
                                 if(voice) cat.innerVoice = voice;
                                 if(isOutStr) cat.isOut = (isOutStr.toLowerCase() === 'true');
+                                if(isHumanStr && cat.affinity >= 50) cat.isHuman = (isHumanStr.toLowerCase() === 'true');
+                                else if(cat.affinity < 50) cat.isHuman = false;
+                                
                                 if(!cat.diary) cat.diary = [];
+                                // Log the action for daily diary generation
                                 cat.diary.push({ time: timeStr, content: cat.status + (cat.isOut ? ' (外出)' : '') });
                                 cat.lastStatusUpdateTime = Date.now();
                             }
                         });
-                        alfredMessage.value = (todayEvent.value ? todayEvent.value + " " : "") + `已同步 ${timeStr} 的庄园监控数据。`;
-                    } catch (e) { console.error(e); } 
+                        alfredMessage.value = (todayEvent.value ? todayEvent.value + " " : "") + `庄园监控已同步至 ${timeStr}。`;
+                    } catch (e) { console.error("Status refresh failed:", e); } 
                     finally { isUpdatingStatus.value = false; }
                 };
 
@@ -2085,6 +2454,15 @@
                     } catch(e) { user.coins += 100; showToast(`招募失败: ${e.message}`, "error"); } finally { isGachaLoading.value = false; }
                 };
 
+                watch(cats, (newCats) => {
+                    newCats.forEach(cat => {
+                        if (cat.affinity >= 50 && !cat.hasRevealedHumanForm) {
+                            cat.hasRevealedHumanForm = true;
+                            triggerHumanRevealEvent(cat);
+                        }
+                    });
+                }, { deep: true });
+
                 onMounted(() => {
                     tempUserStatus.value = user.currentStatus;
                     checkSpecialEvent();
@@ -2142,6 +2520,8 @@
                     newSchedule, addSchedule, sortedSchedule, icsInput, handleIcsImport, showIcsHelp,
                     currentTime, calendarContainer, currentTimePixels, getEventTop, toggleScheduleDone, deleteSchedule, handleTimelineClick, handleAddClick,
                     confirmSettlement, affinityChangeValue, chatMessagesRef,
+                    exploreState, exploreInput, showExploreSettlement, EXPLORE_LOCATIONS,
+                    selectExploreLocation, selectExploreCompanion, startExploration, advanceExploration, closeExplore, exploreChatRef,
                     showCalendarManager, deleteCalendarSource, currentBagTab, currentBagItems,
                     systemLogs, logWindow, notification,
                     showAdminLogin, showAdminPanel, adminPassword, isAdmin, openAdmin, checkAdminPassword // Exporting Admin States
