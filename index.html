@@ -1587,20 +1587,22 @@
                     exploreState.history = [];
                     exploreState.isProcessing = true;
 
-                    const prompt = `Role: KP (Game Master). Universe: ${exploreState.location.universe.toUpperCase()}. 
+                    const prompt = `[CONTEXT: CASUAL OUTING] The user (${user.nickname}) is just taking their cat (${exploreState.companion.name}) out for a walk/adventure today. No specific mission or job, just a pure outing.
+                    
+                    Universe: ${exploreState.location.universe.toUpperCase()}. 
                     Location: ${exploreState.location.name}. 
                     Atmosphere: ${exploreState.location.atmosphere}.
                     Conflict Direction: ${exploreState.location.conflicts}.
                     Companion Cat: ${exploreState.companion.name} (Personality: ${exploreState.companion.personality}).
-                    User: ${user.nickname} (${user.job}).
                     
-                    Task: Generate an opening scene (approx. 150 words) for a TRPG adventure. 
-                    Describe the environment and a sudden crisis or encounter. 
+                    Task: Generate an opening scene (approx. 150 words). 
+                    Describe the environment and a sudden interesting event, crisis, or encounter. 
+                    DO NOT mention "KP", "Game Master", or TRPG mechanics in your response. Just provide the narrative text.
                     Wait for user action. 
                     Language: Simplified Chinese.`;
 
                     try {
-                        const res = await callAI(prompt, "You are a professional TRPG Game Master (KP).", 300);
+                        const res = await callAI(prompt, "You are a professional narrator for a text adventure. Speak directly as the narrator, no meta-commentary.", 300);
                         exploreState.history.push({ role: 'kp', content: cleanText(res) });
                         nextTick(() => { if(exploreChatRef.value) exploreChatRef.value.scrollTop = exploreChatRef.value.scrollHeight; });
                     } catch (e) {
@@ -1630,7 +1632,7 @@
                         rescuer.diary.push({ time: getCurrentTimeStr(), content: `在${exploreState.location.name}暗中观察并救下了陷入困境的${user.nickname}。` });
                     }
 
-                    const prompt = `Role: KP. Current Location: ${exploreState.location.name}.
+                    const prompt = `Current Location: ${exploreState.location.name}.
                     Companion: ${exploreState.companion.name}.
                     User Action: ${userAction}.
                     History: ${exploreState.history.slice(-4).map(h => h.role + ": " + h.content).join("\n")}.
@@ -1638,11 +1640,12 @@
                     
                     Task: Judge the outcome based on user input, environment logic, and cat's personality. 
                     Describe the result and the next situation (100-150 words). 
-                    If the adventure should end (3-5 rounds or logical conclusion), include [END_ADVENTURE] at the end.
+                    DO NOT mention "KP", "Game Master", or TRPG mechanics in your response. Just provide the narrative text.
+                    If the adventure should end (3-5 rounds or logical conclusion), include [END_ADVENTURE] at the end of your response.
                     Language: Simplified Chinese.`;
 
                     try {
-                        const res = await callAI(prompt, "You are a professional TRPG Game Master (KP).", 300);
+                        const res = await callAI(prompt, "You are a professional narrator for a text adventure. Speak directly as the narrator, no meta-commentary.", 300);
                         let content = cleanText(res);
                         const shouldEnd = content.includes("[END_ADVENTURE]") || exploreState.rounds >= 5;
                         content = content.replace("[END_ADVENTURE]", "").trim();
@@ -1661,8 +1664,8 @@
                 };
 
                 const finishExploration = async () => {
-                    const prompt = `Role: KP. Task: Provide a settlement for the adventure at ${exploreState.location.name}.
-                    Summary: ${exploreState.history.map(h => h.role + ": " + h.content).join("\n")}.
+                    const prompt = `Task: Provide a settlement for the adventure at ${exploreState.location.name}.
+                    Summary of the adventure: ${exploreState.history.map(h => h.role + ": " + h.content).join("\n")}.
                     
                     Output JSON: {
                         "summary": "Short summary of the adventure",
@@ -1674,7 +1677,7 @@
                     Language: Simplified Chinese.`;
 
                     try {
-                        const res = await callAI(prompt, "Settlement System", 300);
+                        const res = await callAI(prompt, "You are a settlement system for a text adventure.", 300);
                         const data = parseAIJSON(res);
                         if (data) {
                             exploreState.settlement = data;
