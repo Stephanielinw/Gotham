@@ -9,12 +9,11 @@
     "preview": "vite preview",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
-  "dependencies": {
-
-  },
   "devDependencies": {
     "@types/node": "^22.14.0",
-    
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }
