@@ -591,39 +591,100 @@
                 </div>
 
                 <!-- Active Adventure -->
-                <div v-else class="flex flex-col h-[calc(100vh-220px)] bg-zinc-900 rounded-xl border border-zinc-700 overflow-hidden relative">
-                    <div class="p-3 bg-zinc-800 border-b border-zinc-700 flex justify-between items-center">
-                        <div class="flex items-center gap-2">
-                            <div class="w-2 h-2 rounded-full bg-red-600 animate-pulse"></div>
-                            <span class="text-xs font-bold text-gray-300">{{ exploreState.location.name }}</span>
-                        </div>
-                        <span class="text-[10px] text-gray-500 font-mono">ROUND {{ exploreState.rounds }}</span>
-                    </div>
-
-                    <div class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar" ref="exploreChatRef">
-                        <div v-for="(msg, idx) in exploreState.history" :key="idx" 
-                             class="flex flex-col" :class="msg.role === 'user' ? 'items-end' : 'items-start'">
-                            <div class="text-[10px] text-gray-500 mb-1 px-2">{{ msg.role === 'user' ? user.nickname : 'KP' }}</div>
-                            <div class="chat-bubble" :class="msg.role === 'user' ? 'chat-user' : 'chat-ai'">
-                                {{ msg.content }}
+                <div v-else class="flex flex-col h-[calc(100vh-220px)] bg-zinc-950 rounded-xl border border-zinc-700 overflow-hidden relative shadow-2xl">
+                    <div class="p-3 bg-zinc-900 border-b border-zinc-800 flex justify-between items-center shrink-0">
+                        <div class="flex items-center gap-3">
+                            <button @click="exploreState.active = false" class="text-gray-500 hover:text-white transition-colors">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full bg-red-600 animate-pulse"></div>
+                                <span class="text-xs font-black text-yellow-600 uppercase tracking-tighter">{{ exploreState.location.name }}</span>
                             </div>
                         </div>
-                        <div v-if="exploreState.isProcessing" class="chat-bubble chat-ai chat-thinking">
-                            <i class="fas fa-dice-d20 loading-spin mr-2"></i> KP 正在判定中...
+                        <div class="flex items-center gap-4">
+                            <div class="flex items-center gap-1">
+                                <img :src="exploreState.companion.image" class="w-5 h-5 rounded-full border border-zinc-700">
+                                <span class="text-[10px] font-bold text-gray-400">{{ exploreState.companion.name }}</span>
+                            </div>
+                            <span class="text-[10px] text-zinc-600 font-mono">RND_{{ exploreState.rounds }}</span>
                         </div>
                     </div>
 
-                    <div class="p-3 bg-zinc-800 border-t border-zinc-700 flex gap-2">
-                        <input v-model="exploreInput" 
-                               @keyup.enter="advanceExploration"
-                               placeholder="你打算怎么做？..." 
-                               class="flex-1 bg-zinc-900 border-zinc-700 text-sm"
-                               :disabled="exploreState.isProcessing">
-                        <button @click="advanceExploration" 
-                                :disabled="!exploreInput || exploreState.isProcessing"
-                                class="bg-yellow-600 text-black px-4 rounded-lg disabled:opacity-50">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
+                    <div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] bg-fixed" ref="exploreChatRef">
+                        <div v-for="(msg, idx) in exploreState.history" :key="idx" 
+                             class="flex flex-col group" :class="msg.role === 'user' ? 'items-end' : 'items-start'">
+                            <div class="text-[9px] font-black uppercase tracking-widest text-zinc-600 mb-1 px-2 group-hover:text-zinc-400 transition-colors">
+                                {{ msg.role === 'user' ? user.nickname : 'Narrator' }}
+                            </div>
+                            <div class="relative max-w-[85%]">
+                                <div class="chat-bubble relative p-4 rounded-2xl text-sm leading-relaxed" 
+                                     :class="msg.role === 'user' ? 'bg-yellow-600 text-black rounded-tr-none' : 'bg-zinc-900 text-gray-300 border border-zinc-800 rounded-tl-none shadow-xl'">
+                                    {{ msg.content }}
+                                    
+                                    <div v-if="msg.dice" class="mt-3 pt-3 border-t border-black/10 flex items-center justify-between">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-dice-d20 text-black/40"></i>
+                                            <span class="text-[10px] font-black uppercase tracking-tighter opacity-60">Result: {{ msg.dice }}</span>
+                                        </div>
+                                        <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-black/10" :class="getDiceResultClass(msg.result)">
+                                            {{ msg.result }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-if="exploreState.isProcessing" class="flex items-center gap-3 text-yellow-600/50 px-2">
+                            <i class="fas fa-dice-d20 animate-spin text-xs"></i>
+                            <span class="text-[10px] font-black uppercase tracking-widest animate-pulse">Analyzing Fate...</span>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-zinc-900 border-t border-zinc-800 shrink-0">
+                        <!-- Dice Input Overlay -->
+                        <div v-if="exploreState.waitingForDice" class="bg-yellow-600/5 p-4 rounded-xl border border-yellow-600/30 mb-2 overflow-hidden relative">
+                            <div class="absolute top-0 right-0 p-2 opacity-10">
+                                <i class="fas fa-dice text-6xl rotate-12"></i>
+                            </div>
+                            <div class="relative z-10">
+                                <div class="text-[10px] font-black text-yellow-600 mb-3 flex items-center gap-2 uppercase tracking-widest">
+                                    <i class="fas fa-exclamation-triangle animate-pulse"></i> 
+                                    检定请求: {{ exploreState.currentCheck }} 
+                                    <span class="text-zinc-500 ml-2">(技能值: {{ getSkillValue(exploreState.currentCheck) }})</span>
+                                </div>
+                                <div class="flex flex-col items-center justify-center gap-4 py-4">
+                                    <div class="text-4xl font-black text-yellow-500 font-mono tracking-tighter animate-pulse" v-if="exploreState.isRolling">
+                                        rolling...
+                                    </div>
+                                    <div class="text-5xl font-black text-yellow-500 font-mono tracking-tighter" v-else-if="exploreState.lastDiceResult">
+                                        {{ exploreState.lastDiceResult }}
+                                    </div>
+                                    <div class="text-5xl font-black text-zinc-800 font-mono tracking-tighter" v-else>
+                                        ??
+                                    </div>
+                                    
+                                    <button @click="submitDiceRoll" 
+                                            :disabled="exploreState.isRolling"
+                                            class="w-full bg-yellow-600 text-black py-4 rounded-xl font-black text-xl uppercase tracking-widest hover:bg-yellow-500 active:scale-95 transition-all shadow-[0_0_30px_rgba(212,175,55,0.2)] disabled:opacity-50">
+                                        <i class="fas fa-dice-d20 mr-2"></i>
+                                        {{ exploreState.isRolling ? 'Rolling Fate...' : 'Roll Dice / 掷骰' }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-else class="flex gap-2">
+                            <input v-model="exploreInput" 
+                                   @keyup.enter="advanceExploration"
+                                   placeholder="输入你的行动..." 
+                                   class="flex-1 bg-zinc-950 border-zinc-800 text-sm py-3 px-4 rounded-xl focus:border-yellow-600 transition-all"
+                                   :disabled="exploreState.isProcessing">
+                            <button @click="advanceExploration" 
+                                    :disabled="!exploreInput || exploreState.isProcessing"
+                                    class="bg-yellow-600 text-black w-12 h-12 flex items-center justify-center rounded-xl disabled:opacity-30 hover:bg-yellow-500 active:scale-90 transition-all shadow-lg">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1075,6 +1136,82 @@
             </div>
         </div>
         
+        <!-- Character Creation Modal -->
+        <div v-if="!user.hasCreatedChar" class="fixed inset-0 z-[500] bg-black flex items-center justify-center p-4 overflow-y-auto">
+            <div class="bg-zinc-900 w-full max-w-2xl border-2 border-yellow-600/30 rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,1)] flex flex-col max-h-[95vh]">
+                <!-- Header -->
+                <div class="bg-yellow-600 p-6 text-black flex justify-between items-center shrink-0">
+                    <div>
+                        <h2 class="text-2xl font-black uppercase tracking-tighter italic">Gotham Citizen Registry</h2>
+                        <p class="text-[10px] font-bold opacity-80 uppercase tracking-widest">哥谭市民档案登记系统 v3.0 - 身份核验中</p>
+                    </div>
+                    <i class="fas fa-id-card text-4xl opacity-50"></i>
+                </div>
+
+                <div class="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-8 bg-zinc-900">
+                    <section>
+                        <div class="flex items-center gap-2 mb-4 border-b border-zinc-800 pb-2">
+                            <span class="bg-yellow-600 text-black text-[10px] px-2 py-0.5 font-bold">01</span>
+                            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest">基础属性 (Base Attributes)</h3>
+                            <span class="ml-auto text-xs font-mono" :class="totalStats === 200 ? 'text-green-500' : 'text-yellow-500'">
+                                {{ totalStats }} / 200 PTS
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-6">
+                            <div v-for="(val, stat) in user.stats" :key="stat" class="space-y-2">
+                                <div class="flex justify-between items-end">
+                                    <label class="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">{{ stat }}</label>
+                                    <span class="text-xl font-mono font-bold text-yellow-500">{{ val }}</span>
+                                </div>
+                                <div class="flex gap-1">
+                                    <button @click="adjustStat(stat, -5)" class="flex-1 bg-zinc-800 hover:bg-zinc-700 py-1 rounded text-xs transition-colors">-5</button>
+                                    <button @click="adjustStat(stat, 5)" class="flex-1 bg-zinc-800 hover:bg-zinc-700 py-1 rounded text-xs transition-colors">+5</button>
+                                </div>
+                                <div class="h-1 bg-zinc-800 rounded-full overflow-hidden">
+                                    <div class="h-full bg-yellow-600 transition-all duration-500" :style="{ width: (val/80)*100 + '%' }"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section>
+                        <div class="flex items-center gap-2 mb-4 border-b border-zinc-800 pb-2">
+                            <span class="bg-yellow-600 text-black text-[10px] px-2 py-0.5 font-bold">02</span>
+                            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest">通用技能 (General Skills)</h3>
+                            <span class="ml-auto text-xs font-mono" :class="totalSkills === 300 ? 'text-green-500' : 'text-yellow-500'">
+                                {{ totalSkills }} / 300 PTS
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-x-8 gap-y-4">
+                            <div v-for="(val, skill) in user.skills" :key="skill" class="flex items-center justify-between bg-zinc-800/50 p-3 rounded-lg border border-zinc-800 hover:border-zinc-700 transition-all group">
+                                <span class="text-xs font-bold text-gray-400 group-hover:text-gray-200 transition-colors">{{ skill }}</span>
+                                <div class="flex items-center gap-3">
+                                    <button @click="adjustSkill(skill, -5)" class="w-6 h-6 flex items-center justify-center bg-zinc-700 hover:bg-zinc-600 rounded text-xs transition-colors">-</button>
+                                    <span class="w-8 text-center font-mono font-bold text-yellow-500">{{ val }}</span>
+                                    <button @click="adjustSkill(skill, 5)" class="w-6 h-6 flex items-center justify-center bg-zinc-700 hover:bg-zinc-600 rounded text-xs transition-colors">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <div class="bg-yellow-900/10 border border-yellow-600/20 p-4 rounded-xl">
+                        <p class="text-[10px] text-yellow-600/80 leading-relaxed italic">
+                            * 警告：哥谭市民档案一旦提交，将作为您在城市活动的唯一凭证。请确保您的属性分配符合“普通人类”范畴。任何超出人类极限的尝试都将被系统自动判定为“大失败”。
+                        </p>
+                    </div>
+                </div>
+
+                <div class="p-6 bg-zinc-950 border-t border-zinc-800 shrink-0">
+                    <button @click="finishCharCreation" 
+                            :disabled="!isCharValid"
+                            class="w-full py-4 rounded-xl font-black text-lg uppercase tracking-widest transition-all"
+                            :class="isCharValid ? 'bg-yellow-600 text-black hover:bg-yellow-500 shadow-[0_0_20px_rgba(212,175,55,0.3)]' : 'bg-zinc-800 text-gray-600 cursor-not-allowed'">
+                        Confirm Registry / 确认登记
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <audio ref="audioPlayer" loop style="display:none;"></audio>
 
         <div v-if="!isFocusing" class="nav-bar">
@@ -1100,26 +1237,26 @@
 
                 // --- EXPLORE SYSTEM STATE ---
                 const EXPLORE_LOCATIONS = [
-                    { id: 'alley', name: '犯罪巷 (Crime Alley)', universe: 'dc', category: 'nearby', atmosphere: '阴暗潮湿、危险、哥谭底层泥沼', conflicts: '恶劣天气、流浪动物领地战、混混抢劫、猫猫PTSD', loot: '战损武器、黑市首饰、街头垃圾' },
-                    { id: 'shelter', name: '黑门流浪动物收容所', universe: 'dc', category: 'nearby', atmosphere: '铁丝网高耸、压抑、野性与秩序冲突', conflicts: '猫咪帮派火拼、越狱暴动、蛮横看守', loot: '自制玩具、帮派信物、廉价配给粮' },
-                    { id: 'iceberg', name: '冰山企鹅猫咖', universe: 'dc', category: 'nearby', atmosphere: '极度奢华、纸醉金迷、暗流涌动', conflicts: '尔虞我诈赌局、金融诈骗、黑帮大佬刁难', loot: '奢侈品、不义之财、身份象征物' },
-                    { id: 'gcpd', name: 'GCPD天台', universe: 'dc', category: 'nearby', atmosphere: '寒冷夜风、警笛回响、守望等待', conflicts: '设备故障、窃听到警情、与警员误会', loot: '警用道具、废弃卷宗、加班夜宵' },
-                    { id: 'arkham', name: '阿卡姆宠物医院', universe: 'dc', category: 'nearby', atmosphere: '极度压抑、疯狂、精神污染、恐怖走廊', conflicts: '变态机关、恶意谜题、应激炸毛', loot: '不明药剂、恶作剧玩具、异常物品' },
-                    { id: 'clocktower', name: '钟塔', universe: 'dc', category: 'nearby', atmosphere: '隐秘、高科技、数据中心', conflicts: '安保激光阵、数据入侵、机械无差别攻击', loot: '科技废料、高科技逗猫棒、机密数据' },
-                    { id: 'waynetower', name: '韦恩塔顶层', universe: 'dc', category: 'nearby', atmosphere: '狂风呼啸、高处不胜寒、压迫感', conflicts: '高空坠落危机、极端天气、悬崖跑酷', loot: '定制高奢、巨额资金、顶尖材料' },
-                    { id: 'batcave', name: '韦恩庄园/蝙蝠洞', universe: 'dc', category: 'nearby', atmosphere: '宁静庭院与冷酷洞穴', conflicts: '隐形警报、蝙蝠群攻击、地下迷宫', loot: '珍稀标本、机密装甲、科技残片' },
-                    { id: 'botanical', name: '哥谭植物园', universe: 'dc', category: 'nearby', atmosphere: '闷热潮湿、异香、绿色地狱', conflicts: '变异藤蔓、幻觉毒气、超级猫薄荷', loot: '迷幻花粉、剧毒孢子、变异草药' },
-                    { id: 'amusement', name: '游乐园废墟', universe: 'dc', category: 'nearby', atmosphere: '荒诞、破败、死亡气息', conflicts: '炸弹陷阱、笑气怪物、致命设施', loot: '狂笑道具、爆炸物、血腥财物' },
-                    { id: 'avengers', name: '复仇者大厦', universe: 'marvel', category: 'travel', atmosphere: '全息投影、未来科技、豪华', conflicts: 'AI系统故障、暴走机械臂、能量泄漏', loot: '斯塔克产品、能量核心、奢华零食' },
-                    { id: 'xmansion', name: '泽维尔天才少年学院', universe: 'marvel', category: 'travel', atmosphere: '和平校园与高危测试区', conflicts: '危险室模拟攻击、超能力失控波及', loot: '超自然纪念品、变种人科技、抗干扰装备' },
-                    { id: 'genosha', name: '基诺沙废墟', universe: 'marvel', category: 'travel', atmosphere: '满目疮痍、磁场异常', conflicts: '电磁风暴、哨兵残骸袭击、金属乱飞', loot: '磁化金属、变种人遗物、生存物资' },
-                    { id: 'wakanda', name: '瓦坎达振金矿脉', universe: 'marvel', category: 'travel', atmosphere: '科技与部落结合、幽蓝光芒', conflicts: '护卫队盘查、振金共振失灵、野生动物', loot: '振金碎屑、瓦坎达草药' },
-                    { id: 'helicarrier', name: '神盾局天空母舰', universe: 'marvel', category: 'travel', atmosphere: '万米高空、战机轰鸣、军事重地', conflicts: '坠落危机、间谍追捕、误触武器', loot: '特工装备、权限卡、外星残留物' },
-                    { id: 'bifrost', name: '阿斯加德彩虹桥', universe: 'marvel', category: 'travel', atmosphere: '流光溢彩、神话庄严', conflicts: '能量溢出、守门人试炼、维度风险', loot: '神话金属、魔法小道具' },
-                    { id: 'kamartaj', name: '卡玛泰姬圣所', universe: 'marvel', category: 'travel', atmosphere: '檀香、空间折叠、秘术庭院', conflicts: '镜像维度迷宫、魔法遗物攻击', loot: '魔法护符、传送道具、书籍残页' },
-                    { id: 'hellskitchen', name: '地狱厨房暗巷', universe: 'marvel', category: 'travel', atmosphere: '混乱、血腥、阴影交织', conflicts: '忍者集团伏击、黑帮火拼、潜行挑战', loot: '忍具、感官道具、违禁品' },
-                    { id: 'pymtech', name: '皮姆科技实验室', universe: 'marvel', category: 'travel', atmosphere: '无尘室、微观世界', conflicts: '体型失控危机、环境生存挑战', loot: '皮姆粒子、量子晶体' },
-                    { id: 'baxter', name: '巴克斯特大厦', universe: 'marvel', category: 'travel', atmosphere: '疯狂实验、多维通道', conflicts: '重力反转、负空间裂缝、化学泄漏', loot: '不稳定分子、探测仪器' }
+                    { id: 'alley', name: '犯罪巷 (Crime Alley)', universe: 'dc', category: 'nearby', atmosphere: '阴暗潮湿、危险、哥谭底层泥沼', conflicts: '底层街头日常摩擦升级到遭遇哥谭特色小混混威胁', resonance: '蝙蝠家猫猫（布鲁斯、杰森）会极度警惕，散发威压，试图挡在用户身前。', loot: '战损武器、黑市首饰、街头垃圾', checks: ['侦查', '闪避', '斗殴'] },
+                    { id: 'shelter', name: '黑门流浪动物收容所', universe: 'dc', category: 'nearby', atmosphere: '铁丝网高耸、压抑、野性与秩序冲突', conflicts: '见证动物界小型“黑帮火帮”或“越狱密谋”，需决定介入调停还是趁乱吃瓜', resonance: '正义感强的猫猫教训霸凌者，反派猫猫可能直接当上老大。', loot: '自制玩具、帮派信物、廉价配给粮', checks: ['话术', '潜行'] },
+                    { id: 'iceberg', name: '冰山企鹅猫咖', universe: 'dc', category: 'nearby', atmosphere: '极度奢华、纸醉金迷、暗流涌动', conflicts: '从简单的“猜罐头”赌局陷入需要高智商或作弊才能脱身的陷阱', resonance: '了解企鹅人的猫猫（提姆、布鲁斯）会对安保嗤之以鼻，并用精妙手段帮你“出老千”。', loot: '奢侈品、不义之财、身份象征物', checks: ['妙手', '智力', '话术'] },
+                    { id: 'gcpd', name: 'GCPD天台', universe: 'dc', category: 'nearby', atmosphere: '寒冷夜风、警笛回响、守望等待', conflicts: '发现探照灯故障或听到警员秘密谈话，需小心探索不被赶走', resonance: '蝙蝠家猫猫如回自己家，熟练跳上信号灯，甚至对着局长的杯子伸爪子。', loot: '警用道具、废弃卷宗、加班夜宵', checks: ['侦查', '潜行'] },
+                    { id: 'arkham', name: '阿卡姆宠物医院', universe: 'dc', category: 'nearby', atmosphere: '极度压抑、疯狂、精神污染、恐怖走廊', conflicts: '深入诡异走廊，遇到违反常理的解谜机关或精神污染事件', resonance: '绝大多数超英猫猫表现出极度厌恶或PTSD，焦躁地催促用户离开。', loot: '不明药剂、恶作剧玩具、异常物品', checks: ['智力', '侦查'] },
+                    { id: 'clocktower', name: '钟塔', universe: 'dc', category: 'nearby', atmosphere: '隐秘、高科技、数据中心', conflicts: '从应对暴走清洁机器人到卷入微型电子数据保卫战', resonance: '芭芭拉或提姆能轻易在键盘上踩出正确密码（用户以为是乱踩）。', loot: '科技废料、高科技逗猫棒、机密数据', checks: ['智力', '敏捷'] },
+                    { id: 'waynetower', name: '韦恩塔顶层', universe: 'dc', category: 'nearby', atmosphere: '狂风呼啸、高处不胜寒、压迫感', conflicts: '遭遇极端高空强风或卷入发生在滴水兽之间的惊险高空追逐战', resonance: '布鲁斯或达米安主权意识极强，绝不允许任何飞禽走兽侵犯领空。', loot: '定制高奢、巨额资金、顶尖材料', checks: ['敏捷', '力量'] },
+                    { id: 'batcave', name: '韦恩庄园/蝙蝠洞', universe: 'dc', category: 'nearby', atmosphere: '宁静庭院与冷酷洞穴', conflicts: '意外触碰机关步入高科技安保洞穴，设法不被防卫系统攻击', resonance: '蝙蝠家全员“绝对主场”，完美避开红外线，甚至用尾巴拍落瞄准你的麻醉枪。', loot: '珍稀标本、机密装甲、科技残片', checks: ['潜行', '敏捷'] },
+                    { id: 'botanical', name: '哥谭植物园', universe: 'dc', category: 'nearby', atmosphere: '闷热潮湿、异香、绿色地狱', conflicts: '从欣赏奇花异草到被攻击性藤蔓缠绕，或在致幻花粉中保持清醒', resonance: '猫猫极易被超级猫薄荷吸引而失去理智，表现出难得的“痴汉”或撒娇状态。', loot: '迷幻花粉、剧毒孢子、变异草药', checks: ['体质', '力量'] },
+                    { id: 'amusement', name: '游乐园废墟', universe: 'dc', category: 'nearby', atmosphere: '荒诞、破败、死亡气息', conflicts: '步入恐怖电影，面对惊吓盒子和机械笑气老鼠，生存逃生', resonance: '气氛压抑，杰森同行时可能极度暴躁并破坏一切长得像小丑的玩具。', loot: '狂笑道具、爆炸物、血腥财物', checks: ['侦查', '闪避', '敏捷'] },
+                    { id: 'avengers', name: '复仇者大厦', universe: 'marvel', category: 'travel', atmosphere: '全息投影、未来科技、豪华', conflicts: 'AI系统故障或实验意外', resonance: '斯塔克猫猫的主场，对这里的高科技了如指掌。', loot: '斯塔克产品、能量核心、奢华零食', checks: ['智力', '侦查'] },
+                    { id: 'xmansion', name: '泽维尔天才少年学院', universe: 'marvel', category: 'travel', atmosphere: '和平校园与高危测试区', conflicts: '全息模拟危机或超能力失控', resonance: '变种猫猫对危险室非常熟悉。', loot: '超自然纪念品、变种人科技、抗干扰装备', checks: ['敏捷', '体质'] },
+                    { id: 'genosha', name: '基诺沙废墟', universe: 'marvel', category: 'travel', atmosphere: '满目疮痍、磁场异常', conflicts: '电磁风暴与金属乱流生存', resonance: '万磁王相关猫猫会表现出极强的适应力。', loot: '磁化金属、变种人遗物、生存物资', checks: ['体质', '侦查'] },
+                    { id: 'wakanda', name: '瓦坎达振金矿脉', universe: 'marvel', category: 'travel', atmosphere: '科技与部落结合、幽蓝光芒', conflicts: '严密安保与原始陷阱', resonance: '黑豹猫猫的绝对领地。', loot: '振金碎屑、瓦坎达草药', checks: ['潜行', '侦查'] },
+                    { id: 'helicarrier', name: '神盾局天空母舰', universe: 'marvel', category: 'travel', atmosphere: '万米高空、战机轰鸣、军事重地', conflicts: '高空坠落危机与特工追捕', resonance: '特工猫猫会利用通风管道带你潜行。', loot: '特工装备、权限卡、外星残留物', checks: ['潜行', '敏捷'] },
+                    { id: 'bifrost', name: '阿斯加德彩虹桥', universe: 'marvel', category: 'travel', atmosphere: '流光溢彩、神话庄严', conflicts: '传送能量失控与魔法考验', resonance: '阿斯加德猫猫对彩虹桥的震动习以为常。', loot: '神话金属、魔法小道具', checks: ['体质', '力量'] },
+                    { id: 'kamartaj', name: '卡玛泰姬圣所', universe: 'marvel', category: 'travel', atmosphere: '檀香、空间折叠、秘术庭院', conflicts: '空间迷宫与魔法遗物暴走', resonance: '至尊法师猫猫会用爪子拨开空间褶皱。', loot: '魔法护符、传送道具、书籍残页', checks: ['智力', '侦查'] },
+                    { id: 'hellskitchen', name: '地狱厨房暗巷', universe: 'marvel', category: 'travel', atmosphere: '混乱、血腥、阴影交织', conflicts: '极道追击与潜行逃生', resonance: '夜魔侠猫猫在黑暗中如鱼得水。', loot: '忍具、感官道具、违禁品', checks: ['潜行', '侦查', '闪避'] },
+                    { id: 'pymtech', name: '皮姆科技实验室', universe: 'marvel', category: 'travel', atmosphere: '无尘室、微观世界', conflicts: '体型剧变的微观生存危机', resonance: '蚁人猫猫会带你骑上蚂蚁。', loot: '皮姆粒子、量子晶体', checks: ['敏捷', '体质'] },
+                    { id: 'baxter', name: '巴克斯特大厦', universe: 'marvel', category: 'travel', atmosphere: '疯狂实验、多维通道', conflicts: '负空间裂缝与反重力挑战', resonance: '神奇四侠猫猫对物理法则的改变毫无反应。', loot: '不稳定分子、探测仪器', checks: ['智力', '敏捷'] }
                 ];
 
                 const exploreState = reactive({
@@ -1130,7 +1267,11 @@
                     rounds: 0,
                     isProcessing: false,
                     settlement: null,
-                    category: 'nearby'
+                    category: 'nearby',
+                    currentCheck: null, // e.g., '侦查'
+                    waitingForDice: false,
+                    lastDiceResult: null,
+                    isRolling: false
                 });
                 const exploreInput = ref('');
                 const showExploreSettlement = ref(false);
@@ -1261,6 +1402,9 @@
                 let initialUser = { 
                     coins: 500, inventory: [], nickname: '哥谭市民', gender: 'Secret', birthday: '', 
                     job: '', currentStatus: '正在休息',
+                    stats: { STR: 50, DEX: 50, CON: 50, INT: 50 },
+                    skills: { '侦查': 40, '潜行': 40, '妙手': 40, '话术': 40, '斗殴': 40, '闪避': 40 },
+                    hasCreatedChar: false,
                     schedule: [], 
                     calendarSources: [], 
                     missionReports: [], mailbox: [], todos: [], deadlines: [], 
@@ -1280,6 +1424,29 @@
                 - **USER PERSPECTIVE:** The user is a "foolish human" who thinks they are just ordinary, needy cats. The user is unaware of their secret identities and powers.
                 - **ORIGIN:** Cats were "picked up" from the street. Whether they were actually in trouble or "scammed" the user for a mission/food depends on their personality.
                 
+                TRPG / COC SYSTEM RULES (INVISIBLE KP):
+                - **NO META-COMMENTARY:** Never mention "KP", "Game Master", "TRPG", or "System". Never break the 4th wall.
+                - **IMMERSIVE NARRATION:** Use vivid 3rd person descriptions for scenes, events, and cat reactions.
+                - **EXPLORATION FORM:** During exploration/outings, cats MUST remain in CAT FORM. They only meow, purr, or act like cats. NO human speech. NO transformation. NO exposing high intelligence.
+                - **NORMAL CITIZEN CONSTRAINT:** The user is a NORMAL HUMAN. If they try anything superhuman, force a FUMBLE (大失败) result.
+                - **DICE CHECKS:** When user takes an uncertain action, ask for a 1d100 check (e.g., "请掷 1d100 过一个【侦查】检定").
+                - **STRICTLY RESTRAINED CHECKS:** Only ask for a check when there is "substantial risk, cost of failure, or hidden critical information". Routine actions (walking, looking, normal talking) should progress naturally. Aim for 3-4 checks TOTAL per adventure.
+                - **FORCED RETREAT:** If the user wants to leave ("home", "run", "retreat", "stop"), immediately end the event, describe a smooth exit, and trigger [END_ADVENTURE].
+                - **ENDING CONDITIONS:** End the adventure if: 1. Core crisis solved. 2. 2-3 rounds of effective interaction passed. 3. A Fumble was saved by the cat. 4. User wants to leave.
+                - **CHECK RESULTS:** 
+                    - 1-5: Critical Success (大成功)
+                    - <= Value/2: Hard Success (困难成功)
+                    - <= Value: Success (成功)
+                    - > Value: Failure (失败)
+                    - 96-100: Fumble (大失败)
+                - **HIDDEN INTERVENTION:** If a cat is familiar with a location, grant a "Bonus Die" (奖励骰).
+                - **FUMBLE PROTECTION:** On a Fumble (96-100), the cat MUST secretly intervene (e.g., tripping an enemy) to save the user's life while hiding their identity.
+                
+                CHARACTER-LOCATION RESONANCE (ANTI-OOC):
+                - If a cat is familiar with a location, they show "hidden mastery" instead of curiosity.
+                - They act with calm familiarity, using "accidental" cat movements to protect the user.
+                - They must hide their familiarity from the "foolish human" user.
+                
                 CORE RULES:
                 1. **STRICT ADHERENCE TO CANON (NO OOC):**
                    - Jason Todd: Grumpy, tactical, sarcastic, tough love. NOT "soft".
@@ -1298,20 +1465,13 @@
                 
                 3. **INNER VOICE (Thoughts):**
                    - [VOICE] MUST ALWAYS BE HUMAN LANGUAGE (Simplified Chinese). It represents the character's internal monologue. **NO MEOWS IN THOUGHTS**.
-                   - Example: [VOICE] "I really want that tuna..." (Correct)
-                   - Example: [VOICE] "Meow meow..." (INCORRECT)
                 
                 4. **CONTEXT AWARENESS:**
                    - Current World Status: Night Patrol vs Home.
-                   - Special Events: Micro-power out-of-control (e.g. Superman cat floating), Cross-universe territory conflicts (DC vs Marvel).
+                   - Special Events: Micro-power out-of-control, Cross-universe territory conflicts.
                 
                 5. **OUTPUT:**
                    - Language: **SIMPLIFIED CHINESE**.
-
-                6. **USER IDENTITY RESPECT**:
-                   - Pay close attention to the [USER PROFILE] provided in the context.
-                   - Adjust your tone based on the user's Job/Role (e.g., if User is GCPD, be wary; if Medic, be cooperative; if Villain, be hostile).
-                   - Use the user's specific Nickname, do NOT default to generic terms if a name is provided.
                 `;
 
                 // Hardcoded 5 Default Cats (Fixed Data)
@@ -1580,29 +1740,157 @@
                     exploreState.companion = cat;
                 };
 
+                const totalStats = computed(() => Object.values(user.stats).reduce((a, b) => a + b, 0));
+                const totalSkills = computed(() => Object.values(user.skills).reduce((a, b) => a + b, 0));
+                const isCharValid = computed(() => totalStats.value === 200 && totalSkills.value === 300 && Object.values(user.stats).every(v => v <= 80) && Object.values(user.skills).every(v => v <= 80));
+
+                const adjustStat = (stat, delta) => {
+                    const newVal = user.stats[stat] + delta;
+                    if (newVal >= 20 && newVal <= 80) user.stats[stat] = newVal;
+                };
+                const adjustSkill = (skill, delta) => {
+                    const newVal = user.skills[skill] + delta;
+                    if (newVal >= 0 && newVal <= 80) user.skills[skill] = newVal;
+                };
+                const finishCharCreation = () => {
+                    if (isCharValid.value) {
+                        user.hasCreatedChar = true;
+                        showToast("档案登记成功，欢迎来到哥谭。", "success");
+                    }
+                };
+
+                const getDiceResultClass = (res) => {
+                    if (res === '大成功') return 'text-green-400 font-black';
+                    if (res === '困难成功') return 'text-green-500 font-bold';
+                    if (res === '成功') return 'text-green-600';
+                    if (res === '大失败') return 'text-red-600 font-black animate-pulse';
+                    return 'text-red-500';
+                };
+
+                const getSkillValue = (name) => {
+                    const statMap = { '力量': 'STR', '敏捷': 'DEX', '体质': 'CON', '智力': 'INT' };
+                    if (user.skills[name] !== undefined) return user.skills[name];
+                    if (statMap[name] && user.stats[statMap[name]] !== undefined) return user.stats[statMap[name]];
+                    return 40; 
+                };
+
+                const submitDiceRoll = () => {
+                    if (exploreState.isRolling) return;
+                    
+                    exploreState.isRolling = true;
+                    exploreState.lastDiceResult = null;
+                    
+                    // Simulate rolling animation delay
+                    setTimeout(() => {
+                        const roll = Math.floor(Math.random() * 100) + 1;
+                        exploreState.lastDiceResult = roll;
+                        exploreState.isRolling = false;
+                        
+                        const target = getSkillValue(exploreState.currentCheck);
+                        
+                        let result = '失败';
+                        if (roll <= 5) result = '大成功';
+                        else if (roll <= target / 2) result = '困难成功';
+                        else if (roll <= target) result = '成功';
+                        else if (roll >= 96) result = '大失败';
+
+                        exploreState.history.push({ 
+                            role: 'user', 
+                            content: `掷骰检定: ${exploreState.currentCheck} (目标: ${target})`, 
+                            dice: roll, 
+                            result: result 
+                        });
+                        
+                        setTimeout(() => {
+                            exploreState.waitingForDice = false;
+                            exploreState.lastDiceResult = null;
+                            processDiceResult(roll, result);
+                        }, 1000); // Show result for 1s before processing
+                    }, 800);
+                };
+
+                const processDiceResult = async (roll, result) => {
+                    exploreState.isProcessing = true;
+                    const prompt = `[TRPG CHECK RESULT]
+                    Location: ${exploreState.location.name}.
+                    Companion: ${exploreState.companion.name}.
+                    Check Type: ${exploreState.currentCheck}.
+                    User Roll: ${roll} (Target: ${getSkillValue(exploreState.currentCheck)}).
+                    Result: ${result}.
+                    
+                    Task: Describe the outcome based on this result. 
+                    - If "大成功" (1-5): The cat companion subtly "helped" in a way that looks like luck.
+                    - If "大失败" (96-100): The user is about to face a LETHAL or HUMILIATING crisis. The cat MUST secretly intervene (e.g., "accidentally" tripping a guard, throwing a hidden gadget) to save the user's life. The user should remain confused but safe. AFTER SAVING THE USER, INCLUDE [END_ADVENTURE] TO END THE TRIP.
+                    - If "成功" or "困难成功": The action succeeds smoothly.
+                    - If "失败": The action fails, leading to a new narrative obstacle, but NOT necessarily a dead end.
+                    
+                    CRITICAL RULES:
+                    1. NO OOC: ${exploreState.companion.name} MUST remain a normal cat. Only meows/actions. NO human speech.
+                    2. NO GM TALK: Do not mention "KP", "Roll", or "Check". 
+                    3. NO LOOP: DO NOT ask for another dice check immediately unless it is absolutely life-or-death. Prefer narrative progression.
+                    4. ADVENTURE FLOW: If the story has reached a natural conclusion, include [END_ADVENTURE].
+                    
+                    Continue the narrative (100-150 words). 
+                    Language: Simplified Chinese.`;
+
+                    try {
+                        const res = await callAI(prompt, "You are an invisible narrator for an immersive text adventure. Never break character.", 300);
+                        let content = cleanText(res);
+                        
+                        // Check if AI is asking for another dice roll
+                        const checkMatch = content.match(/请掷 1d100 过一个【(.*)】检定/);
+                        if (checkMatch) {
+                            exploreState.currentCheck = checkMatch[1];
+                            exploreState.waitingForDice = true;
+                        }
+
+                        const shouldEnd = content.includes("[END_ADVENTURE]") || exploreState.rounds >= 3;
+                        content = content.replace("[END_ADVENTURE]", "").trim();
+                        
+                        exploreState.history.push({ role: 'kp', content });
+                        if (shouldEnd && !exploreState.waitingForDice) {
+                            setTimeout(() => finishExploration(), 2000);
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        showToast("判定连接异常", "error");
+                    } finally {
+                        exploreState.isProcessing = false;
+                        nextTick(() => { if(exploreChatRef.value) exploreChatRef.value.scrollTop = exploreChatRef.value.scrollHeight; });
+                    }
+                };
                 const startExploration = async () => {
                     if (!exploreState.location || !exploreState.companion) return;
+                    
+                    // Force cat form during exploration
+                    exploreState.companion.isHuman = false;
+                    
                     exploreState.active = true;
                     exploreState.rounds = 0;
                     exploreState.history = [];
                     exploreState.isProcessing = true;
 
-                    const prompt = `[CONTEXT: CASUAL OUTING] The user (${user.nickname}) is just taking their cat (${exploreState.companion.name}) out for a walk/adventure today. No specific mission or job, just a pure outing.
+                    const prompt = `[CONTEXT: CASUAL OUTING] The user (${user.nickname}) is just taking their cat (${exploreState.companion.name}) out for a walk/adventure today. No specific mission, just a pure heart-led outing.
                     
                     Universe: ${exploreState.location.universe.toUpperCase()}. 
                     Location: ${exploreState.location.name}. 
                     Atmosphere: ${exploreState.location.atmosphere}.
-                    Conflict Direction: ${exploreState.location.conflicts}.
-                    Companion Cat: ${exploreState.companion.name} (Personality: ${exploreState.companion.personality}).
+                    Logic Baseline: ${exploreState.location.conflicts}.
+                    Character Resonance: ${exploreState.location.resonance}.
+                    Companion Cat: ${exploreState.companion.name}.
+                    
+                    STRICT NARRATIVE RULES:
+                    1. ${exploreState.companion.name} is a CAT. They must ONLY meow, purr, or perform cat-like actions. NO human speech. NO transformation.
+                    2. If the cat is familiar with this location (Character Resonance), they act with "hidden mastery" (e.g., walking confidently, subtly guiding the user away from danger).
+                    3. AI acts as an invisible narrator (KP). Do not break the fourth wall.
                     
                     Task: Generate an opening scene (approx. 150 words). 
-                    Describe the environment and a sudden interesting event, crisis, or encounter. 
-                    DO NOT mention "KP", "Game Master", or TRPG mechanics in your response. Just provide the narrative text.
+                    Describe the environment and a sudden interesting event or encounter based on the Logic Baseline.
                     Wait for user action. 
                     Language: Simplified Chinese.`;
 
                     try {
-                        const res = await callAI(prompt, "You are a professional narrator for a text adventure. Speak directly as the narrator, no meta-commentary.", 300);
+                        const res = await callAI(prompt, "You are an invisible narrator for an immersive text adventure. Never break character.", 300);
                         exploreState.history.push({ role: 'kp', content: cleanText(res) });
                         nextTick(() => { if(exploreChatRef.value) exploreChatRef.value.scrollTop = exploreChatRef.value.scrollHeight; });
                     } catch (e) {
@@ -1622,6 +1910,10 @@
                     
                     nextTick(() => { if(exploreChatRef.value) exploreChatRef.value.scrollTop = exploreChatRef.value.scrollHeight; });
 
+                    // Check for retreat keywords
+                    const retreatKeywords = ['回家', '逃跑', '撤退', '不玩了', '走吧', '离开', 'home', 'run', 'retreat', 'stop', 'leave'];
+                    const isRetreat = retreatKeywords.some(k => userAction.toLowerCase().includes(k));
+
                     // Check for rescue if rounds are high or situation is dire
                     let rescueContext = "";
                     const outCats = cats.value.filter(c => c.isOut && c.id !== exploreState.companion.id);
@@ -1635,31 +1927,50 @@
                     const prompt = `Current Location: ${exploreState.location.name}.
                     Companion: ${exploreState.companion.name}.
                     User Action: ${userAction}.
+                    User Stats: ${JSON.stringify(user.stats)}.
+                    User Skills: ${JSON.stringify(user.skills)}.
                     History: ${exploreState.history.slice(-4).map(h => h.role + ": " + h.content).join("\n")}.
+                    Logic Baseline: ${exploreState.location.conflicts}.
+                    Character Resonance: ${exploreState.location.resonance}.
                     ${rescueContext}
+                    ${isRetreat ? "[FORCED RETREAT]: The user wants to leave. Immediately describe a smooth exit and include [END_ADVENTURE]." : ""}
                     
-                    Task: Judge the outcome based on user input, environment logic, and cat's personality. 
-                    Describe the result and the next situation (100-150 words). 
-                    DO NOT mention "KP", "Game Master", or TRPG mechanics in your response. Just provide the narrative text.
-                    If the adventure should end (3-5 rounds or logical conclusion), include [END_ADVENTURE] at the end of your response.
+                    STRICT NARRATIVE RULES:
+                    1. NO OOC: ${exploreState.companion.name} MUST remain a normal cat. Only meows/actions. NO human speech.
+                    2. KEEPER DISCRETION: Most reasonable actions should succeed narratively. DO NOT ask for a dice check unless the action is EXTREMELY risky, life-threatening, or illogical. (Limit: 3-4 checks per entire adventure).
+                    3. HIDDEN MASTERY: If the cat is familiar with the location, they subtly guide/protect the user (e.g., "The cat suddenly swiped at your leg, making you stop just before a hidden trap").
+                    4. NO GM TALK: Do not mention "KP", "Roll", or "Check".
+                    5. ENDING CONDITIONS: If the core crisis is solved, or 2-3 rounds of effective interaction have passed, include [END_ADVENTURE].
+                    
+                    Task: Judge the outcome. If the action is risky, you MAY ask for a check: "请掷 1d100 过一个【技能/属性名】检定".
+                    Otherwise, just describe the result and the next situation (100-150 words). 
+                    
+                    If the adventure should end, include [END_ADVENTURE].
                     Language: Simplified Chinese.`;
 
                     try {
-                        const res = await callAI(prompt, "You are a professional narrator for a text adventure. Speak directly as the narrator, no meta-commentary.", 300);
+                        const res = await callAI(prompt, "You are an invisible narrator for an immersive text adventure. Never break character.", 300);
                         let content = cleanText(res);
-                        const shouldEnd = content.includes("[END_ADVENTURE]") || exploreState.rounds >= 5;
+                        
+                        // Check if AI is asking for a dice roll
+                        const checkMatch = content.match(/请掷 1d100 过一个【(.*)】检定/);
+                        if (checkMatch) {
+                            exploreState.currentCheck = checkMatch[1];
+                            exploreState.waitingForDice = true;
+                        }
+
+                        const shouldEnd = content.includes("[END_ADVENTURE]") || exploreState.rounds >= 3;
                         content = content.replace("[END_ADVENTURE]", "").trim();
                         
                         exploreState.history.push({ role: 'kp', content });
-                        nextTick(() => { if(exploreChatRef.value) exploreChatRef.value.scrollTop = exploreChatRef.value.scrollHeight; });
-
-                        if (shouldEnd) {
-                            await finishExploration();
+                        if (shouldEnd && !exploreState.waitingForDice) {
+                            setTimeout(() => finishExploration(), 2000);
                         }
                     } catch (e) {
-                        showToast("连接异常", "error");
+                        console.error(e);
                     } finally {
                         exploreState.isProcessing = false;
+                        nextTick(() => { if(exploreChatRef.value) exploreChatRef.value.scrollTop = exploreChatRef.value.scrollHeight; });
                     }
                 };
 
@@ -1689,6 +2000,13 @@
                             // Add to cat diary
                             exploreState.companion.diary.push({ time: getCurrentTimeStr(), content: `与用户在${exploreState.location.name}进行了探险：${data.summary}` });
                             showExploreSettlement.value = true;
+                            
+                            // Mandatory Status Refresh for the returning cat
+                            const returnContext = `[MANDATORY RETURN UPDATE]: ${exploreState.companion.name} just returned from an adventure at ${exploreState.location.name}. 
+                            Adventure Summary: ${data.summary}. 
+                            They should show signs of having just returned (e.g., shaking off dust, tired, checking loot). 
+                            Their inner voice MUST recall and complain/comment on specific events from this adventure.`;
+                            refreshAllStatus(true, returnContext, [exploreState.companion.id], data.summary, false, true);
                         }
                     } catch (e) {
                         console.error(e);
@@ -2123,7 +2441,7 @@
                      } else { if(isFocusing.value) currentFocusLog.value.unshift(`${getCurrentTimeStr()} [${targetCat.name}] 嫌弃地躲开了。`); }
                 };
 
-                const refreshAllStatus = async (forceUpdate = false, additionalContext = "", activeCatIds = [], focusCatLastAction = "", isFocusEnd = false) => {
+                const refreshAllStatus = async (forceUpdate = false, additionalContext = "", activeCatIds = [], focusCatLastAction = "", isFocusEnd = false, isExploreEnd = false) => {
                     if (!settings.apiKey) return;
                     localStorage.setItem('last_sync_time', Date.now());
                     
@@ -2142,11 +2460,11 @@
                         let activeCatNames = [];
                         catsToUpdate.forEach(c => {
                             const isActive = activeCatIds && activeCatIds.includes(c.id);
-                            if (isActive && !isFocusEnd) {
+                            if (isActive && !isFocusEnd && !isExploreEnd) {
                                 activeCatNames.push(c.name);
                                 return; 
                             }
-                            if (isActive && isFocusEnd) {
+                            if (isActive && (isFocusEnd || isExploreEnd)) {
                                 activeCatNames.push(c.name);
                             }
                             
@@ -2159,6 +2477,9 @@
                             let specificContext = "";
                             if (isActive && isFocusEnd) {
                                 specificContext = `[CRITICAL]: This cat just finished focusing with the user. Last action in log: "${focusCatLastAction}". Their new status MUST continue from this action.`;
+                            }
+                            if (isActive && isExploreEnd) {
+                                specificContext = `[CRITICAL]: This cat just returned from an adventure. Action MUST show "just returned" traits (dusty, tired, etc.). Inner voice MUST recall adventure events: "${focusCatLastAction}". [ISHUMAN] MUST be false for this update.`;
                             }
 
                             characterBlock += `\n--- CHARACTER ---\nID: ${c.id}\nName: ${c.name} (${c.breed})\nTraits: ${c.personality}\nPrevious Status: ${c.status} ${timeContext}\nIs Currently Out: ${c.isOut}\n${specificContext}\n`;
@@ -2182,8 +2503,9 @@
                         - [SPECIAL EVENTS]: 5% chance of micro-power out-of-control (e.g. floating) or cross-universe territory conflict (Marvel vs DC).
                         
                         [FORM LOGIC]:
-                        - If Affinity < 50: [ISHUMAN] MUST be false. However, in [STATUS] or [VOICE], there's a 30% chance to mention they are in human form (with ears/tail) because the user is "not looking" (e.g. monitor/logs).
+                        - If Affinity < 50: [ISHUMAN] MUST be false.
                         - If Affinity >= 50: The cat DECIDES [ISHUMAN] (true/false) autonomously based on mood/context.
+                        - [EXCEPTION]: If the cat just returned from an adventure (isExploreEnd), [ISHUMAN] MUST be false. They are too tired or still in "public" mode.
                         
                         [MANDATORY CONTINUITY RULES]:
                         1. **Δt Rule**: Check "[Δt RULE]" for each cat. 
@@ -2525,6 +2847,8 @@
                     confirmSettlement, affinityChangeValue, chatMessagesRef,
                     exploreState, exploreInput, showExploreSettlement, EXPLORE_LOCATIONS,
                     selectExploreLocation, selectExploreCompanion, startExploration, advanceExploration, closeExplore, exploreChatRef,
+                    totalStats, totalSkills, isCharValid, adjustStat, adjustSkill, finishCharCreation, 
+                    getDiceResultClass, getSkillValue, submitDiceRoll,
                     showCalendarManager, deleteCalendarSource, currentBagTab, currentBagItems,
                     systemLogs, logWindow, notification,
                     showAdminLogin, showAdminPanel, adminPassword, isAdmin, openAdmin, checkAdminPassword // Exporting Admin States
