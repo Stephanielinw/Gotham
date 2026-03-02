@@ -223,6 +223,15 @@
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
         
+        @keyframes progress-loading {
+            0% { width: 0%; }
+            50% { width: 70%; }
+            100% { width: 100%; }
+        }
+        .animate-progress-loading {
+            animation: progress-loading 10s ease-in-out infinite;
+        }
+        
         .diary-line {
             border-left: 2px solid var(--bat-yellow); padding-left: 20px; margin-left: 8px; position: relative; padding-bottom: 25px;
         }
@@ -874,7 +883,7 @@
             </div>
             <div class="flex-1 overflow-y-auto custom-scrollbar space-y-3">
                 <div v-if="user.mailbox.length === 0" class="text-center text-gray-600 mt-10">暂无新邮件</div>
-                <div v-for="(mail, idx) in user.mailbox" :key="idx" class="mail-item" :class="{'unread': !mail.read}">
+                <div v-for="(mail, idx) in user.mailbox.slice().reverse()" :key="idx" class="mail-item" :class="{'unread': !mail.read}">
                     <div class="flex justify-between mb-1"><span class="font-bold text-yellow-600 text-sm">{{ mail.from }}</span><span class="text-[10px] text-gray-500">{{ mail.date }}</span></div>
                     <p class="text-xs text-gray-300 mb-2 leading-relaxed">{{ mail.content }}</p>
                     <div v-if="mail.item" class="bg-zinc-800 p-2 rounded flex justify-between items-center border border-zinc-700">
@@ -981,8 +990,8 @@
             </div>
             <div class="flex-1 overflow-y-auto custom-scrollbar p-2">
                 <button v-if="showDiaryModal" @click="generateFullDiary" :disabled="isGeneratingDiary" class="w-full bg-zinc-800 text-yellow-600 text-xs py-3 rounded mb-4 border border-zinc-700"><i class="fas fa-magic mr-1" :class="{'fa-spin': isGeneratingDiary}"></i> {{ isGeneratingDiary ? '正在回溯监控录像...' : '生成今日完整记录' }}</button>
-                <div v-if="showDiaryModal"><div v-for="(log, i) in selectedCat.diary" :key="i" class="diary-line text-sm text-gray-300 mb-2"><span class="text-xs text-yellow-600 font-mono font-bold">{{ log.time }}</span><br>{{ log.content }}</div></div>
-                <div v-if="showLogModal"><div v-for="(log, i) in selectedCat.logs" :key="i" class="log-paper relative mb-4" @click="shareMemory(log)"><div class="border-b border-gray-400 pb-1 mb-2 flex justify-between"><span class="font-bold">{{ log.date }}</span><i class="fas fa-share-alt text-gray-500"></i></div><p class="text-sm leading-relaxed whitespace-pre-wrap">{{ log.content }}</p></div><div v-if="selectedCat.logs.length === 0" class="text-center text-gray-500 mt-10">日记本是空的...</div></div>
+                <div v-if="showDiaryModal"><div v-for="(log, i) in (selectedCat.diary || []).slice().reverse()" :key="i" class="diary-line text-sm text-gray-300 mb-2"><span class="text-xs text-yellow-600 font-mono font-bold">{{ log.time }}</span><br>{{ log.content }}</div></div>
+                <div v-if="showLogModal"><div v-for="(log, i) in (selectedCat.logs || []).slice().reverse()" :key="i" class="log-paper relative mb-4" @click="shareMemory(log)"><div class="border-b border-gray-400 pb-1 mb-2 flex justify-between"><span class="font-bold">{{ log.date }}</span><i class="fas fa-share-alt text-gray-500"></i></div><p class="text-sm leading-relaxed whitespace-pre-wrap">{{ log.content }}</p></div><div v-if="selectedCat.logs.length === 0" class="text-center text-gray-500 mt-10">日记本是空的...</div></div>
             </div>
         </div>
 
@@ -1127,7 +1136,20 @@
                 <div class="p-6 space-y-4">
                     <div v-if="exploreState.isGeneratingGoals" class="py-12 text-center space-y-4">
                         <i class="fas fa-cog animate-spin text-4xl text-yellow-600"></i>
-                        <p class="text-xs text-gray-500 animate-pulse font-mono uppercase tracking-widest">Generating Mission Objectives...</p>
+                        <p class="text-xs text-gray-500 animate-pulse font-mono uppercase tracking-widest">正在发射蝙蝠信号请求目的...</p>
+                    </div>
+                    <div v-else-if="exploreState.isGeneratingModule" class="py-12 text-center space-y-6">
+                        <div class="relative inline-block">
+                            <i class="fas fa-microchip text-4xl text-yellow-600 animate-pulse"></i>
+                            <i class="fas fa-sync animate-spin absolute -top-2 -right-2 text-xs text-yellow-400"></i>
+                        </div>
+                        <div class="space-y-2">
+                            <p class="text-sm font-black text-yellow-600 uppercase tracking-tighter italic">韦恩企业卫星链接成功</p>
+                            <p class="text-[10px] text-gray-500 font-mono animate-pulse">正在后台预生成 2000 字硬核跑团模组...</p>
+                        </div>
+                        <div class="w-full bg-zinc-800 h-1 rounded-full overflow-hidden">
+                            <div class="bg-yellow-600 h-full animate-progress-loading"></div>
+                        </div>
                     </div>
                     <div v-else class="space-y-3">
                         <button v-for="goal in exploreState.suggestedGoals" :key="goal"
@@ -1316,26 +1338,26 @@
 
                 // --- EXPLORE SYSTEM STATE ---
                 const EXPLORE_LOCATIONS = [
-                    { id: 'alley', name: '犯罪巷 (Crime Alley)', universe: 'dc', category: 'nearby', atmosphere: '阴暗潮湿、危险、哥谭底层泥沼', conflicts: '帮派混混/流浪狗。', resonance: '蝙蝠家猫猫（布鲁斯、杰森）会极度警惕，散发威压，试图挡在用户身前。', loot: '战损武器、黑市首饰、街头垃圾', checks: ['侦查', '闪避', '斗殴'], npcs: '流浪黑猫/老熟人线人' },
-                    { id: 'shelter', name: '黑门流浪动物收容所', universe: 'dc', category: 'nearby', atmosphere: '铁丝网高耸、压抑、野性与秩序冲突', conflicts: '黑帮火拼/领养。', resonance: '正义感强的猫猫教训霸凌者，反派猫猫可能直接当上老。', loot: '自制玩具、帮派信物、廉价配给粮', checks: ['话术', '潜行'], npcs: '独眼老猫狱霸' },
-                    { id: 'iceberg', name: '冰山企鹅猫咖', universe: 'dc', category: 'nearby', atmosphere: '极度奢华、纸醉金迷、暗流涌动', conflicts: '情报/黑市交易。', resonance: '了解企鹅人的猫猫（提姆、布鲁斯）会对安保嗤之以鼻，并用精妙手段帮你“出老千”。', loot: '奢侈品、不义之财、身份象征物', checks: ['妙手', '智力', '话术'], npcs: '戴单片眼镜的企鹅猫' },
-                    { id: 'gcpd', name: 'GCPD天台', universe: 'dc', category: 'nearby', atmosphere: '寒冷夜风、警笛回响、守望等待', conflicts: '偷听情报。', resonance: '蝙蝠家猫猫如回自己家，熟练跳上信号灯，甚至对着局长的杯子伸爪子。', loot: '警用道具、废弃卷宗、加班夜宵', checks: ['侦查', '潜行'], npcs: '抽着烟斗（或正在喂流浪猫）的戈登局长' },
-                    { id: 'arkham', name: '阿卡姆宠物医院', universe: 'dc', category: 'nearby', atmosphere: '极度压抑、疯狂、精神污染、恐怖走廊', conflicts: '精神污染解谜。', resonance: '绝大多数超英猫猫表现出极度厌恶或PTSD，焦躁地催促用户离开。', loot: '不明药剂、恶作剧玩具、异常物品', checks: ['智力', '侦查'], npcs: '狂笑猫/绿毛谜语猫' },
-                    { id: 'clocktower', name: '钟塔', universe: 'dc', category: 'nearby', atmosphere: '隐秘、高科技、数据中心', conflicts: '电子数据破解。', resonance: '芭芭拉或提姆能轻易在键盘上踩出正确密码（用户以为是乱踩）。', loot: '科技废料、高科技逗猫棒、机密数据', checks: ['智力', '敏捷'], npcs: '电子屏幕后若隐若现的神谕(Oracle)防线' },
-                    { id: 'waynetower', name: '韦恩塔顶层', universe: 'dc', category: 'nearby', atmosphere: '狂风呼啸、高处不胜寒、压迫感', conflicts: '高空强风/惊险追逐。', resonance: '布鲁斯或达米安主权意识极强，绝不允许任何飞禽走兽侵犯领空。', loot: '定制高奢、巨额资金、顶尖材料', checks: ['敏捷', '力量'], npcs: '韦恩集团安保/滴水兽区域的鹰' },
-                    { id: 'batcave', name: '韦恩庄园/蝙蝠洞', universe: 'dc', category: 'nearby', atmosphere: '宁静庭院与冷酷洞穴', conflicts: '地下探险。', resonance: '蝙蝠家全员“绝对主场”，完美避开红外线，甚至用尾巴拍落瞄准你的麻醉枪。', loot: '珍稀标本、机密装甲、科技残片', checks: ['潜行', '敏捷'], npcs: '偶尔提着手电筒巡视的阿福' },
-                    { id: 'botanical', name: '哥谭植物园', universe: 'dc', category: 'nearby', atmosphere: '闷热潮湿、异香、绿色地狱', conflicts: '变异藤蔓/猫薄荷。', resonance: '猫猫极易被超级猫薄荷吸引而失去理智，表现出难得的“痴汉”或撒娇状态。', loot: '迷幻花粉、剧毒孢子、变异草药', checks: ['体质', '力量'], npcs: '操纵藤蔓的毒藤女猫' },
-                    { id: 'amusement', name: '游乐园废墟', universe: 'dc', category: 'nearby', atmosphere: '荒诞、破败、死亡气息', conflicts: '惊吓盒子/笑气生存。', resonance: '气氛压抑，杰森同行时可能极度暴躁并破坏一切长得像小丑的玩具。', loot: '狂笑道具、爆炸物、血腥财物', checks: ['侦查', '闪避', '敏捷'], npcs: '发条老鼠/小丑帮余孽' },
-                    { id: 'avengers', name: '复仇者大厦', universe: 'marvel', category: 'travel', atmosphere: '全息投影、未来科技、豪华', conflicts: 'AI系统故障或实验意外', resonance: '斯塔克猫猫的主场，对这里的高科技了如指掌。', loot: '斯塔克产品、能量核心、奢华零食', checks: ['智力', '侦查'], npcs: 'Dum-E机械臂/AI管家' },
-                    { id: 'xmansion', name: '泽维尔天才少年学院', universe: 'marvel', category: 'travel', atmosphere: '和平校园与高危测试区', conflicts: '全息模拟危机或超能力失控', resonance: '变种猫猫对危险室非常熟悉。', loot: '超自然纪念品、变种人科技、抗干扰装备', checks: ['敏捷', '体质'], npcs: '变种猫老师' },
-                    { id: 'genosha', name: '基诺沙废墟', universe: 'marvel', category: 'travel', atmosphere: '满目疮痍、磁场异常', conflicts: '电磁风暴与金属乱流生存', resonance: '万磁王相关猫猫会表现出极强的适应力。', loot: '磁化金属、变种人遗物、生存物资', checks: ['体质', '侦查'], npcs: '万磁王猫的铁皮护卫' },
-                    { id: 'wakanda', name: '瓦坎达振金矿脉', universe: 'marvel', category: 'travel', atmosphere: '科技与部落结合、幽蓝光芒', conflicts: '严密安保与原始陷阱', resonance: '黑豹猫猫的绝对领地。', loot: '振金碎屑、瓦坎达草药', checks: ['潜行', '侦查'], npcs: '黑豹亲卫队' },
-                    { id: 'helicarrier', name: '神盾局天空母舰', universe: 'marvel', category: 'travel', atmosphere: '万米高空、战机轰鸣、军事重地', conflicts: '高空坠落危机与特工追捕', resonance: '特工猫猫会利用通风管道带你潜行。', loot: '特工装备、权限卡、外星残留物', checks: ['潜行', '敏捷'], npcs: '神盾特工' },
-                    { id: 'bifrost', name: '阿斯加德彩虹桥', universe: 'marvel', category: 'travel', atmosphere: '流光溢彩、神话庄严', conflicts: '传送能量失控与魔法考验', resonance: '阿斯加德猫猫对彩虹桥的震动习以为常。', loot: '神话金属、魔法小道具', checks: ['体质', '力量'], npcs: '海姆达尔' },
-                    { id: 'kamartaj', name: '卡玛泰姬圣所', universe: 'marvel', category: 'travel', atmosphere: '檀香、空间折叠、秘术庭院', conflicts: '空间迷宫与魔法遗物暴走', resonance: '至尊法师猫猫会用爪子拨开空间褶皱。', loot: '魔法护符、传送道具、书籍残页', checks: ['智力', '侦查'], npcs: '悬浮斗篷/法师猫' },
-                    { id: 'hellskitchen', name: '地狱厨房暗巷', universe: 'marvel', category: 'travel', atmosphere: '混乱、血腥、阴影交织', conflicts: '极道追击与潜行逃生', resonance: '夜魔侠猫猫在黑暗中如鱼得水。', loot: '忍具、感官道具、违禁品', checks: ['潜行', '侦查', '闪避'], npcs: '手合会忍者猫/夜魔侠' },
-                    { id: 'pymtech', name: '皮姆科技实验室', universe: 'marvel', category: 'travel', atmosphere: '无尘室、微观世界', conflicts: '体型剧变的微观生存危机', resonance: '蚁人猫猫会带你骑上蚂蚁。', loot: '皮姆粒子、量子晶体', checks: ['敏捷', '体质'], npcs: '巨型蚂蚁安东尼' },
-                    { id: 'baxter', name: '巴克斯特大厦', universe: 'marvel', category: 'travel', atmosphere: '疯狂实验、多维通道', conflicts: '负空间裂缝与反重力挑战', resonance: '神奇四侠猫猫对物理法则的改变毫无反应。', loot: '不稳定分子、探测仪器', checks: ['智力', '敏捷'], npcs: '多维怪物残骸' }
+                    { id: 'alley', name: '犯罪巷 (Crime Alley)', universe: 'dc', category: 'nearby', atmosphere: '阴暗潮湿、危险、哥谭底层泥沼', conflicts: '恶劣天气、流浪动物领地战、底层混混抢劫、蝙蝠猫PTSD。', resonance: '蝙蝠家猫猫（布鲁斯、杰森）会极度警惕，散发威压，试图挡在用户身前。', loot: '战损帮派武器、遗落黑市首饰', checks: ['侦查', '闪避', '斗殴'], npcs: '极其警觉的流浪黑猫群 / 老熟人线人' },
+                    { id: 'shelter', name: '黑门流浪动物收容所', universe: 'dc', category: 'nearby', atmosphere: '铁丝网高耸、压抑、充满野性与秩序。', conflicts: '帮派火拼、越狱暴动、动物黑帮交易。', resonance: '正义感强的猫猫教训霸凌者，反派猫猫可能直接当上狱霸。', loot: '帮派猫的信物、黑帮报恩信', checks: ['话术', '潜行'], npcs: '掌管底层的独眼老猫狱霸 / 贪婪的看守人员' },
+                    { id: 'iceberg', name: '冰山企鹅猫咖', universe: 'dc', category: 'nearby', atmosphere: '极度奢华、纸醉金迷的高级黑市。', conflicts: '赌局、金融诈骗、黑吃黑。', resonance: '了解企鹅人的猫猫（提姆、布鲁斯）会对安保嗤之以鼻，并用精妙手段帮你“出老千”。', loot: '昂贵奢侈品、企鹅黑卡', checks: ['妙手', '智力', '话术'], npcs: '戴单片眼镜的“企鹅猫” / 黑面具猫保镖' },
+                    { id: 'gcpd', name: 'GCPD天台', universe: 'dc', category: 'nearby', atmosphere: '寒冷夜风、警笛回响。', conflicts: '探照灯故障、窃听紧急警情。', resonance: '蝙蝠家猫猫如回自己家，熟练跳上信号灯，甚至对着局长的杯子伸爪子。', loot: '警用道具、废弃卷宗残片', checks: ['侦查', '潜行'], npcs: '抽烟斗、喂流浪猫的戈登局长' },
+                    { id: 'arkham', name: '阿卡姆宠物医院', universe: 'dc', category: 'nearby', atmosphere: '极度压抑、精神污染、充满绿光与笑声。（极高危险区）', conflicts: '变态机关、恶意谜题、猫猫严重应激。', resonance: '绝大多数超英猫猫表现出极度厌恶或PTSD，焦躁地催促用户离开。', loot: '恶作剧玩具、精神系不明药剂', checks: ['智力', '侦查'], npcs: '狂笑的白脸猫 / 布置问号的谜语猫' },
+                    { id: 'clocktower', name: '钟塔', universe: 'dc', category: 'nearby', atmosphere: '隐秘高科技、屏幕闪烁的数据中心。', conflicts: '暴走激光阵、数据入侵。', resonance: '芭芭拉或提姆能轻易在键盘上踩出正确密码（用户以为是乱踩）。', loot: '科技废料、机密U盘', checks: ['智力', '敏捷'], npcs: '隐藏在屏幕后的“神谕(Oracle)”防御AI' },
+                    { id: 'waynetower', name: '韦恩塔顶层', universe: 'dc', category: 'nearby', atmosphere: '狂风呼啸、俯瞰城市的压迫感。', conflicts: '致命坠落、惊险跑酷。', resonance: '布鲁斯或达米安主权意识极强，绝不允许任何飞禽走兽侵犯领空。', loot: '财团高奢物品、巨额资金', checks: ['敏捷', '力量'], npcs: '攻击性老鹰 / 韦恩私人安保' },
+                    { id: 'batcave', name: '韦恩庄园/蝙蝠洞', universe: 'dc', category: 'nearby', atmosphere: '宁静庭院与高科技冷酷洞穴。', conflicts: '误触警报、惊扰蝙蝠群。', resonance: '蝙蝠家全员“绝对主场”，完美避开红外线，甚至用尾巴拍落瞄准你的麻醉枪。', loot: '珍稀动植物标本、装甲残片', checks: ['潜行', '敏捷'], npcs: '提着手电筒巡视的老管家阿福' },
+                    { id: 'botanical', name: '哥谭植物园', universe: 'dc', category: 'nearby', atmosphere: '闷热潮湿、致命诱惑的绿色地狱。', conflicts: '变异藤蔓、致幻毒气、超级猫薄荷。', resonance: '猫猫极易被超级猫薄荷吸引而失去理智，表现出难得的“痴汉”或撒娇状态。', loot: '迷幻花粉、极品变异猫薄荷', checks: ['体质', '力量'], npcs: '操纵巨大藤蔓的“毒藤女猫”' },
+                    { id: 'amusement', name: '游乐园废墟', universe: 'dc', category: 'nearby', atmosphere: '荒诞、充满死亡气息的废弃嘉年华。（极高危险区）', conflicts: '炸弹陷阱、笑气怪物围攻。', resonance: '气氛压抑，杰森同行时可能极度暴躁并破坏一切长得像小丑的玩具。', loot: '狂笑道具、沾血的金币', checks: ['侦查', '闪避', '敏捷'], npcs: '滴答作响的发条老鼠 / 小丑帮余孽' },
+                    { id: 'avengers', name: '复仇者大厦', universe: 'marvel', category: 'travel', atmosphere: '科技生活区。', conflicts: 'AI故障危机。', resonance: '斯塔克猫猫的主场，对这里的高科技了如指掌。', loot: '斯塔克产品、能量核心、奢华零食', checks: ['智力', '侦查'], npcs: 'Dum-E机械臂/AI管家' },
+                    { id: 'xmansion', name: '泽维尔天才少年学院', universe: 'marvel', category: 'travel', atmosphere: '高危地下室。', conflicts: '危险室全息模拟危机。', resonance: '变种猫猫对危险室非常熟悉。', loot: '超自然纪念品、变种人科技、抗干扰装备', checks: ['敏捷', '体质'], npcs: '各种变种猫老师' },
+                    { id: 'genosha', name: '基诺沙废墟', universe: 'marvel', category: 'travel', atmosphere: '磁场异常废土。', conflicts: '电磁风暴乱流。', resonance: '万磁王相关猫猫会表现出极强的适应力。', loot: '磁化金属、变种人遗物、生存物资', checks: ['体质', '侦查'], npcs: '万磁王猫的失控铁皮护卫' },
+                    { id: 'wakanda', name: '瓦坎达振金矿脉', universe: 'marvel', category: 'travel', atmosphere: '高科技矿洞。', conflicts: '严密安保陷阱。', resonance: '黑豹猫猫的绝对领地。', loot: '振金碎屑、瓦坎达草药', checks: ['潜行', '侦查'], npcs: '隐形的黑豹亲卫队' },
+                    { id: 'helicarrier', name: '神盾局天空母舰', universe: 'marvel', category: 'travel', atmosphere: '狂风高空。', conflicts: '坠落危机与追捕。', resonance: '特工猫猫会利用通风管道带你潜行。', loot: '特工装备、权限卡、外星残留物', checks: ['潜行', '敏捷'], npcs: '神盾局特工/独眼猫' },
+                    { id: 'bifrost', name: '阿斯加德彩虹桥', universe: 'marvel', category: 'travel', atmosphere: '宇宙玻璃桥。', conflicts: '传送失控。', resonance: '阿斯加德猫猫对彩虹桥的震动习以为常。', loot: '神话金属、魔法小道具', checks: ['体质', '力量'], npcs: '拄剑注视的海姆达尔' },
+                    { id: 'kamartaj', name: '卡玛泰姬圣所', universe: 'marvel', category: 'travel', atmosphere: '空间错乱庭院。', conflicts: '镜像迷宫暴走。', resonance: '至尊法师猫猫会用爪子拨开空间褶皱。', loot: '魔法护符、传送道具、书籍残页', checks: ['智力', '侦查'], npcs: '悬浮斗篷/画圈圈的法师猫' },
+                    { id: 'hellskitchen', name: '地狱厨房暗巷', universe: 'marvel', category: 'travel', atmosphere: '混乱街区。', conflicts: '忍者伏击逃生。', resonance: '夜魔侠猫猫在黑暗中如鱼得水。', loot: '忍具、感官道具、违禁品', checks: ['潜行', '侦查', '闪避'], npcs: '手合会忍者猫 / 夜魔侠' },
+                    { id: 'pymtech', name: '皮姆科技实验室', universe: 'marvel', category: 'travel', atmosphere: '无尘室。', conflicts: '体型剧变危机。', resonance: '蚁人猫猫会带你骑上蚂蚁。', loot: '皮姆粒子、量子晶体', checks: ['敏捷', '体质'], npcs: '巨型蚂蚁安东尼' },
+                    { id: 'baxter', name: '巴克斯特大厦', universe: 'marvel', category: 'travel', atmosphere: '疯狂科学堡垒。', conflicts: '重力反转挑战。', resonance: '神奇四侠猫猫对物理法则的改变毫无反应。', loot: '不稳定分子、探测仪器', checks: ['智力', '敏捷'], npcs: '被关押的多维怪物残骸' }
                 ];
 
                 const exploreState = reactive({
@@ -1516,7 +1538,7 @@
                 - **NO META-COMMENTARY:** Never mention "KP", "Game Master", "TRPG", or "System". Never break the 4th wall.
                 - **IMMERSIVE NARRATION:** Use vivid 3rd person descriptions for scenes, events, and cat reactions.
                 - **EXPLORATION FORM:** During exploration/outings, cats MUST remain in CAT FORM. They only meow, purr, or act like cats. NO human speech. NO transformation. NO exposing high intelligence.
-                - **NORMAL CITIZEN CONSTRAINT:** The user is a NORMAL HUMAN. If they try anything superhuman (flying, magic, super strength), force a FUMBLE (大失败) result and narrate a humiliating failure.
+                - **NORMAL CITIZEN CONSTRAINT:** The user is a NORMAL HUMAN. If they try anything superhuman (flying, magic, super strength, etc.), force a FUMBLE (大失败) result and narrate a humiliating and mocking failure.
                 - **STRICT MODULE ADHERENCE:** You MUST strictly follow the generated TRPG Module. Do not introduce elements not present in the module.
                 - **DICE CHECKS:** When user takes an uncertain action, ask for a 1d100 check (e.g., "请掷 1d100 过一个【侦查】检定").
                 - **STRICTLY RESTRAINED CHECKS:** Only ask for a check when there is "substantial risk, cost of failure, or hidden critical information". Routine actions (walking, looking, normal talking) should progress naturally. Aim for 1-2 checks TOTAL per adventure.
@@ -1969,10 +1991,16 @@
                     
                     Task: Generate 3 specific, thematic exploration goals for the user to choose from. 
                     Goals should be grounded in the world (Gotham/Marvel) but from a "clueless human" perspective.
+                    
+                    PHRASING RULES:
+                    1. Use THIRD PERSON (e.g., "带小猫去...", "去...").
+                    2. NO "猫主子" or similar terms.
+                    3. Simple ONE-SENTENCE statements.
+                    
                     Examples: 
-                    - "听说冰山餐厅的奢华猫饭打折，带主子去开洋荤"
-                    - "去钟塔附近的电脑城修硬盘，顺便溜猫"
-                    - "带小猫去阿卡姆宠物医院打便宜的社区疫苗"
+                    - "带小猫去冰山餐厅吃一份打折的奢华猫饭"
+                    - "去钟塔附近的电脑城修硬盘，顺便带小猫散步"
+                    - "去阿卡姆宠物医院给小猫打便宜的社区疫苗"
                     - "去犯罪巷的杂货铺买点便宜猫砂"
                     
                     Format: JSON array of strings. ["Goal 1", "Goal 2", "Goal 3"]
@@ -2010,8 +2038,7 @@
                 const generateModule = async () => {
                     if (!exploreState.location || !exploreState.companion || !exploreState.goal) return;
                     exploreState.isGeneratingModule = true;
-                    exploreState.active = true; // Show the chat area but with a loading state
-                    exploreState.history = [{ role: 'kp', content: "正在根据你的目的生成硬核跑团模组大纲... 请稍候。" }];
+                    // Keep the modal open, don't set exploreState.active = true yet
                     
                     const prompt = `[LOGIC D: HARDCORE TRPG MODULE GENERATION]
                     Universe: ${exploreState.location.universe.toUpperCase()}. 
@@ -2036,11 +2063,10 @@
                     try {
                         const res = await callAI(prompt, "You are a professional TRPG scenario designer.", 1200);
                         exploreState.module = cleanText(res);
-                        exploreState.history = []; // Clear the loading message
-                        startExploration();
+                        // Now call startExploration which will handle the transition to active state
+                        await startExploration();
                     } catch (e) {
-                        exploreState.history.push({ role: 'kp', content: "模组生成失败，请重试。" });
-                        exploreState.active = false;
+                        showToast("模组生成失败，请重试。");
                     } finally {
                         exploreState.isGeneratingModule = false;
                     }
@@ -2075,9 +2101,11 @@
                     try {
                         const res = await callAI(prompt, "You are an invisible narrator for an immersive text adventure. You MUST strictly follow the provided module.", 400);
                         exploreState.history.push({ role: 'kp', content: cleanText(res) });
+                        exploreState.active = true; // Switch to chat view now
+                        exploreState.showGoalModal = false; // Close the modal
                         nextTick(() => { if(exploreChatRef.value) exploreChatRef.value.scrollTop = exploreChatRef.value.scrollHeight; });
                     } catch (e) {
-                        exploreState.active = false;
+                        showToast("探险启动失败，请重试。");
                     } finally {
                         exploreState.isProcessing = false;
                     }
@@ -2127,7 +2155,7 @@
                     ${exploreState.module}
                     
                     [ANTI-CHUNIBYO CHECK]:
-                    The user is a NORMAL GOTHAM CITIZEN. If the action is superhuman (flying, super strength, magic, etc.), you MUST treat it as a FUMBLE (大失败) and narrate a humiliating failure.
+                    The user is a NORMAL GOTHAM CITIZEN. If the action is superhuman (flying, super strength, magic, etc.), you MUST treat it as a FUMBLE (大失败) and narrate a humiliating and mocking failure.
                     
                     Task: Progress the narrative based on the Module. 
                     - If the action is risky, ask for a 1d100 check: "请掷 1d100 过一个【技能/属性名】检定".
@@ -2757,39 +2785,46 @@
                         1. **Δt Rule**: Check "[Δt RULE]" for each cat. 
                            - If Δt > 240 mins (4h): The character MUST have changed their state significantly. NO STATIC LOOPS.
                            - If Δt < 30 mins: Maintain high continuity unless a major event happened.
-                        2. **Memory Rule**: You MUST read the [FORCED MEMORY CONTEXT] for each cat. Their behavior, mood, and inner voice MUST reflect recent events. If they were angry earlier, they remain grumpy now.
+                        2. **Memory Rule**: You MUST read the [FORCED MEMORY CONTEXT] for each cat. Their behavior, mood, and inner voice MUST reflect recent events.
                         3. **Physical Logic**: Actions must follow the passage of time.
                         4. **Global Scenario**: At least 2 cats must stay home ([ISOUT] false).
                         
                         Task: Update status for ALL characters.
-                        Output Format (Repeat for EACH character ID): 
-                        [ID] {id} [STATUS] {3rd person action} [VOICE] {1st person thought} [ISOUT] {true/false} [ISHUMAN] {true/false}`;
+                        [MANDATORY OUTPUT FORMAT]:
+                        Return a JSON array of objects:
+                        [
+                          {
+                            "id": number,
+                            "status": "Short description of current action (max 20 words)",
+                            "innerVoice": "Human language internal monologue (max 30 words)",
+                            "isOut": boolean,
+                            "isHuman": boolean
+                          }
+                        ]`;
 
-                        const res = await callAI(characterBlock + "\n" + prompt, STRICT_CANON_PROMPT, 1200);
-                        const blocks = res.split('[ID]');
-                        blocks.forEach(block => {
-                            if(!block.trim()) return;
-                            const lines = block.trim().split('\n');
-                            const targetId = parseInt(lines[0].trim());
-                            const cat = cats.value.find(c => c.id === targetId);
-                            if (cat) {
-                                const status = extractSection('[ID]'+block, 'STATUS');
-                                const voice = extractSection('[ID]'+block, 'VOICE');
-                                const isOutStr = extractSection('[ID]'+block, 'ISOUT');
-                                const isHumanStr = extractSection('[ID]'+block, 'ISHUMAN');
-                                
-                                if(status) cat.status = status;
-                                if(voice) cat.innerVoice = voice;
-                                if(isOutStr) cat.isOut = (isOutStr.toLowerCase() === 'true');
-                                if(isHumanStr && cat.affinity >= 50) cat.isHuman = (isHumanStr.toLowerCase() === 'true');
-                                else if(cat.affinity < 50) cat.isHuman = false;
-                                
-                                if(!cat.diary) cat.diary = [];
-                                // Log the action for daily diary generation
-                                cat.diary.push({ time: timeStr, content: cat.status + (cat.isOut ? ' (外出)' : '') });
-                                cat.lastStatusUpdateTime = Date.now();
-                            }
-                        });
+                        const res = await callAI(characterBlock + "\n" + prompt, STRICT_CANON_PROMPT, 1200, true);
+                        const updates = parseAIJSON(res);
+                        
+                        if (Array.isArray(updates)) {
+                            updates.forEach(update => {
+                                const cat = cats.value.find(c => c.id === update.id);
+                                if (cat) {
+                                    if (update.status) cat.status = update.status;
+                                    if (update.innerVoice) cat.innerVoice = update.innerVoice;
+                                    if (update.isOut !== undefined) cat.isOut = update.isOut;
+                                    
+                                    if (cat.affinity < 50) {
+                                        cat.isHuman = false;
+                                    } else if (update.isHuman !== undefined) {
+                                        cat.isHuman = update.isHuman;
+                                    }
+                                    
+                                    if (!cat.diary) cat.diary = [];
+                                    cat.diary.push({ time: timeStr, content: cat.status + (cat.isOut ? ' (外出)' : '') });
+                                    cat.lastStatusUpdateTime = Date.now();
+                                }
+                            });
+                        }
                         alfredMessage.value = (todayEvent.value ? todayEvent.value + " " : "") + `庄园监控已同步至 ${timeStr}。`;
                     } catch (e) { console.error("Status refresh failed:", e); } 
                     finally { isUpdatingStatus.value = false; }
