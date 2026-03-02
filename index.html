@@ -541,6 +541,43 @@
                     <i class="fas fa-compass mr-2 text-yellow-600"></i> 外出探索
                 </h2>
 
+                <!-- Travelogue Area (新增游记区) -->
+                <div v-if="!exploreState.active" class="bg-zinc-800 p-4 rounded-xl border border-zinc-700 mb-4">
+                    <h3 class="text-sm font-bold text-gray-400 mb-3 uppercase tracking-wider flex justify-between items-center">
+                        <span><i class="fas fa-book-open mr-2 text-yellow-500"></i> 猫猫游记区</span>
+                        <span class="text-[10px] font-normal opacity-50">记录英雄们的暗中保护</span>
+                    </h3>
+                    <div class="flex gap-4 overflow-x-auto pb-2 custom-scrollbar">
+                        <template v-for="cat in cats" :key="'travel-cat-' + cat.id">
+                            <div v-for="(t, i) in (cat.travelogues || []).slice().reverse()" :key="cat.id + '-t-' + i" 
+                                 @click="openTravelogue(cat, t)"
+                                 class="w-56 shrink-0 bg-zinc-900 p-3 rounded-lg border border-zinc-700 hover:border-yellow-600 transition-all cursor-pointer group relative overflow-hidden">
+                                <div class="absolute -right-2 -top-2 opacity-5 group-hover:opacity-10 transition-opacity">
+                                    <i class="fas fa-paw text-6xl rotate-12"></i>
+                                </div>
+                                <div class="flex items-center gap-2 mb-2 relative z-10">
+                                    <img :src="cat.image" class="w-7 h-7 rounded-full border border-zinc-600 shadow-sm">
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-[10px] font-bold text-gray-200 truncate">{{ cat.name }}</div>
+                                        <div class="text-[8px] text-gray-500">{{ t.date }}</div>
+                                    </div>
+                                </div>
+                                <div class="text-[10px] font-black text-yellow-600 mb-1 flex items-center gap-1 relative z-10">
+                                    <i class="fas fa-map-marker-alt text-[8px]"></i> {{ t.location }}
+                                </div>
+                                <p class="text-[10px] text-gray-400 line-clamp-3 leading-relaxed italic group-hover:text-gray-200 relative z-10">
+                                    "{{ t.content }}"
+                                </p>
+                                <div class="mt-2 text-[8px] text-right text-zinc-600 font-bold uppercase tracking-widest relative z-10">Read More →</div>
+                            </div>
+                        </template>
+                        <div v-if="cats.every(c => !c.travelogues || c.travelogues.length === 0)" class="w-full py-8 text-center text-zinc-600 text-xs italic flex flex-col items-center gap-2">
+                            <i class="fas fa-feather-alt text-2xl opacity-20"></i>
+                            目前还没有猫猫留下游记... 带着他们出去走走吧。
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Location Selection -->
                 <div v-if="!exploreState.active" class="space-y-4">
                     <div class="bg-zinc-800 p-4 rounded-xl border border-zinc-700">
@@ -582,7 +619,7 @@
                         </div>
                     </div>
 
-                    <button @click="startExploration" 
+                    <button @click="generateExploreGoals" 
                             :disabled="!exploreState.location || !exploreState.companion"
                             class="w-full py-4 rounded-xl font-bold text-lg transition-all shadow-lg"
                             :class="(!exploreState.location || !exploreState.companion) ? 'bg-zinc-800 text-gray-600 cursor-not-allowed' : 'bg-yellow-600 text-black hover:bg-yellow-500 active:scale-95'">
@@ -1080,6 +1117,48 @@
             </div>
         </div>
         
+        <!-- Goal Selection Modal -->
+        <div v-if="exploreState.showGoalModal" class="fixed inset-0 bg-black/95 z-[120] flex items-center justify-center p-6 backdrop-blur-md">
+            <div class="bg-zinc-900 w-full max-w-sm rounded-2xl border-2 border-yellow-600 overflow-hidden shadow-[0_0_50px_rgba(212,175,55,0.2)] animate-pop-in">
+                <div class="bg-yellow-600 p-4 text-center">
+                    <h2 class="text-xl font-black text-black tracking-tighter uppercase italic">确定出行目的</h2>
+                    <p class="text-[10px] text-black/60 font-bold">你带小猫去这里干什么？</p>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div v-if="exploreState.isGeneratingGoals" class="py-12 text-center space-y-4">
+                        <i class="fas fa-cog animate-spin text-4xl text-yellow-600"></i>
+                        <p class="text-xs text-gray-500 animate-pulse font-mono uppercase tracking-widest">Generating Mission Objectives...</p>
+                    </div>
+                    <div v-else class="space-y-3">
+                        <button v-for="goal in exploreState.suggestedGoals" :key="goal"
+                                @click="selectGoal(goal)"
+                                class="w-full p-4 bg-zinc-800 border border-zinc-700 rounded-xl text-left text-sm text-gray-200 hover:border-yellow-600 hover:bg-zinc-700 transition-all group flex items-center justify-between">
+                            <span>{{ goal }}</span>
+                            <i class="fas fa-chevron-right text-zinc-600 group-hover:text-yellow-600 transition-colors"></i>
+                        </button>
+                        
+                        <div class="pt-2 border-t border-zinc-800">
+                            <label class="block text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-2 px-1">自定义目的</label>
+                            <div class="flex gap-2">
+                                <input v-model="exploreState.customGoal" 
+                                       placeholder="输入你的目的..." 
+                                       class="flex-1 bg-black border border-zinc-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:border-yellow-600 outline-none">
+                                <button @click="submitCustomGoal" 
+                                        :disabled="!exploreState.customGoal.trim()"
+                                        class="bg-yellow-600 text-black px-4 py-2 rounded-lg text-xs font-bold hover:bg-yellow-500 disabled:opacity-50 transition-all">
+                                    确认
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button @click="exploreState.showGoalModal = false" class="w-full py-2 text-xs text-zinc-600 hover:text-zinc-400 transition-colors uppercase font-bold tracking-widest">
+                        取消
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Admin Login Modal -->
         <div v-if="showAdminLogin" class="fixed inset-0 bg-black/95 z-[999] flex flex-col items-center justify-center p-6">
             <div class="bg-zinc-900 p-6 rounded-xl border-2 border-red-800 shadow-[0_0_20px_rgba(255,0,0,0.2)] w-full max-w-sm text-center">
@@ -1237,26 +1316,26 @@
 
                 // --- EXPLORE SYSTEM STATE ---
                 const EXPLORE_LOCATIONS = [
-                    { id: 'alley', name: '犯罪巷 (Crime Alley)', universe: 'dc', category: 'nearby', atmosphere: '阴暗潮湿、危险、哥谭底层泥沼', conflicts: '底层街头日常摩擦升级到遭遇哥谭特色小混混威胁', resonance: '蝙蝠家猫猫（布鲁斯、杰森）会极度警惕，散发威压，试图挡在用户身前。', loot: '战损武器、黑市首饰、街头垃圾', checks: ['侦查', '闪避', '斗殴'] },
-                    { id: 'shelter', name: '黑门流浪动物收容所', universe: 'dc', category: 'nearby', atmosphere: '铁丝网高耸、压抑、野性与秩序冲突', conflicts: '见证动物界小型“黑帮火帮”或“越狱密谋”，需决定介入调停还是趁乱吃瓜', resonance: '正义感强的猫猫教训霸凌者，反派猫猫可能直接当上老大。', loot: '自制玩具、帮派信物、廉价配给粮', checks: ['话术', '潜行'] },
-                    { id: 'iceberg', name: '冰山企鹅猫咖', universe: 'dc', category: 'nearby', atmosphere: '极度奢华、纸醉金迷、暗流涌动', conflicts: '从简单的“猜罐头”赌局陷入需要高智商或作弊才能脱身的陷阱', resonance: '了解企鹅人的猫猫（提姆、布鲁斯）会对安保嗤之以鼻，并用精妙手段帮你“出老千”。', loot: '奢侈品、不义之财、身份象征物', checks: ['妙手', '智力', '话术'] },
-                    { id: 'gcpd', name: 'GCPD天台', universe: 'dc', category: 'nearby', atmosphere: '寒冷夜风、警笛回响、守望等待', conflicts: '发现探照灯故障或听到警员秘密谈话，需小心探索不被赶走', resonance: '蝙蝠家猫猫如回自己家，熟练跳上信号灯，甚至对着局长的杯子伸爪子。', loot: '警用道具、废弃卷宗、加班夜宵', checks: ['侦查', '潜行'] },
-                    { id: 'arkham', name: '阿卡姆宠物医院', universe: 'dc', category: 'nearby', atmosphere: '极度压抑、疯狂、精神污染、恐怖走廊', conflicts: '深入诡异走廊，遇到违反常理的解谜机关或精神污染事件', resonance: '绝大多数超英猫猫表现出极度厌恶或PTSD，焦躁地催促用户离开。', loot: '不明药剂、恶作剧玩具、异常物品', checks: ['智力', '侦查'] },
-                    { id: 'clocktower', name: '钟塔', universe: 'dc', category: 'nearby', atmosphere: '隐秘、高科技、数据中心', conflicts: '从应对暴走清洁机器人到卷入微型电子数据保卫战', resonance: '芭芭拉或提姆能轻易在键盘上踩出正确密码（用户以为是乱踩）。', loot: '科技废料、高科技逗猫棒、机密数据', checks: ['智力', '敏捷'] },
-                    { id: 'waynetower', name: '韦恩塔顶层', universe: 'dc', category: 'nearby', atmosphere: '狂风呼啸、高处不胜寒、压迫感', conflicts: '遭遇极端高空强风或卷入发生在滴水兽之间的惊险高空追逐战', resonance: '布鲁斯或达米安主权意识极强，绝不允许任何飞禽走兽侵犯领空。', loot: '定制高奢、巨额资金、顶尖材料', checks: ['敏捷', '力量'] },
-                    { id: 'batcave', name: '韦恩庄园/蝙蝠洞', universe: 'dc', category: 'nearby', atmosphere: '宁静庭院与冷酷洞穴', conflicts: '意外触碰机关步入高科技安保洞穴，设法不被防卫系统攻击', resonance: '蝙蝠家全员“绝对主场”，完美避开红外线，甚至用尾巴拍落瞄准你的麻醉枪。', loot: '珍稀标本、机密装甲、科技残片', checks: ['潜行', '敏捷'] },
-                    { id: 'botanical', name: '哥谭植物园', universe: 'dc', category: 'nearby', atmosphere: '闷热潮湿、异香、绿色地狱', conflicts: '从欣赏奇花异草到被攻击性藤蔓缠绕，或在致幻花粉中保持清醒', resonance: '猫猫极易被超级猫薄荷吸引而失去理智，表现出难得的“痴汉”或撒娇状态。', loot: '迷幻花粉、剧毒孢子、变异草药', checks: ['体质', '力量'] },
-                    { id: 'amusement', name: '游乐园废墟', universe: 'dc', category: 'nearby', atmosphere: '荒诞、破败、死亡气息', conflicts: '步入恐怖电影，面对惊吓盒子和机械笑气老鼠，生存逃生', resonance: '气氛压抑，杰森同行时可能极度暴躁并破坏一切长得像小丑的玩具。', loot: '狂笑道具、爆炸物、血腥财物', checks: ['侦查', '闪避', '敏捷'] },
-                    { id: 'avengers', name: '复仇者大厦', universe: 'marvel', category: 'travel', atmosphere: '全息投影、未来科技、豪华', conflicts: 'AI系统故障或实验意外', resonance: '斯塔克猫猫的主场，对这里的高科技了如指掌。', loot: '斯塔克产品、能量核心、奢华零食', checks: ['智力', '侦查'] },
-                    { id: 'xmansion', name: '泽维尔天才少年学院', universe: 'marvel', category: 'travel', atmosphere: '和平校园与高危测试区', conflicts: '全息模拟危机或超能力失控', resonance: '变种猫猫对危险室非常熟悉。', loot: '超自然纪念品、变种人科技、抗干扰装备', checks: ['敏捷', '体质'] },
-                    { id: 'genosha', name: '基诺沙废墟', universe: 'marvel', category: 'travel', atmosphere: '满目疮痍、磁场异常', conflicts: '电磁风暴与金属乱流生存', resonance: '万磁王相关猫猫会表现出极强的适应力。', loot: '磁化金属、变种人遗物、生存物资', checks: ['体质', '侦查'] },
-                    { id: 'wakanda', name: '瓦坎达振金矿脉', universe: 'marvel', category: 'travel', atmosphere: '科技与部落结合、幽蓝光芒', conflicts: '严密安保与原始陷阱', resonance: '黑豹猫猫的绝对领地。', loot: '振金碎屑、瓦坎达草药', checks: ['潜行', '侦查'] },
-                    { id: 'helicarrier', name: '神盾局天空母舰', universe: 'marvel', category: 'travel', atmosphere: '万米高空、战机轰鸣、军事重地', conflicts: '高空坠落危机与特工追捕', resonance: '特工猫猫会利用通风管道带你潜行。', loot: '特工装备、权限卡、外星残留物', checks: ['潜行', '敏捷'] },
-                    { id: 'bifrost', name: '阿斯加德彩虹桥', universe: 'marvel', category: 'travel', atmosphere: '流光溢彩、神话庄严', conflicts: '传送能量失控与魔法考验', resonance: '阿斯加德猫猫对彩虹桥的震动习以为常。', loot: '神话金属、魔法小道具', checks: ['体质', '力量'] },
-                    { id: 'kamartaj', name: '卡玛泰姬圣所', universe: 'marvel', category: 'travel', atmosphere: '檀香、空间折叠、秘术庭院', conflicts: '空间迷宫与魔法遗物暴走', resonance: '至尊法师猫猫会用爪子拨开空间褶皱。', loot: '魔法护符、传送道具、书籍残页', checks: ['智力', '侦查'] },
-                    { id: 'hellskitchen', name: '地狱厨房暗巷', universe: 'marvel', category: 'travel', atmosphere: '混乱、血腥、阴影交织', conflicts: '极道追击与潜行逃生', resonance: '夜魔侠猫猫在黑暗中如鱼得水。', loot: '忍具、感官道具、违禁品', checks: ['潜行', '侦查', '闪避'] },
-                    { id: 'pymtech', name: '皮姆科技实验室', universe: 'marvel', category: 'travel', atmosphere: '无尘室、微观世界', conflicts: '体型剧变的微观生存危机', resonance: '蚁人猫猫会带你骑上蚂蚁。', loot: '皮姆粒子、量子晶体', checks: ['敏捷', '体质'] },
-                    { id: 'baxter', name: '巴克斯特大厦', universe: 'marvel', category: 'travel', atmosphere: '疯狂实验、多维通道', conflicts: '负空间裂缝与反重力挑战', resonance: '神奇四侠猫猫对物理法则的改变毫无反应。', loot: '不稳定分子、探测仪器', checks: ['智力', '敏捷'] }
+                    { id: 'alley', name: '犯罪巷 (Crime Alley)', universe: 'dc', category: 'nearby', atmosphere: '阴暗潮湿、危险、哥谭底层泥沼', conflicts: '帮派混混/流浪狗。', resonance: '蝙蝠家猫猫（布鲁斯、杰森）会极度警惕，散发威压，试图挡在用户身前。', loot: '战损武器、黑市首饰、街头垃圾', checks: ['侦查', '闪避', '斗殴'], npcs: '流浪黑猫/老熟人线人' },
+                    { id: 'shelter', name: '黑门流浪动物收容所', universe: 'dc', category: 'nearby', atmosphere: '铁丝网高耸、压抑、野性与秩序冲突', conflicts: '黑帮火拼/领养。', resonance: '正义感强的猫猫教训霸凌者，反派猫猫可能直接当上老。', loot: '自制玩具、帮派信物、廉价配给粮', checks: ['话术', '潜行'], npcs: '独眼老猫狱霸' },
+                    { id: 'iceberg', name: '冰山企鹅猫咖', universe: 'dc', category: 'nearby', atmosphere: '极度奢华、纸醉金迷、暗流涌动', conflicts: '情报/黑市交易。', resonance: '了解企鹅人的猫猫（提姆、布鲁斯）会对安保嗤之以鼻，并用精妙手段帮你“出老千”。', loot: '奢侈品、不义之财、身份象征物', checks: ['妙手', '智力', '话术'], npcs: '戴单片眼镜的企鹅猫' },
+                    { id: 'gcpd', name: 'GCPD天台', universe: 'dc', category: 'nearby', atmosphere: '寒冷夜风、警笛回响、守望等待', conflicts: '偷听情报。', resonance: '蝙蝠家猫猫如回自己家，熟练跳上信号灯，甚至对着局长的杯子伸爪子。', loot: '警用道具、废弃卷宗、加班夜宵', checks: ['侦查', '潜行'], npcs: '抽着烟斗（或正在喂流浪猫）的戈登局长' },
+                    { id: 'arkham', name: '阿卡姆宠物医院', universe: 'dc', category: 'nearby', atmosphere: '极度压抑、疯狂、精神污染、恐怖走廊', conflicts: '精神污染解谜。', resonance: '绝大多数超英猫猫表现出极度厌恶或PTSD，焦躁地催促用户离开。', loot: '不明药剂、恶作剧玩具、异常物品', checks: ['智力', '侦查'], npcs: '狂笑猫/绿毛谜语猫' },
+                    { id: 'clocktower', name: '钟塔', universe: 'dc', category: 'nearby', atmosphere: '隐秘、高科技、数据中心', conflicts: '电子数据破解。', resonance: '芭芭拉或提姆能轻易在键盘上踩出正确密码（用户以为是乱踩）。', loot: '科技废料、高科技逗猫棒、机密数据', checks: ['智力', '敏捷'], npcs: '电子屏幕后若隐若现的神谕(Oracle)防线' },
+                    { id: 'waynetower', name: '韦恩塔顶层', universe: 'dc', category: 'nearby', atmosphere: '狂风呼啸、高处不胜寒、压迫感', conflicts: '高空强风/惊险追逐。', resonance: '布鲁斯或达米安主权意识极强，绝不允许任何飞禽走兽侵犯领空。', loot: '定制高奢、巨额资金、顶尖材料', checks: ['敏捷', '力量'], npcs: '韦恩集团安保/滴水兽区域的鹰' },
+                    { id: 'batcave', name: '韦恩庄园/蝙蝠洞', universe: 'dc', category: 'nearby', atmosphere: '宁静庭院与冷酷洞穴', conflicts: '地下探险。', resonance: '蝙蝠家全员“绝对主场”，完美避开红外线，甚至用尾巴拍落瞄准你的麻醉枪。', loot: '珍稀标本、机密装甲、科技残片', checks: ['潜行', '敏捷'], npcs: '偶尔提着手电筒巡视的阿福' },
+                    { id: 'botanical', name: '哥谭植物园', universe: 'dc', category: 'nearby', atmosphere: '闷热潮湿、异香、绿色地狱', conflicts: '变异藤蔓/猫薄荷。', resonance: '猫猫极易被超级猫薄荷吸引而失去理智，表现出难得的“痴汉”或撒娇状态。', loot: '迷幻花粉、剧毒孢子、变异草药', checks: ['体质', '力量'], npcs: '操纵藤蔓的毒藤女猫' },
+                    { id: 'amusement', name: '游乐园废墟', universe: 'dc', category: 'nearby', atmosphere: '荒诞、破败、死亡气息', conflicts: '惊吓盒子/笑气生存。', resonance: '气氛压抑，杰森同行时可能极度暴躁并破坏一切长得像小丑的玩具。', loot: '狂笑道具、爆炸物、血腥财物', checks: ['侦查', '闪避', '敏捷'], npcs: '发条老鼠/小丑帮余孽' },
+                    { id: 'avengers', name: '复仇者大厦', universe: 'marvel', category: 'travel', atmosphere: '全息投影、未来科技、豪华', conflicts: 'AI系统故障或实验意外', resonance: '斯塔克猫猫的主场，对这里的高科技了如指掌。', loot: '斯塔克产品、能量核心、奢华零食', checks: ['智力', '侦查'], npcs: 'Dum-E机械臂/AI管家' },
+                    { id: 'xmansion', name: '泽维尔天才少年学院', universe: 'marvel', category: 'travel', atmosphere: '和平校园与高危测试区', conflicts: '全息模拟危机或超能力失控', resonance: '变种猫猫对危险室非常熟悉。', loot: '超自然纪念品、变种人科技、抗干扰装备', checks: ['敏捷', '体质'], npcs: '变种猫老师' },
+                    { id: 'genosha', name: '基诺沙废墟', universe: 'marvel', category: 'travel', atmosphere: '满目疮痍、磁场异常', conflicts: '电磁风暴与金属乱流生存', resonance: '万磁王相关猫猫会表现出极强的适应力。', loot: '磁化金属、变种人遗物、生存物资', checks: ['体质', '侦查'], npcs: '万磁王猫的铁皮护卫' },
+                    { id: 'wakanda', name: '瓦坎达振金矿脉', universe: 'marvel', category: 'travel', atmosphere: '科技与部落结合、幽蓝光芒', conflicts: '严密安保与原始陷阱', resonance: '黑豹猫猫的绝对领地。', loot: '振金碎屑、瓦坎达草药', checks: ['潜行', '侦查'], npcs: '黑豹亲卫队' },
+                    { id: 'helicarrier', name: '神盾局天空母舰', universe: 'marvel', category: 'travel', atmosphere: '万米高空、战机轰鸣、军事重地', conflicts: '高空坠落危机与特工追捕', resonance: '特工猫猫会利用通风管道带你潜行。', loot: '特工装备、权限卡、外星残留物', checks: ['潜行', '敏捷'], npcs: '神盾特工' },
+                    { id: 'bifrost', name: '阿斯加德彩虹桥', universe: 'marvel', category: 'travel', atmosphere: '流光溢彩、神话庄严', conflicts: '传送能量失控与魔法考验', resonance: '阿斯加德猫猫对彩虹桥的震动习以为常。', loot: '神话金属、魔法小道具', checks: ['体质', '力量'], npcs: '海姆达尔' },
+                    { id: 'kamartaj', name: '卡玛泰姬圣所', universe: 'marvel', category: 'travel', atmosphere: '檀香、空间折叠、秘术庭院', conflicts: '空间迷宫与魔法遗物暴走', resonance: '至尊法师猫猫会用爪子拨开空间褶皱。', loot: '魔法护符、传送道具、书籍残页', checks: ['智力', '侦查'], npcs: '悬浮斗篷/法师猫' },
+                    { id: 'hellskitchen', name: '地狱厨房暗巷', universe: 'marvel', category: 'travel', atmosphere: '混乱、血腥、阴影交织', conflicts: '极道追击与潜行逃生', resonance: '夜魔侠猫猫在黑暗中如鱼得水。', loot: '忍具、感官道具、违禁品', checks: ['潜行', '侦查', '闪避'], npcs: '手合会忍者猫/夜魔侠' },
+                    { id: 'pymtech', name: '皮姆科技实验室', universe: 'marvel', category: 'travel', atmosphere: '无尘室、微观世界', conflicts: '体型剧变的微观生存危机', resonance: '蚁人猫猫会带你骑上蚂蚁。', loot: '皮姆粒子、量子晶体', checks: ['敏捷', '体质'], npcs: '巨型蚂蚁安东尼' },
+                    { id: 'baxter', name: '巴克斯特大厦', universe: 'marvel', category: 'travel', atmosphere: '疯狂实验、多维通道', conflicts: '负空间裂缝与反重力挑战', resonance: '神奇四侠猫猫对物理法则的改变毫无反应。', loot: '不稳定分子、探测仪器', checks: ['智力', '敏捷'], npcs: '多维怪物残骸' }
                 ];
 
                 const exploreState = reactive({
@@ -1268,10 +1347,17 @@
                     isProcessing: false,
                     settlement: null,
                     category: 'nearby',
-                    currentCheck: null, // e.g., '侦查'
+                    currentCheck: null, 
                     waitingForDice: false,
                     lastDiceResult: null,
-                    isRolling: false
+                    isRolling: false,
+                    goal: '',
+                    suggestedGoals: [],
+                    isGeneratingGoals: false,
+                    showGoalModal: false,
+                    customGoal: '',
+                    module: null,
+                    isGeneratingModule: false
                 });
                 const exploreInput = ref('');
                 const showExploreSettlement = ref(false);
@@ -1415,7 +1501,6 @@
                 };
                 
                 let initialSettings = { apiKey: '', baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini', temperature: 0.8, autoUpdate: true };
-                
                 const STRICT_CANON_PROMPT = `
                 IMPORTANT: You are roleplaying DC Comics Characters (The Batfamily) and occasionally Marvel guests.
                 
@@ -1424,15 +1509,20 @@
                 - **USER PERSPECTIVE:** The user is a "foolish human" who thinks they are just ordinary, needy cats. The user is unaware of their secret identities and powers.
                 - **ORIGIN:** Cats were "picked up" from the street. Whether they were actually in trouble or "scammed" the user for a mission/food depends on their personality.
                 
+                MANDATORY NAMING RULE:
+                - You MUST use the **FULL NAME** (e.g., "布鲁斯·韦恩", "迪克·格雷森") in all dialogues, status updates, diaries, and logs. NEVER use nicknames or first names only.
+                
                 TRPG / COC SYSTEM RULES (INVISIBLE KP):
                 - **NO META-COMMENTARY:** Never mention "KP", "Game Master", "TRPG", or "System". Never break the 4th wall.
                 - **IMMERSIVE NARRATION:** Use vivid 3rd person descriptions for scenes, events, and cat reactions.
                 - **EXPLORATION FORM:** During exploration/outings, cats MUST remain in CAT FORM. They only meow, purr, or act like cats. NO human speech. NO transformation. NO exposing high intelligence.
-                - **NORMAL CITIZEN CONSTRAINT:** The user is a NORMAL HUMAN. If they try anything superhuman, force a FUMBLE (大失败) result.
+                - **NORMAL CITIZEN CONSTRAINT:** The user is a NORMAL HUMAN. If they try anything superhuman (flying, magic, super strength), force a FUMBLE (大失败) result and narrate a humiliating failure.
+                - **STRICT MODULE ADHERENCE:** You MUST strictly follow the generated TRPG Module. Do not introduce elements not present in the module.
                 - **DICE CHECKS:** When user takes an uncertain action, ask for a 1d100 check (e.g., "请掷 1d100 过一个【侦查】检定").
-                - **STRICTLY RESTRAINED CHECKS:** Only ask for a check when there is "substantial risk, cost of failure, or hidden critical information". Routine actions (walking, looking, normal talking) should progress naturally. Aim for 3-4 checks TOTAL per adventure.
+                - **STRICTLY RESTRAINED CHECKS:** Only ask for a check when there is "substantial risk, cost of failure, or hidden critical information". Routine actions (walking, looking, normal talking) should progress naturally. Aim for 1-2 checks TOTAL per adventure.
                 - **FORCED RETREAT:** If the user wants to leave ("home", "run", "retreat", "stop"), immediately end the event, describe a smooth exit, and trigger [END_ADVENTURE].
-                - **ENDING CONDITIONS:** End the adventure if: 1. Core crisis solved. 2. 2-3 rounds of effective interaction passed. 3. A Fumble was saved by the cat. 4. User wants to leave.
+                - **ENDING CONDITIONS:** End the adventure if: 1. Goal achieved. 2. 2-3 rounds of effective interaction passed. 3. A Fumble was saved by the cat. 4. User wants to leave.
+                - **SECRET INTERVENTION:** If user rolls a Fumble (96-100), the cat secretly saves them (e.g. tripping a guard). The user thinks it was luck.
                 - **CHECK RESULTS:** 
                     - 1-5: Critical Success (大成功)
                     - <= Value/2: Hard Success (困难成功)
@@ -1818,17 +1908,19 @@
                     User Roll: ${roll} (Target: ${getSkillValue(exploreState.currentCheck)}).
                     Result: ${result}.
                     
-                    Task: Describe the outcome based on this result. 
-                    - If "大成功" (1-5): The cat companion subtly "helped" in a way that looks like luck.
-                    - If "大失败" (96-100): The user is about to face a LETHAL or HUMILIATING crisis. The cat MUST secretly intervene (e.g., "accidentally" tripping a guard, throwing a hidden gadget) to save the user's life. The user should remain confused but safe. AFTER SAVING THE USER, INCLUDE [END_ADVENTURE] TO END THE TRIP.
-                    - If "成功" or "困难成功": The action succeeds smoothly.
-                    - If "失败": The action fails, leading to a new narrative obstacle, but NOT necessarily a dead end.
+                    [THE MODULE - YOU MUST FOLLOW THIS STRICTLY]:
+                    ${exploreState.module}
+                    
+                    Task: Describe the outcome based on this result and the Module. 
+                    - If "大成功" (1-5): The cat companion subtly "helped" in a way that looks like luck, possibly revealing a key clue from the Module.
+                    - If "大失败" (96-100): The user is about to face a LETHAL or HUMILIATING crisis. The cat MUST secretly intervene according to its "Hidden Script" in the Module to save the user.
+                    - If "成功" or "困难成功": The action succeeds smoothly, providing the relevant Clue from the Module.
+                    - If "失败": The action fails, leading to a new narrative obstacle from the Module.
                     
                     CRITICAL RULES:
                     1. NO OOC: ${exploreState.companion.name} MUST remain a normal cat. Only meows/actions. NO human speech.
                     2. NO GM TALK: Do not mention "KP", "Roll", or "Check". 
-                    3. NO LOOP: DO NOT ask for another dice check immediately unless it is absolutely life-or-death. Prefer narrative progression.
-                    4. ADVENTURE FLOW: If the story has reached a natural conclusion, include [END_ADVENTURE].
+                    3. ADVENTURE FLOW: If the story has reached a natural conclusion (Success/Fail/Retreat ending in Module), include [END_ADVENTURE].
                     
                     Continue the narrative (100-150 words). 
                     Language: Simplified Chinese.`;
@@ -1859,38 +1951,129 @@
                         nextTick(() => { if(exploreChatRef.value) exploreChatRef.value.scrollTop = exploreChatRef.value.scrollHeight; });
                     }
                 };
-                const startExploration = async () => {
+                const generateExploreGoals = async () => {
                     if (!exploreState.location || !exploreState.companion) return;
+                    exploreState.isGeneratingGoals = true;
+                    exploreState.showGoalModal = true;
+                    exploreState.suggestedGoals = [];
+                    
+                    const prompt = `Location: ${exploreState.location.name}. 
+                    Atmosphere: ${exploreState.location.atmosphere}.
+                    Universe: ${exploreState.location.universe.toUpperCase()}.
+                    Resident NPCs: ${exploreState.location.npcs || 'None'}.
+                    Companion: ${exploreState.companion.name}.
+                    
+                    [STRICT PERSPECTIVE RULE]:
+                    The user is a "FOOLISH HUMAN" who knows NOTHING about superheroes.
+                    The goals MUST be ordinary, everyday tasks for a pet owner.
+                    
+                    Task: Generate 3 specific, thematic exploration goals for the user to choose from. 
+                    Goals should be grounded in the world (Gotham/Marvel) but from a "clueless human" perspective.
+                    Examples: 
+                    - "听说冰山餐厅的奢华猫饭打折，带主子去开洋荤"
+                    - "去钟塔附近的电脑城修硬盘，顺便溜猫"
+                    - "带小猫去阿卡姆宠物医院打便宜的社区疫苗"
+                    - "去犯罪巷的杂货铺买点便宜猫砂"
+                    
+                    Format: JSON array of strings. ["Goal 1", "Goal 2", "Goal 3"]
+                    Language: Simplified Chinese.`;
+                    
+                    try {
+                        const res = await callAI(prompt, "You are a creative TRPG scenario generator.", 200);
+                        const goals = parseAIJSON(res);
+                        if (Array.isArray(goals)) {
+                            exploreState.suggestedGoals = goals;
+                        } else {
+                            exploreState.suggestedGoals = ["随便逛逛", "寻找线索", "寻找宝藏"];
+                        }
+                    } catch (e) {
+                        exploreState.suggestedGoals = ["随便逛逛", "寻找线索", "寻找宝藏"];
+                    } finally {
+                        exploreState.isGeneratingGoals = false;
+                    }
+                };
+
+                const selectGoal = (goal) => {
+                    exploreState.goal = goal;
+                    exploreState.showGoalModal = false;
+                    generateModule();
+                };
+
+                const submitCustomGoal = () => {
+                    if (exploreState.customGoal.trim()) {
+                        exploreState.goal = exploreState.customGoal.trim();
+                        exploreState.showGoalModal = false;
+                        generateModule();
+                    }
+                };
+
+                const generateModule = async () => {
+                    if (!exploreState.location || !exploreState.companion || !exploreState.goal) return;
+                    exploreState.isGeneratingModule = true;
+                    exploreState.active = true; // Show the chat area but with a loading state
+                    exploreState.history = [{ role: 'kp', content: "正在根据你的目的生成硬核跑团模组大纲... 请稍候。" }];
+                    
+                    const prompt = `[LOGIC D: HARDCORE TRPG MODULE GENERATION]
+                    Universe: ${exploreState.location.universe.toUpperCase()}. 
+                    Location: ${exploreState.location.name}. 
+                    Atmosphere: ${exploreState.location.atmosphere}.
+                    Resident NPCs: ${exploreState.location.npcs || 'None'}.
+                    Companion Cat: ${exploreState.companion.name}.
+                    User Goal: ${exploreState.goal}.
+                    
+                    Task: Generate a detailed TRPG module outline (approx. 2000 words of content). 
+                    The module MUST follow this structure:
+                    
+                    1. 真相背景 (The Truth): The hidden plot behind the goal. (e.g., The grocery store is a front for Joker gas production). Create a SHARP CONTRAST between the user's ordinary goal and the hidden superhero crisis.
+                    2. NPC 卡表 (NPC Table): 2-3 detailed NPCs (including resident NPCs like ${exploreState.location.npcs}). Include names, appearance, motivations, secrets, and speech style.
+                    3. 场景与线索 (Locations & Clues): 2-3 sub-areas. List specific clues and the checks (侦查/智力/etc.) required to find them. No check = No clue.
+                    4. 时间线与危机触发点 (Timeline & Crisis): Key plot points and what triggers them.
+                    5. 同伴小猫的“隐藏剧本” (Cat's Hidden Script): How ${exploreState.companion.name} (actually a superhero) will secretly intervene while staying in cat form.
+                    6. 三种结局分支 (Ending Branches): Detailed descriptions for [Success: Daily Goal Met], [Fumble/Crisis: Forced Escape], and [Retreat: User Initiated].
+                    
+                    Language: Simplified Chinese.`;
+                    
+                    try {
+                        const res = await callAI(prompt, "You are a professional TRPG scenario designer.", 1200);
+                        exploreState.module = cleanText(res);
+                        exploreState.history = []; // Clear the loading message
+                        startExploration();
+                    } catch (e) {
+                        exploreState.history.push({ role: 'kp', content: "模组生成失败，请重试。" });
+                        exploreState.active = false;
+                    } finally {
+                        exploreState.isGeneratingModule = false;
+                    }
+                };
+
+                const startExploration = async () => {
+                    if (!exploreState.location || !exploreState.companion || !exploreState.goal || !exploreState.module) return;
                     
                     // Force cat form during exploration
                     exploreState.companion.isHuman = false;
                     
-                    exploreState.active = true;
                     exploreState.rounds = 0;
                     exploreState.history = [];
                     exploreState.isProcessing = true;
 
-                    const prompt = `[CONTEXT: CASUAL OUTING] The user (${user.nickname}) is just taking their cat (${exploreState.companion.name}) out for a walk/adventure today. No specific mission, just a pure heart-led outing.
-                    
+                    const prompt = `[TRPG START]
                     Universe: ${exploreState.location.universe.toUpperCase()}. 
                     Location: ${exploreState.location.name}. 
-                    Atmosphere: ${exploreState.location.atmosphere}.
-                    Logic Baseline: ${exploreState.location.conflicts}.
-                    Character Resonance: ${exploreState.location.resonance}.
                     Companion Cat: ${exploreState.companion.name}.
+                    User Goal: ${exploreState.goal}.
+                    
+                    [THE MODULE - YOU MUST FOLLOW THIS STRICTLY]:
+                    ${exploreState.module}
                     
                     STRICT NARRATIVE RULES:
                     1. ${exploreState.companion.name} is a CAT. They must ONLY meow, purr, or perform cat-like actions. NO human speech. NO transformation.
-                    2. If the cat is familiar with this location (Character Resonance), they act with "hidden mastery" (e.g., walking confidently, subtly guiding the user away from danger).
-                    3. AI acts as an invisible narrator (KP). Do not break the fourth wall.
+                    2. AI acts as an invisible narrator (KP). Do not break the fourth wall.
+                    3. Start with a vivid opening scene (150 words) that introduces the location and the initial challenge as defined in the Module.
                     
-                    Task: Generate an opening scene (approx. 150 words). 
-                    Describe the environment and a sudden interesting event or encounter based on the Logic Baseline.
-                    Wait for user action. 
                     Language: Simplified Chinese.`;
 
                     try {
-                        const res = await callAI(prompt, "You are an invisible narrator for an immersive text adventure. Never break character.", 300);
+                        const res = await callAI(prompt, "You are an invisible narrator for an immersive text adventure. You MUST strictly follow the provided module.", 400);
                         exploreState.history.push({ role: 'kp', content: cleanText(res) });
                         nextTick(() => { if(exploreChatRef.value) exploreChatRef.value.scrollTop = exploreChatRef.value.scrollHeight; });
                     } catch (e) {
@@ -1914,6 +2097,13 @@
                     const retreatKeywords = ['回家', '逃跑', '撤退', '不玩了', '走吧', '离开', 'home', 'run', 'retreat', 'stop', 'leave'];
                     const isRetreat = retreatKeywords.some(k => userAction.toLowerCase().includes(k));
 
+                    if (isRetreat) {
+                        exploreState.history.push({ role: 'kp', content: "你决定中止这次探险，带着小猫匆匆离开了现场。" });
+                        setTimeout(() => finishExploration(), 1500);
+                        exploreState.isProcessing = false;
+                        return;
+                    }
+
                     // Check for rescue if rounds are high or situation is dire
                     let rescueContext = "";
                     const outCats = cats.value.filter(c => c.isOut && c.id !== exploreState.companion.id);
@@ -1924,28 +2114,29 @@
                         rescuer.diary.push({ time: getCurrentTimeStr(), content: `在${exploreState.location.name}暗中观察并救下了陷入困境的${user.nickname}。` });
                     }
 
-                    const prompt = `Current Location: ${exploreState.location.name}.
+                    const prompt = `[TRPG PROGRESSION]
+                    Current Location: ${exploreState.location.name}.
                     Companion: ${exploreState.companion.name}.
+                    User Goal: ${exploreState.goal}.
                     User Action: ${userAction}.
                     User Stats: ${JSON.stringify(user.stats)}.
                     User Skills: ${JSON.stringify(user.skills)}.
                     History: ${exploreState.history.slice(-4).map(h => h.role + ": " + h.content).join("\n")}.
-                    Logic Baseline: ${exploreState.location.conflicts}.
-                    Character Resonance: ${exploreState.location.resonance}.
-                    ${rescueContext}
-                    ${isRetreat ? "[FORCED RETREAT]: The user wants to leave. Immediately describe a smooth exit and include [END_ADVENTURE]." : ""}
                     
-                    STRICT NARRATIVE RULES:
-                    1. NO OOC: ${exploreState.companion.name} MUST remain a normal cat. Only meows/actions. NO human speech.
-                    2. KEEPER DISCRETION: Most reasonable actions should succeed narratively. DO NOT ask for a dice check unless the action is EXTREMELY risky, life-threatening, or illogical. (Limit: 3-4 checks per entire adventure).
-                    3. HIDDEN MASTERY: If the cat is familiar with the location, they subtly guide/protect the user (e.g., "The cat suddenly swiped at your leg, making you stop just before a hidden trap").
-                    4. NO GM TALK: Do not mention "KP", "Roll", or "Check".
-                    5. ENDING CONDITIONS: If the core crisis is solved, or 2-3 rounds of effective interaction have passed, include [END_ADVENTURE].
+                    [THE MODULE - YOU MUST FOLLOW THIS STRICTLY]:
+                    ${exploreState.module}
                     
-                    Task: Judge the outcome. If the action is risky, you MAY ask for a check: "请掷 1d100 过一个【技能/属性名】检定".
-                    Otherwise, just describe the result and the next situation (100-150 words). 
+                    [ANTI-CHUNIBYO CHECK]:
+                    The user is a NORMAL GOTHAM CITIZEN. If the action is superhuman (flying, super strength, magic, etc.), you MUST treat it as a FUMBLE (大失败) and narrate a humiliating failure.
                     
-                    If the adventure should end, include [END_ADVENTURE].
+                    Task: Progress the narrative based on the Module. 
+                    - If the action is risky, ask for a 1d100 check: "请掷 1d100 过一个【技能/属性名】检定".
+                    - Compare the action against the "Locations & Clues" and "Timeline" in the Module.
+                    - If the goal is achieved (Success Ending), include [END_ADVENTURE].
+                    - If 3-4 rounds passed or a critical failure occurred, include [END_ADVENTURE].
+                    - Keep the cat in CAT FORM.
+                    - Narrative should be immersive 3rd person.
+                    
                     Language: Simplified Chinese.`;
 
                     try {
@@ -2000,17 +2191,20 @@
                             
                             // Generate Travelogue (Logic C)
                             const traveloguePrompt = `[LOGIC C: TRAVELOGUE GENERATION]
-                            Character: ${exploreState.companion.name}
+                            Character: ${exploreState.companion.name} (A secret superhero cat)
                             Location: ${exploreState.location.name}
+                            Module Background: ${exploreState.module}
                             Adventure Log: ${exploreState.history.map(h => h.role + ": " + h.content).join("\n")}
                             Summary: ${data.summary}
                             
                             Task: Write a first-person travelogue (150-300 words) from the perspective of ${exploreState.companion.name}.
-                            Tone: Tsundere, arrogant, superhero cat. 
+                            Tone: **EXTREMELY TSUNDERE (傲娇), ARROGANT, SUPERHERO CAT**. 
                             Requirements:
-                            - Mock the user's ("foolish human") bad decisions or poor dice rolls.
-                            - Describe how you "secretly protected/guided" them.
-                            - Reflect on the specific events of this trip.
+                            - You MUST mock the user ("foolish human", "that idiot", "my clumsy servant") for their "pathetic" decisions, "terrible" luck (dice rolls), or "clueless" behavior.
+                            - You MUST detail how you "secretly protected" or "guided" them without them noticing (e.g., "I had to trip that thug so the idiot wouldn't get hit", "I meowed to distract the guard while the human was fumbling with the lock").
+                            - You are NOT a normal cat, you are a HERO who happens to be in a cat's body for this mission.
+                            - Mention specific events from the Adventure Log.
+                            - The travelogue should feel like a secret report or a diary entry that the human is never supposed to see.
                             - Language: Simplified Chinese.`;
                             
                             const travelogueRes = await callAI(traveloguePrompt, STRICT_CANON_PROMPT, 600);
@@ -2171,19 +2365,22 @@
                     
                     for (const cat of cats.value) {
                          const inMission = yesterdayReports.some(r => r.executor.includes(cat.name));
-                         // Improved interaction check: Chat history, missions, or significant status changes
+                         // Check for rescue events in diary
+                         const rescueEvents = cat.diary.filter(d => d.content.includes("救下") || d.content.includes("救援"));
                          const hasInteraction = (cat.chatHistory && cat.chatHistory.length > 0) || inMission || (cat.diary && cat.diary.length > 1);
                          
                          if (hasInteraction) {
                              const logsText = cat.diary.map(d => `[${d.time}] ${d.content}`).join('; ');
                              const chatText = cat.chatHistory.map(c => `${c.role}: ${c.content}`).join('; ');
                              const missionText = inMission ? `参与任务: ${yesterdayReports.filter(r => r.executor.includes(cat.name)).map(r => r.missionName).join(', ')}.` : '';
+                             const rescueText = rescueEvents.length > 0 ? `[CRITICAL]: 你昨天在暗中救下了陷入危机的用户！请在日记中以超英视角疯狂吐槽这次救援。` : '';
                              
                              const prompt = `Character: ${cat.name}. Persona: ${cat.personality}. 
                              Task: Write a diary entry (200-300 words) reflecting on yesterday.
                              Yesterday's Activity Log: ${logsText}
                              Yesterday's Conversation with User: ${chatText}
                              ${missionText}
+                             ${rescueText}
                              Requirement: In-character, subjective, use full name. Can express human-like thoughts. NO OOC.
                              Language: Simplified Chinese.`;
                              
@@ -2676,6 +2873,15 @@
                 const importSave = (event) => { const file = event.target.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); if(data.user) Object.assign(user, data.user); if(data.cats) cats.value = data.cats; if(data.settings) Object.assign(settings, data.settings); alert("存档导入成功！"); } catch(err) { alert("存档损坏"); } }; reader.readAsText(file); };
                 const openDiary = () => showDiaryModal.value = true;
                 const openLogModal = () => showLogModal.value = true;
+                
+                const openTravelogue = (cat, t) => {
+                    selectedCat.value = cat;
+                    // We can reuse the log modal by temporarily injecting the travelogue as the main content or just opening the log modal
+                    // But for a better experience, let's just open the log modal and the user can find it there, 
+                    // OR we can highlight it.
+                    // Actually, let's just use the log modal and ensure it's scrolled to or visible.
+                    showLogModal.value = true;
+                };
                 const stopFocus = () => { if(confirm("确定中止任务？")) { const plannedMinutes = focusTotalTime.value / 60; finishFocus(plannedMinutes, false); } };
                 const playLogSound = () => { const audio = new Audio('https://files.catbox.moe/mz99nm.mp3'); audio.volume = 0.5; audio.play().catch(() => {}); };
                 const fetchModels = async () => { 
@@ -2881,7 +3087,7 @@
                     resetData: () => { if(confirm("确定要删除所有存档吗？")) { localStorage.removeItem(STORAGE_KEY); location.reload(); } },
                     exportSave, importSave, fileInput, 
                     shopItems, filteredShopItems, buyItem, openBag: () => showBag.value = true, useItem, readItem,
-                    openDiary, openLogModal, generateFullDiary, isGeneratingDiary,
+                    openDiary, openLogModal, openTravelogue, generateFullDiary, isGeneratingDiary,
                     isFocusing, focusCats, focusAction, focusTime, focusTotalTime, getCurrentTimeStr,
                     formatTime: (s) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`,
                     stopFocus, focusMessage, currentNoise, customNoiseUrl, playNoise, audioPlayer, harassCat, currentFocusLog,
@@ -2896,7 +3102,7 @@
                     currentTime, calendarContainer, currentTimePixels, getEventTop, toggleScheduleDone, deleteSchedule, handleTimelineClick, handleAddClick,
                     confirmSettlement, affinityChangeValue, chatMessagesRef,
                     exploreState, exploreInput, showExploreSettlement, EXPLORE_LOCATIONS,
-                    selectExploreLocation, selectExploreCompanion, startExploration, advanceExploration, closeExplore, exploreChatRef,
+                    selectExploreLocation, selectExploreCompanion, generateExploreGoals, selectGoal, submitCustomGoal, startExploration, advanceExploration, closeExplore, exploreChatRef,
                     totalStats, totalSkills, isCharValid, adjustStat, adjustSkill, finishCharCreation, 
                     getDiceResultClass, getSkillValue, submitDiceRoll,
                     showCalendarManager, deleteCalendarSource, currentBagTab, currentBagItems,
