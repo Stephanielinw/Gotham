@@ -546,9 +546,12 @@
 
             <!-- EXPLORE TAB -->
             <div v-if="currentTab === 'explore'" class="space-y-6">
-                <h2 class="text-xl font-bold mb-4 text-gray-200 flex items-center">
-                    <i class="fas fa-compass mr-2 text-yellow-600"></i> 外出探索
-                </h2>
+                <!-- Explore Header -->
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-200 flex items-center">
+                        <i class="fas fa-compass mr-2 text-yellow-600"></i> 外出探索
+                    </h2>
+                </div>
 
                 <!-- Travelogue Area (新增游记区) -->
                 <div v-if="!exploreState.active" class="bg-zinc-800 p-4 rounded-xl border border-zinc-700 mb-4">
@@ -786,6 +789,255 @@
                 <div class="fixed-input-bar">
                     <textarea v-model="chatInput" @keydown.enter.prevent="sendMessage" :placeholder="selectedCat.isOut ? '他可能很忙...' : '发送消息...'" class="flex-1 shadow-lg bg-zinc-800 border-zinc-700 text-sm resize-none custom-scrollbar" rows="1" style="min-height: 42px; max-height: 100px;"></textarea>
                     <button @click="sendMessage" class="bg-nightwing-blue text-white px-5 py-2.5 rounded-lg shadow-lg hover:bg-blue-600 transition font-bold h-[42px]"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+
+            <!-- PHONE TAB -->
+            <div v-if="currentTab === 'phone'" class="flex flex-col items-center justify-center min-h-[calc(100vh-180px)]">
+                <div class="bg-zinc-900 w-full max-w-sm h-[650px] rounded-[3rem] border-[8px] border-zinc-800 shadow-2xl relative overflow-hidden flex flex-col">
+                    <!-- Phone Notch -->
+                    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-zinc-800 rounded-b-2xl z-50"></div>
+                    
+                    <!-- Phone Content -->
+                    <div class="flex-1 overflow-hidden flex flex-col bg-zinc-950">
+                        <!-- App Header -->
+                        <div class="h-14 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between px-6 pt-4 shrink-0">
+                            <div class="text-[10px] font-bold text-gray-400">{{ getCurrentTimeStr() }}</div>
+                            <div class="flex gap-1 text-[10px] text-gray-400">
+                                <i class="fas fa-signal"></i>
+                                <i class="fas fa-wifi"></i>
+                                <i class="fas fa-battery-three-quarters"></i>
+                            </div>
+                        </div>
+
+                        <!-- App Content -->
+                        <div class="flex-1 overflow-y-auto custom-scrollbar relative">
+                            <!-- Home Screen -->
+                            <div v-if="phoneState.currentApp === 'home'" class="p-8 grid grid-cols-3 gap-8">
+                                <div @click="phoneState.currentApp = 'chat'" class="flex flex-col items-center gap-2 cursor-pointer">
+                                    <div class="w-14 h-14 bg-green-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 transition-transform"><i class="fas fa-comment-dots"></i></div>
+                                    <span class="text-[10px] text-gray-300">WeChat</span>
+                                </div>
+                                <div @click="phoneState.currentApp = 'news'" class="flex flex-col items-center gap-2 cursor-pointer">
+                                    <div class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 transition-transform"><i class="fas fa-newspaper"></i></div>
+                                    <span class="text-[10px] text-gray-300">Gazette</span>
+                                </div>
+                                <div @click="phoneState.currentApp = 'moments'" class="flex flex-col items-center gap-2 cursor-pointer">
+                                    <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 transition-transform"><i class="fas fa-camera-retro"></i></div>
+                                    <span class="text-[10px] text-gray-300">Moments</span>
+                                </div>
+                                <div @click="phoneState.currentApp = 'delivery'" class="flex flex-col items-center gap-2 cursor-pointer">
+                                    <div class="w-14 h-14 bg-yellow-500 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 transition-transform"><i class="fas fa-motorcycle"></i></div>
+                                    <span class="text-[10px] text-gray-300">Delivery</span>
+                                </div>
+                                <div @click="phoneState.currentApp = 'tarot'" class="flex flex-col items-center gap-2 cursor-pointer">
+                                    <div class="w-14 h-14 bg-indigo-800 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 transition-transform"><i class="fas fa-hat-wizard"></i></div>
+                                    <span class="text-[10px] text-gray-300">Tarot</span>
+                                </div>
+                            </div>
+
+                            <!-- Chat App: List -->
+                            <div v-if="phoneState.currentApp === 'chat' && !phoneState.selectedContactId" class="flex flex-col h-full bg-zinc-900">
+                                <div class="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900 sticky top-0 z-10">
+                                    <h3 class="font-bold text-gray-200">消息</h3>
+                                    <i class="fas fa-search text-gray-500"></i>
+                                </div>
+                                <div class="flex-1 overflow-y-auto">
+                                    <div v-for="cat in cats" :key="'phone-chat-' + cat.id" 
+                                         @click="openPhoneChat(cat.id)"
+                                         class="flex items-center gap-3 p-4 border-b border-zinc-800 hover:bg-zinc-800 transition-colors cursor-pointer">
+                                        <img :src="phoneIdentities[cat.id].avatar" class="w-12 h-12 rounded-lg object-cover">
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex justify-between items-center mb-1">
+                                                <span class="text-sm font-bold text-gray-200">{{ phoneIdentities[cat.id].name }}</span>
+                                                <span class="text-[10px] text-gray-500">{{ getPhoneLastTime(cat.id) }}</span>
+                                            </div>
+                                            <div class="text-xs text-gray-500 truncate">{{ getPhoneLastMessage(cat.id) }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Chat App: Detail -->
+                            <div v-if="phoneState.currentApp === 'chat' && phoneState.selectedContactId" class="flex flex-col h-full bg-zinc-100 text-black">
+                                <div class="h-12 bg-zinc-100 border-b border-zinc-300 flex items-center px-4 sticky top-0 z-10">
+                                    <button @click="phoneState.selectedContactId = null" class="mr-4 text-zinc-600"><i class="fas fa-chevron-left"></i></button>
+                                    <span class="font-bold text-sm">{{ phoneIdentities[phoneState.selectedContactId].name }}</span>
+                                </div>
+                                <div class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-[#ededed]" ref="phoneChatRef">
+                                    <div v-for="(msg, idx) in getPhoneChatHistory(phoneState.selectedContactId)" :key="idx" 
+                                         class="flex" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
+                                        <div class="flex max-w-[80%] gap-2" :class="msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'">
+                                            <img :src="msg.role === 'user' ? 'https://placehold.co/100x100/444/white?text=Me' : phoneIdentities[phoneState.selectedContactId].avatar" class="w-8 h-8 rounded shrink-0">
+                                            <div class="p-2 rounded-lg text-xs relative" :class="msg.role === 'user' ? 'bg-green-500 text-white' : 'bg-white text-black shadow-sm'">
+                                                <div v-if="msg.type === 'image'">
+                                                    <img :src="msg.content" class="max-w-full rounded mb-1 border border-zinc-200">
+                                                    <div v-if="msg.desc" class="text-[10px] opacity-80 italic">{{ msg.desc }}</div>
+                                                </div>
+                                                <div v-else-if="msg.type === 'location'" class="flex items-center gap-2">
+                                                    <i class="fas fa-map-marker-alt text-red-500"></i>
+                                                    <span>{{ msg.content }}</span>
+                                                </div>
+                                                <div v-else>{{ msg.content }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div v-if="phoneState.isTyping" class="flex justify-start">
+                                        <div class="bg-white p-2 rounded-lg text-[10px] text-gray-400 animate-pulse shadow-sm">正在输入...</div>
+                                    </div>
+                                </div>
+                                <div class="p-2 bg-zinc-100 border-t border-zinc-300 flex flex-col gap-2">
+                                    <div class="flex gap-4 px-2 text-zinc-500 text-lg">
+                                        <button @click="$refs.phoneImageInput.click()" title="发送图片"><i class="far fa-image"></i></button>
+                                        <button @click="showPhoneImageDescModal = true" title="描述图片"><i class="fas fa-camera"></i></button>
+                                        <button @click="sendPhoneLocation" title="发送定位"><i class="fas fa-map-marker-alt"></i></button>
+                                        <input type="file" ref="phoneImageInput" class="hidden" accept="image/*" @change="sendPhoneRealImage">
+                                    </div>
+                                    <div class="flex gap-2 items-center">
+                                        <input v-model="phoneChatInput" @keyup.enter="sendPhoneMessage" placeholder="发送消息..." class="flex-1 bg-white border border-zinc-300 rounded px-3 py-2 text-xs focus:outline-none">
+                                        <button @click="sendPhoneMessage" class="bg-green-600 text-white px-4 py-2 rounded text-xs font-bold">发送</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Delivery App -->
+                            <div v-if="phoneState.currentApp === 'delivery'" class="flex flex-col h-full bg-zinc-50 text-black">
+                                <div class="p-4 bg-yellow-500 flex justify-between items-center sticky top-0 z-10 shadow-md">
+                                    <h1 class="font-black text-lg italic tracking-tighter text-black"><i class="fas fa-motorcycle mr-2"></i> BAT-DELIVERY</h1>
+                                    <div class="text-[10px] font-bold text-black/60">哥谭极速达</div>
+                                </div>
+                                <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                                    <div class="bg-white p-4 rounded-xl shadow-sm border border-zinc-200">
+                                        <h2 class="text-sm font-bold mb-3 text-zinc-800">精选餐厅</h2>
+                                        <div class="space-y-4">
+                                            <div v-for="item in phoneState.deliveryMenu" :key="item.id" class="flex items-center gap-3 p-2 hover:bg-zinc-50 rounded-lg transition-colors border-b border-zinc-100 last:border-0">
+                                                <div class="text-3xl">{{ item.icon }}</div>
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="flex justify-between items-center">
+                                                        <span class="text-sm font-bold">{{ item.name }}</span>
+                                                        <span class="text-xs font-bold text-yellow-600">{{ item.price }} G</span>
+                                                    </div>
+                                                    <div class="text-[10px] text-gray-500 truncate">{{ item.desc }}</div>
+                                                </div>
+                                                <button @click="orderDelivery(item)" :disabled="user.coins < item.price || phoneState.isOrdering" 
+                                                        class="bg-yellow-500 text-black text-[10px] font-bold px-3 py-1 rounded-full hover:bg-yellow-400 disabled:opacity-50 disabled:grayscale">
+                                                    下单
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div v-if="user.phoneData.delivery.length > 0" class="bg-white p-4 rounded-xl shadow-sm border border-zinc-200">
+                                        <h2 class="text-sm font-bold mb-3 text-zinc-800">订单追踪</h2>
+                                        <div class="space-y-4">
+                                            <div v-for="order in user.phoneData.delivery.slice().reverse()" :key="order.id" class="p-3 bg-zinc-50 rounded-lg border border-zinc-100">
+                                                <div class="flex justify-between items-center mb-2">
+                                                    <span class="text-xs font-bold">{{ order.itemName }}</span>
+                                                    <span class="text-[10px] px-2 py-0.5 rounded-full" :class="order.status === '送达' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">{{ order.status }}</span>
+                                                </div>
+                                                <p class="text-[10px] text-gray-600 leading-relaxed italic">"{{ order.log }}"</p>
+                                                <div class="mt-2 text-[9px] text-gray-400 text-right">{{ order.time }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tarot App -->
+                            <div v-if="phoneState.currentApp === 'tarot'" class="flex flex-col h-full bg-indigo-950 text-white">
+                                <div class="p-4 border-b border-indigo-800 flex justify-between items-center bg-indigo-950 sticky top-0 z-10">
+                                    <h1 class="font-bold text-lg tracking-widest text-indigo-300"><i class="fas fa-moon mr-2"></i> 神秘学占卜</h1>
+                                    <div class="text-[10px] font-bold text-indigo-500">ZATANNA & CO.</div>
+                                </div>
+                                <div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                                    <div v-if="!phoneState.tarotResult" class="space-y-4">
+                                        <div class="text-center py-8">
+                                            <i class="fas fa-eye text-4xl text-indigo-500 animate-pulse mb-4"></i>
+                                            <p class="text-xs text-indigo-300">闭上双眼，在心中默念你的困惑...</p>
+                                        </div>
+                                        <textarea v-model="phoneState.tarotQuestion" placeholder="输入你想要咨询的问题..." 
+                                                  class="w-full bg-indigo-900/50 border border-indigo-700 rounded-xl p-4 text-sm focus:outline-none focus:border-indigo-500 custom-scrollbar" rows="4"></textarea>
+                                        <button @click="drawTarot" :disabled="!phoneState.tarotQuestion.trim() || phoneState.isTarotLoading" 
+                                                class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold shadow-lg shadow-indigo-900/50 transition-all flex items-center justify-center gap-2">
+                                            <i v-if="phoneState.isTarotLoading" class="fas fa-spinner fa-spin"></i>
+                                            {{ phoneState.isTarotLoading ? '正在沟通灵界...' : '开启命运之门' }}
+                                        </button>
+                                    </div>
+
+                                    <div v-else class="space-y-6 animate-fade-in">
+                                        <div class="grid grid-cols-3 gap-2">
+                                            <div v-for="(card, idx) in phoneState.tarotResult.cards" :key="idx" class="flex flex-col items-center gap-2">
+                                                <div class="w-full aspect-[2/3] bg-indigo-900 rounded-lg border-2 border-indigo-400 flex items-center justify-center relative overflow-hidden shadow-lg"
+                                                     :class="card.position === '逆位' ? 'rotate-180' : ''">
+                                                    <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-transparent"></div>
+                                                    <span class="text-[10px] font-bold text-center px-1">{{ card.name }}</span>
+                                                </div>
+                                                <span class="text-[10px] font-bold" :class="card.position === '逆位' ? 'text-red-400' : 'text-green-400'">{{ card.position }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="bg-indigo-900/30 p-4 rounded-xl border border-indigo-800/50">
+                                            <h3 class="text-xs font-bold text-indigo-300 mb-2 uppercase tracking-widest border-b border-indigo-800 pb-1">解牌启示</h3>
+                                            <p class="text-xs leading-relaxed text-indigo-100 italic">{{ phoneState.tarotResult.reading }}</p>
+                                        </div>
+                                        <button @click="phoneState.tarotResult = null; phoneState.tarotQuestion = ''" class="w-full py-2 text-xs text-indigo-500 hover:text-indigo-400 transition-colors">再次占卜</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- News App -->
+                            <div v-if="phoneState.currentApp === 'news'" class="flex flex-col h-full bg-white text-black">
+                                <div class="p-4 border-b-2 border-red-600 flex justify-between items-center bg-white sticky top-0 z-10">
+                                    <h1 class="font-black text-xl italic tracking-tighter">GOTHAM GAZETTE</h1>
+                                    <div class="text-[10px] font-bold text-gray-500">{{ new Date().toLocaleDateString() }}</div>
+                                </div>
+                                <div class="flex-1 overflow-y-auto p-4 space-y-6">
+                                    <div v-if="user.phoneData.news.length === 0" class="text-center py-10 text-gray-400 italic text-xs">今日暂无重大新闻推送。</div>
+                                    <div v-for="item in user.phoneData.news.slice().reverse()" :key="item.id" class="border-b border-zinc-200 pb-4">
+                                        <div class="text-[10px] font-bold text-red-600 mb-1 uppercase tracking-widest">{{ item.type }}</div>
+                                        <h2 class="text-lg font-bold leading-tight mb-2 hover:text-red-700 cursor-pointer">{{ item.title }}</h2>
+                                        <p class="text-xs text-gray-600 leading-relaxed">{{ item.summary }}</p>
+                                        <div class="mt-2 text-[10px] text-gray-400 font-bold">Source: {{ item.source }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Moments App -->
+                            <div v-if="phoneState.currentApp === 'moments'" class="flex flex-col h-full bg-white text-black">
+                                <div class="h-48 bg-zinc-300 relative shrink-0">
+                                    <img src="https://picsum.photos/seed/gotham/600/400" class="w-full h-full object-cover">
+                                    <div class="absolute -bottom-6 right-4 flex items-center gap-3">
+                                        <span class="text-white font-bold text-sm drop-shadow-md">{{ user.nickname }}</span>
+                                        <img src="https://placehold.co/100x100/444/white?text=Me" class="w-16 h-16 rounded-lg border-2 border-white shadow-lg">
+                                    </div>
+                                </div>
+                                <div class="mt-10 flex-1 overflow-y-auto p-4 space-y-8">
+                                    <div v-if="user.phoneData.moments.length === 0" class="text-center py-10 text-gray-400 italic text-xs">朋友圈空空如也。</div>
+                                    <div v-for="moment in user.phoneData.moments.slice().reverse()" :key="moment.id" class="flex gap-3">
+                                        <img :src="moment.authorAvatar" class="w-10 h-10 rounded shadow-sm shrink-0">
+                                        <div class="flex-1 min-w-0">
+                                            <div class="text-sm font-bold text-blue-900 mb-1">{{ moment.authorName }}</div>
+                                            <p class="text-sm text-gray-800 mb-2 leading-relaxed">{{ moment.content }}</p>
+                                            <div v-if="moment.image" class="mb-2">
+                                                <img :src="moment.image" class="max-w-full rounded border border-zinc-100">
+                                            </div>
+                                            <div class="flex justify-between items-center">
+                                                <span class="text-[10px] text-gray-400">{{ moment.time }}</span>
+                                                <div class="bg-zinc-100 px-2 py-0.5 rounded text-blue-900 text-xs"><i class="far fa-comment-dots"></i></div>
+                                            </div>
+                                            <div v-if="moment.likes && moment.likes.length > 0" class="mt-2 bg-zinc-50 p-2 rounded text-[10px] text-blue-900">
+                                                <i class="far fa-heart mr-1"></i> {{ moment.likes.join(', ') }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Home Bar -->
+                        <div class="h-8 flex items-center justify-center shrink-0 bg-zinc-900">
+                            <div @click="phoneState.currentApp = 'home'; phoneState.selectedContactId = null" class="w-24 h-1 bg-zinc-700 rounded-full cursor-pointer hover:bg-zinc-500 transition-colors"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1313,12 +1565,28 @@
             </div>
         </div>
 
+        <!-- Image Description Modal -->
+        <div v-if="showPhoneImageDescModal" class="fixed inset-0 bg-black/80 z-[400] flex items-center justify-center p-6 backdrop-blur-sm">
+            <div class="bg-zinc-900 w-full max-w-sm rounded-2xl border border-zinc-700 shadow-2xl p-6">
+                <h3 class="text-lg font-bold text-gray-200 mb-4 flex items-center gap-2">
+                    <i class="fas fa-camera text-yellow-500"></i> 描述你发送的图片
+                </h3>
+                <textarea v-model="phoneImageDesc" placeholder="例如：我正在吃的一份超大份芝士披萨..." 
+                          class="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-4 text-sm text-gray-200 focus:outline-none focus:border-yellow-600 mb-4" rows="3"></textarea>
+                <div class="flex gap-2">
+                    <button @click="showPhoneImageDescModal = false; phoneImageDesc = ''" class="flex-1 py-3 bg-zinc-800 text-gray-400 rounded-xl font-bold hover:bg-zinc-700 transition-colors">取消</button>
+                    <button @click="sendPhoneDescImage" :disabled="!phoneImageDesc.trim()" class="flex-1 py-3 bg-yellow-600 text-black rounded-xl font-bold hover:bg-yellow-500 transition-colors disabled:opacity-50">发送</button>
+                </div>
+            </div>
+        </div>
+
         <audio ref="audioPlayer" loop style="display:none;"></audio>
 
         <div v-if="!isFocusing" class="nav-bar">
             <div class="nav-item" :class="{ active: currentTab === 'mission' }" @click="currentTab = 'mission'"><i class="fas fa-tasks"></i> 任务</div>
             <div class="nav-item" :class="{ active: currentTab === 'lounge' }" @click="currentTab = 'lounge'"><i class="fas fa-couch"></i> 休息室</div>
             <div class="nav-item" :class="{ active: currentTab === 'explore' }" @click="currentTab = 'explore'"><i class="fas fa-compass"></i> 外出</div>
+            <div class="nav-item" :class="{ active: currentTab === 'phone' }" @click="currentTab = 'phone'"><i class="fas fa-mobile-alt"></i> 手机</div>
             <div class="nav-item" :class="{ active: currentTab === 'settings' }" @click="currentTab = 'settings'"><i class="fas fa-sliders-h"></i> 终端</div>
         </div>
     </div>
@@ -1519,8 +1787,40 @@
                     dailyMailCount: 0, lastMailDate: '', 
                     lastReportDate: '', 
                     lastLoginDate: '', 
-                    lastLogin: Date.now() 
+                    lastLogin: Date.now(),
+                    phoneData: {
+                        chats: [],
+                        moments: [],
+                        news: [],
+                        delivery: [],
+                        tarot: []
+                    }
                 };
+                
+                const phoneIdentities = {
+                    1: { name: '布鲁斯·韦恩', avatar: 'https://placehold.co/100x100/1a1a1a/white?text=BW', role: '哥谭首富/正义联盟顾问', color: '#1a1a1a' },
+                    2: { name: '迪克·格雷森', avatar: 'https://placehold.co/100x100/007cc2/white?text=DG', role: '布鲁德海文警官/夜翼', color: '#007cc2' },
+                    3: { name: '杰森·陶德', avatar: 'https://placehold.co/100x100/c20000/white?text=JT', role: '自由职业者/红头罩', color: '#c20000' },
+                    4: { name: '提姆·德雷克', avatar: 'https://placehold.co/100x100/555/white?text=TD', role: '韦恩企业技术主管/红罗宾', color: '#555' },
+                    5: { name: '达米安·韦恩', avatar: 'https://placehold.co/100x100/006400/white?text=DW', role: '韦恩家族继承人/罗宾', color: '#006400' }
+                };
+
+                const phoneState = reactive({
+                    show: false,
+                    currentApp: 'home', // 'home', 'chat', 'moments', 'news', 'delivery', 'tarot'
+                    selectedContactId: null,
+                    isTyping: false,
+                    tarotQuestion: '',
+                    tarotResult: null,
+                    isTarotLoading: false,
+                    deliveryMenu: [
+                        { id: 1, name: '地狱厨房盲盒披萨', price: 45, desc: '你永远不知道下一块是什么口味。', icon: '🍕' },
+                        { id: 2, name: '冰山餐厅特供猫饭', price: 88, desc: '企鹅人亲自监督的高级食材。', icon: '🍱' },
+                        { id: 3, name: '大都会能量饮料', price: 15, desc: '喝完感觉能飞（并不）。', icon: '🥤' },
+                        { id: 4, name: '阿卡姆特制营养餐', price: 30, desc: '口感一言难尽，但管饱。', icon: '🥣' }
+                    ],
+                    isOrdering: false
+                });
                 
                 let initialSettings = { apiKey: '', baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini', temperature: 0.8, autoUpdate: true };
                 const STRICT_CANON_PROMPT = `
@@ -2336,6 +2636,270 @@
                 };
 
                 // --- REFACTORED LOGIC A Implementation (v3.5.0) ---
+                const phoneChatInput = ref('');
+                const showPhoneImageDescModal = ref(false);
+                const phoneImageDesc = ref('');
+                const phoneChatRef = ref(null);
+                const openPhoneChat = (id) => {
+                    phoneState.selectedContactId = id;
+                    nextTick(() => {
+                        if (phoneChatRef.value) phoneChatRef.value.scrollTop = phoneChatRef.value.scrollHeight;
+                    });
+                };
+                const getPhoneChatHistory = (id) => {
+                    if (!user.phoneData.chats) user.phoneData.chats = [];
+                    let chat = user.phoneData.chats.find(c => c.contactId === id);
+                    if (!chat) {
+                        chat = { contactId: id, history: [] };
+                        user.phoneData.chats.push(chat);
+                    }
+                    return chat.history;
+                };
+                const getPhoneLastMessage = (id) => {
+                    const history = getPhoneChatHistory(id);
+                    return history.length > 0 ? history[history.length - 1].content : "点击开始聊天";
+                };
+                const getPhoneLastTime = (id) => {
+                    const history = getPhoneChatHistory(id);
+                    return history.length > 0 ? history[history.length - 1].time : "";
+                };
+                const sendPhoneMessage = async (type = 'text', content = null, desc = null) => {
+                    const contactId = phoneState.selectedContactId;
+                    if (!contactId || phoneState.isTyping) return;
+                    
+                    const msgContent = content || phoneChatInput.value;
+                    if (!msgContent.trim() && type === 'text') return;
+
+                    const contact = phoneIdentities[contactId];
+                    const cat = cats.value.find(c => c.id === contactId);
+                    const history = getPhoneChatHistory(contactId);
+                    
+                    const userMsgObj = { 
+                        role: 'user', 
+                        type, 
+                        content: msgContent, 
+                        desc,
+                        time: getCurrentTimeStr() 
+                    };
+                    history.push(userMsgObj);
+                    
+                    if (type === 'text') phoneChatInput.value = '';
+                    nextTick(() => { if (phoneChatRef.value) phoneChatRef.value.scrollTop = phoneChatRef.value.scrollHeight; });
+                    
+                    phoneState.isTyping = true;
+                    const catStatusContext = `[CAT STATUS]: ${cat.name} is currently ${cat.status}. Inner voice: ${cat.innerVoice}.`;
+                    
+                    let userContext = "";
+                    if (type === 'image') {
+                        userContext = `The user sent an image. Description: ${desc || 'A real image file'}.`;
+                    } else if (type === 'location') {
+                        userContext = `The user shared their location: ${msgContent}.`;
+                    } else {
+                        userContext = `User Message: "${msgContent}"`;
+                    }
+
+                    const prompt = `
+                    Identity: You are ${contact.name} (${contact.role}). 
+                    Secret: You are actually the cat ${cat.name} in the user's house, but the user DOES NOT KNOW. 
+                    Context: ${catStatusContext}
+                    ${userContext}
+                    Task: Reply to the user as ${contact.name}. 
+                    Rules:
+                    1. **STRICTLY HIDE** your cat identity. 
+                    2. **LOGIC C:** Your reply MUST subtly reflect your current cat status (e.g., if sleeping, say you just woke up; if eating, mention food).
+                    3. Tone: Professional/Heroic/Sarcastic (based on ${cat.personality}).
+                    4. Language: Simplified Chinese. Max 50 words.
+                    `;
+                    try {
+                        const res = await callAI(prompt, STRICT_CANON_PROMPT, 200);
+                        history.push({ role: 'assistant', content: cleanText(res), time: getCurrentTimeStr() });
+                    } catch (e) {
+                        history.push({ role: 'assistant', content: "[信号干扰...无法回复]", time: getCurrentTimeStr() });
+                    } finally {
+                        phoneState.isTyping = false;
+                        nextTick(() => { if (phoneChatRef.value) phoneChatRef.value.scrollTop = phoneChatRef.value.scrollHeight; });
+                    }
+                };
+
+                const sendPhoneRealImage = (event) => {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        sendPhoneMessage('image', e.target.result, '用户上传了一张真实图片');
+                    };
+                    reader.readAsDataURL(file);
+                    event.target.value = ''; // Reset
+                };
+
+                const sendPhoneDescImage = () => {
+                    if (!phoneImageDesc.value.trim()) return;
+                    sendPhoneMessage('image', 'https://picsum.photos/seed/' + Date.now() + '/400/300', phoneImageDesc.value);
+                    showPhoneImageDescModal.value = false;
+                    phoneImageDesc.value = '';
+                };
+
+                const sendPhoneLocation = () => {
+                    const locations = ['哥谭大教堂', '冰山餐厅', '韦恩庄园门口', '奈何岛废墟', '钻石区购物中心', '哥谭警局总部'];
+                    const loc = locations[Math.floor(Math.random() * locations.length)];
+                    sendPhoneMessage('location', loc);
+                };
+
+                const orderDelivery = async (item) => {
+                    if (user.coins < item.price || phoneState.isOrdering) return;
+                    user.coins -= item.price;
+                    phoneState.isOrdering = true;
+                    addLog(`正在下单：${item.name}...`);
+                    
+                    // Logic: 20% chance of robbery
+                    const isRobbed = Math.random() < 0.2;
+                    let status = "送达";
+                    let log = `您的${item.name}已送达，请慢用。`;
+                    
+                    if (isRobbed) {
+                        // Check if any cat is on night patrol
+                        const heroCat = cats.value.find(c => c.status.includes('夜巡') || c.status.includes('外出'));
+                        if (heroCat) {
+                            status = "送达";
+                            log = `外卖员遭遇抢劫，被不明黑影救下，${item.name}盒上留有蝙蝠镖的划痕。`;
+                            addLog(`【紧急事件】外卖员遭遇抢劫！但被正在外出的${heroCat.name}秘密救下。`);
+                        } else {
+                            status = "丢失";
+                            log = `外卖员遭遇抢劫，${item.name}被抢走了。`;
+                            addLog(`【紧急事件】外卖员遭遇抢劫！${item.name}丢失了。`);
+                            // Cats are disappointed
+                            cats.value.forEach(c => {
+                                c.mood = Math.max(0, c.mood - 10);
+                                c.innerVoice = "那个愚蠢的人类连个外卖都保不住吗？我饿了。";
+                            });
+                        }
+                    }
+
+                    user.phoneData.delivery.push({
+                        id: Date.now(),
+                        itemName: item.name,
+                        status,
+                        log,
+                        time: getCurrentTimeStr()
+                    });
+                    
+                    if (user.phoneData.delivery.length > 10) user.phoneData.delivery.shift();
+                    phoneState.isOrdering = false;
+                    showToast(status === '送达' ? '外卖已送达！' : '外卖出事了...');
+                };
+
+                const drawTarot = async () => {
+                    if (!phoneState.tarotQuestion.trim() || phoneState.isTarotLoading) return;
+                    phoneState.isTarotLoading = true;
+                    
+                    const prompt = `
+                    [MYSTIC TAROT APP]
+                    User Question: "${phoneState.tarotQuestion}"
+                    Task: Perform a 3-card Tarot reading (Past, Present, Future).
+                    Requirements:
+                    1. Select 3 random Tarot cards (Major Arcana or Minor Arcana).
+                    2. For each card, specify if it's "正位" (Upright) or "逆位" (Reversed).
+                    3. Provide a mystical, professional reading (100-200 words).
+                    4. Tone: Mysterious, insightful, Zatanna-style magic.
+                    Output JSON:
+                    {
+                      "cards": [
+                        { "name": "The Fool", "position": "正位" },
+                        { "name": "Death", "position": "逆位" },
+                        { "name": "The Star", "position": "正位" }
+                      ],
+                      "reading": "Your reading here..."
+                    }
+                    Language: Simplified Chinese.
+                    `;
+                    
+                    try {
+                        const res = await callAI(prompt, "You are a master Tarot reader in the DC Universe.", 500);
+                        const data = parseAIJSON(res);
+                        if (data) {
+                            phoneState.tarotResult = data;
+                            user.phoneData.tarot.push({
+                                question: phoneState.tarotQuestion,
+                                result: data,
+                                time: getCurrentTimeStr()
+                            });
+                        }
+                    } catch (e) {
+                        showToast("灵界通讯中断，请稍后再试。");
+                    } finally {
+                        phoneState.isTarotLoading = false;
+                    }
+                };
+                const generatePhoneNews = async () => {
+                    if (!settings.apiKey) return;
+                    addLog("正在生成今日哥谭新闻... (逻辑A)");
+                    const yesterdayReports = user.missionReports.slice(-3).map(r => `[${r.missionName}] ${r.summary}`).join(" | ");
+                    const yesterdayExplores = cats.value.flatMap(c => (c.travelogues || []).slice(-1)).map(t => `[${t.location}] ${t.content}`).join(" | ");
+                    const prompt = `
+                    [LOGIC A: NEWS GENERATION]
+                    Yesterday's Events:
+                    - Mission Reports: ${yesterdayReports || 'None'}
+                    - Explore Travelogues: ${yesterdayExplores || 'None'}
+                    Task: Generate 3 news headlines for "Gotham Gazette".
+                    Headlines:
+                    1. Headline A (Player Feedback): Reflect a major event or "Fumble" from yesterday's adventures.
+                    2. Headline B (Cat Night Patrol): Reflect a cat's secret activity (e.g. Batman stopping a crime).
+                    3. Headline C (World Flavor): General Gotham/Marvel flavor news.
+                    Output JSON Format:
+                    [
+                      { "id": 1, "type": "BREAKING", "title": "Headline", "summary": "Short summary", "source": "Gotham Gazette" },
+                      { "id": 2, "type": "CRIME", "title": "Headline", "summary": "Short summary", "source": "Gotham Gazette" },
+                      { "id": 3, "type": "WORLD", "title": "Headline", "summary": "Short summary", "source": "Gotham Gazette" }
+                    ]
+                    Language: Simplified Chinese.
+                    `;
+                    try {
+                        const res = await callAI(prompt, "You are a news generator for Gotham City.", 600);
+                        const news = parseAIJSON(res);
+                        if (Array.isArray(news)) {
+                            user.phoneData.news = news;
+                        }
+                    } catch (e) { console.error("News generation failed", e); }
+                };
+                const generatePhoneMoments = async () => {
+                    if (!settings.apiKey) return;
+                    addLog("正在生成朋友圈动态... (逻辑B/D)");
+                    const catsWithInteractions = cats.value.filter(c => c.todayInteractions && c.todayInteractions.length > 0);
+                    if (catsWithInteractions.length === 0) return;
+                    const cat = catsWithInteractions[Math.floor(Math.random() * catsWithInteractions.length)];
+                    const interaction = cat.todayInteractions[cat.todayInteractions.length - 1].content;
+                    const identity = phoneIdentities[cat.id];
+                    const prompt = `
+                    [LOGIC B/D: MOMENTS GENERATION]
+                    Character: ${identity.name}
+                    Real Event at Home: ${interaction}
+                    Task: Write a social media post (Moment) from ${identity.name}'s human perspective.
+                    Rules:
+                    1. Subtly reflect the "Real Event" (e.g. if the user brushed them, mention "grooming" or "spa").
+                    2. Use a human tone (professional, tired, or arrogant).
+                    3. Do NOT reveal you are a cat.
+                    Output JSON:
+                    {
+                      "authorName": "${identity.name}",
+                      "authorAvatar": "${identity.avatar}",
+                      "content": "Post content",
+                      "time": "Just now",
+                      "likes": ["Dick Grayson", "Tim Drake"],
+                      "image": "https://picsum.photos/seed/${cat.name}/400/300"
+                    }
+                    Language: Simplified Chinese.
+                    `;
+                    try {
+                        const res = await callAI(prompt, "You are a social media manager for superheroes.", 400);
+                        const moment = parseAIJSON(res);
+                        if (moment) {
+                            if (!user.phoneData.moments) user.phoneData.moments = [];
+                            user.phoneData.moments.push({ ...moment, id: Date.now() });
+                            if (user.phoneData.moments.length > 20) user.phoneData.moments.shift();
+                        }
+                    } catch (e) { console.error("Moments generation failed", e); }
+                };
+
                 const checkDailyInitialization = async () => {
                     const now = new Date();
                     const todayStr = now.toDateString(); 
@@ -2354,6 +2918,8 @@
                         if (settings.apiKey) {
                             await generateAlfredReport(); 
                             await generateAllCatDiaries(); 
+                            await generatePhoneNews();
+                            await generatePhoneMoments();
                             await refreshAllStatus(true, "今日首次启动，执行每日结算。");
                         } else {
                             // Fallback for no API key: just clear done tasks
@@ -2528,7 +3094,7 @@
                         Task: Respond to user. If user used item, react to it.
                         Strict Format (NO MARKDOWN BLOCKS):
                         [STATUS] Update status based on interaction. (3rd Person, Action only).
-                        [VOICE] Inner thoughts. (1st Person). MUST BE HUMAN LANGUAGE (Simplified Chinese). NO MEOWS IN THOUGHTS.
+                        [VOICE] Inner thoughts. (1st Person). MUST BE HUMAN LANGUAGE (Simplified Chinese). NO MEOWS IN THOUGHTS. **MANDATORY:** Refer to yourself as "我" (I) or similar, NEVER use your full name to refer to yourself in thoughts.
                         [REPLY] Output to user. (50-100 words). IF CAT FORM: Meows/Purrs + Actions only. IF HUMAN FORM: Human speech allowed.
                         [USER_STATUS] Summarize User's current action/status based on their input and this interaction. (Max 15 chars). 
                         - If the user explicitly said what they are doing (e.g., "I'm eating"), reflect that. 
@@ -2830,7 +3396,7 @@
                           {
                             "id": number,
                             "status": "Short description of current action (max 20 words)",
-                            "innerVoice": "Human language internal monologue (max 30 words)",
+                            "innerVoice": "Human language internal monologue (max 30 words). **MANDATORY:** Refer to yourself as '我' (I) or similar, NEVER use your full name to refer to yourself in thoughts.",
                             "isOut": boolean,
                             "isHuman": boolean
                           }
@@ -3186,7 +3752,11 @@
                     getDiceResultClass, getSkillValue, submitDiceRoll,
                     showCalendarManager, deleteCalendarSource, currentBagTab, currentBagItems,
                     systemLogs, logWindow, notification,
-                    showAdminLogin, showAdminPanel, adminPassword, isAdmin, openAdmin, checkAdminPassword // Exporting Admin States
+                    showAdminLogin, showAdminPanel, adminPassword, isAdmin, openAdmin, checkAdminPassword,
+                    phoneState, phoneIdentities, phoneChatInput, phoneChatRef,
+                    openPhoneChat, getPhoneChatHistory, getPhoneLastMessage, getPhoneLastTime, sendPhoneMessage,
+                    generatePhoneNews, generatePhoneMoments,
+                    showPhoneImageDescModal, phoneImageDesc, sendPhoneRealImage, sendPhoneDescImage, sendPhoneLocation, orderDelivery, drawTarot
                 };
             }
         }).mount('#app');
