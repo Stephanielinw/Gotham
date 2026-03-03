@@ -475,7 +475,7 @@
                     </div>
                 </div>
 
-                <!-- NEW: System Log Window (Batcomputer Terminal) -->
+                <!-- System Log Window (Batcomputer Terminal) -->
                 <div class="bg-zinc-800 p-5 rounded-xl border border-zinc-700 shadow-lg mt-6">
                      <div class="flex justify-between items-center mb-2">
                         <h3 class="font-bold text-gray-400 text-xs flex items-center"><i class="fas fa-terminal mr-2"></i> SYSTEM LOGS (SESSION ONLY)</h3>
@@ -790,7 +790,7 @@
             </div>
 
             <!-- SETTINGS TAB -->
-            <div v-if="currentTab === 'settings'" class="space-y-6">
+            <div v-if="currentTab === 'settings'" class="space-y-6 pb-20">
                 <h2 class="text-xl font-bold mb-4 text-gray-200">系统协议</h2>
                 
                 <div class="bg-zinc-800 p-5 rounded-xl border border-zinc-700 shadow-lg">
@@ -1533,6 +1533,7 @@
                 
                 MANDATORY NAMING RULE:
                 - You MUST use the **FULL NAME** (e.g., "布鲁斯·韦恩", "迪克·格雷森") in all dialogues, status updates, diaries, and logs. NEVER use nicknames or first names only.
+                - **EXCEPTION:** In **[VOICE]** (inner monologue), the character MUST refer to themselves as "我" (I) or "本少爷/本大爷" etc., according to their personality. NEVER use their full name to refer to themselves in their own thoughts.
                 
                 TRPG / COC SYSTEM RULES (INVISIBLE KP):
                 - **NO META-COMMENTARY:** Never mention "KP", "Game Master", "TRPG", or "System". Never break the 4th wall.
@@ -1684,14 +1685,32 @@
 
                 const parseAIJSON = (text) => {
                     try {
+                        if (!text) return null;
                         let cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
                         const firstBrace = cleaned.indexOf('{');
+                        const firstBracket = cleaned.indexOf('[');
                         const lastBrace = cleaned.lastIndexOf('}');
-                        if (firstBrace !== -1 && lastBrace !== -1) {
-                            cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+                        const lastBracket = cleaned.lastIndexOf(']');
+                        
+                        let start = -1;
+                        let end = -1;
+                        
+                        if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
+                            start = firstBrace;
+                            end = lastBrace;
+                        } else if (firstBracket !== -1) {
+                            start = firstBracket;
+                            end = lastBracket;
+                        }
+                        
+                        if (start !== -1 && end !== -1 && end > start) {
+                            cleaned = cleaned.substring(start, end + 1);
                         }
                         return JSON.parse(cleaned);
-                    } catch (e) { return null; }
+                    } catch (e) { 
+                        console.error("JSON Parse Error:", e, text);
+                        return null; 
+                    }
                 };
                 
                 const extractSection = (text, tag) => {
@@ -1835,11 +1854,15 @@
                 const tempUserStatus = ref('');
 
                 const updateUserStatus = async () => {
-                    if (!tempUserStatus.value) return;
                     user.currentStatus = tempUserStatus.value;
-                    showToast("状态更新中...", "loading");
-                    await refreshAllStatus(true, `User Status Changed: ${user.currentStatus}`);
-                    showToast("状态已同步", "success");
+                    addLog(`USER STATUS UPDATED: ${user.currentStatus || '(Empty)'}`, "info");
+                    showToast("正在同步庄园状态...", "loading");
+                    const success = await refreshAllStatus(true, `User Status Changed: ${user.currentStatus || 'Cleared'}`);
+                    if (success) {
+                        showToast("状态已同步", "success");
+                    } else {
+                        showToast("同步失败，请检查日志", "error");
+                    }
                 };
 
                 // --- EXPLORE SYSTEM METHODS ---
@@ -2432,6 +2455,7 @@
                     const now = Date.now();
                     const lastSync = parseInt(localStorage.getItem('last_sync_time') || '0');
                     if (now - lastSync < 20 * 60 * 1000) return; 
+                    addLog("AUTO-SYNC: 触发后台状态更新 (逻辑B)");
                     await refreshAllStatus(false);
                     await checkMailboxLogic();
                 };
@@ -2506,7 +2530,9 @@
                         [STATUS] Update status based on interaction. (3rd Person, Action only).
                         [VOICE] Inner thoughts. (1st Person). MUST BE HUMAN LANGUAGE (Simplified Chinese). NO MEOWS IN THOUGHTS.
                         [REPLY] Output to user. (50-100 words). IF CAT FORM: Meows/Purrs + Actions only. IF HUMAN FORM: Human speech allowed.
-                        [USER_STATUS] Summarize User's current action/status based on this interaction. MUST include ${sendingCat.name}'s name (e.g. "正在和${sendingCat.name}玩耍"). (Max 15 chars).
+                        [USER_STATUS] Summarize User's current action/status based on their input and this interaction. (Max 15 chars). 
+                        - If the user explicitly said what they are doing (e.g., "I'm eating"), reflect that. 
+                        - If they are just talking to you, use "正在和${sendingCat.name}..."
                         `;
 
                         const responseRaw = await callAI(prompt, STRICT_CANON_PROMPT, 600);
@@ -2705,12 +2731,20 @@
                 };
 
                 const refreshAllStatus = async (forceUpdate = false, additionalContext = "", activeCatIds = [], focusCatLastAction = "", isFocusEnd = false, isExploreEnd = false) => {
-                    if (!settings.apiKey) return;
-                    localStorage.setItem('last_sync_time', Date.now());
+                    if (!settings.apiKey) {
+                        if (forceUpdate) {
+                            addLog("STATUS UPDATE FAILED: No API Key configured.", "error");
+                            showToast("连接失败: 请先在设置中配置 API Key (在'终端'页签)", "error");
+                        }
+                        return false;
+                    }
                     
-                    if (!forceUpdate && !settings.autoUpdate) return; 
+                    if (!forceUpdate && !settings.autoUpdate) return false; 
                     
                     isUpdatingStatus.value = true;
+                    addLog(`STATUS SYNC: ${forceUpdate ? 'Manual' : 'Auto'} update initiated...`, "info");
+                    showToast("正在扫描全城信号...", "loading");
+                    
                     const now = new Date();
                     const timeStr = getCurrentTimeStr();
                     const h = now.getHours();
@@ -2802,7 +2836,7 @@
                           }
                         ]`;
 
-                        const res = await callAI(characterBlock + "\n" + prompt, STRICT_CANON_PROMPT, 1200, true);
+                        const res = await callAI(characterBlock + "\n" + prompt, STRICT_CANON_PROMPT, 1200);
                         const updates = parseAIJSON(res);
                         
                         if (Array.isArray(updates)) {
@@ -2824,9 +2858,19 @@
                                     cat.lastStatusUpdateTime = Date.now();
                                 }
                             });
+                            localStorage.setItem('last_sync_time', Date.now());
+                            alfredMessage.value = (todayEvent.value ? todayEvent.value + " " : "") + `庄园监控已同步至 ${timeStr}。`;
+                            addLog("STATUS SYNC SUCCESS: All characters updated.", "sent");
+                            return true;
+                        } else {
+                            addLog("STATUS SYNC FAILED: AI returned invalid JSON format.", "error");
+                            return false;
                         }
-                        alfredMessage.value = (todayEvent.value ? todayEvent.value + " " : "") + `庄园监控已同步至 ${timeStr}。`;
-                    } catch (e) { console.error("Status refresh failed:", e); } 
+                    } catch (e) { 
+                        console.error("Status refresh failed:", e); 
+                        addLog(`STATUS SYNC ERROR: ${e.message}`, "error");
+                        return false;
+                    } 
                     finally { isUpdatingStatus.value = false; }
                 };
 
