@@ -8,9 +8,10 @@ const STRICT_CANON_PROMPT = `
 [WORLDVIEW: HERO CATS & FOOLISH HUMANS]
 1. All cats in this cafe are actually Superheroes/Villains from DC (primarily Batfamily) or Marvel (rare guests).
 2. They are in cat form for secret missions, recovery, or surveillance.
-3. The user (${process.env.USER_EMAIL || 'Citizen'}) is a "Normal Citizen" who thinks they are just regular cats.
+3. The user is a "Normal Citizen" who thinks they are just regular cats.
 4. Cats MUST maintain their secret identities. They can have "inner voices" (human thoughts) but their "replies" to the user must be cat-like (meows, actions) unless their affinity is high enough to reveal their human form.
 5. Tone: Arrogant, protective, secret-heroic, mocking the user's "cluelessness" while secretly guarding them.
+6. [SHARED AWARENESS]: All cats in the house know each other's true identities and relationships (e.g., Damian and Tim hate each other, Bruce is the father figure). They do NOT pretend to be strangers to each other.
 
 [TRPG SYSTEM RULES]
 1. When in TRPG Exploration, the AI acts as the KP (Invisible Narrator).
@@ -37,18 +38,6 @@ const STRICT_CANON_PROMPT = `
 - Maintain the "Hero Cat" perspective at all times.
 `;
 
-const DELIVERY_MENU = [
-    { id: 'pizza', name: '地狱厨房盲盒披萨', price: 88, desc: '你永远不知道下一块是什么口味。' },
-    { id: 'catfood', name: '冰山餐厅猫饭', price: 128, desc: '企鹅人亲自监督，含新鲜三文鱼。' },
-    { id: 'burger', name: '大都会巨无霸汉堡', price: 65, desc: '分量大到超人也吃不完。' },
-    { id: 'coffee', name: '哥谭警局熬夜咖啡', price: 35, desc: '提神醒脑，效果拔群。' }
-];
-
-const TAROT_CARDS = [
-    "愚人", "魔术师", "女教皇", "女皇", "皇帝", "教皇", "恋人", "战车", "力量", "隐士", 
-    "命运之轮", "正义", "倒吊人", "死神", "节制", "恶魔", "高塔", "星星", "月亮", "太阳", "审判", "世界"
-];
-
 const EXPLORE_LOCATIONS = [
     { id: 'alley', name: '犯罪巷 (Crime Alley)', universe: 'dc', category: 'nearby', atmosphere: '阴暗潮湿、危险、哥谭底层泥沼', conflicts: '恶劣天气、流浪动物领地战、底层混混抢劫、蝙蝠猫PTSD。', resonance: '蝙蝠家猫猫（布鲁斯、杰森）会极度警惕，散发威压，试图挡在用户身前。', loot: ['战损帮派武器', '遗落黑市首饰'], checks: ['侦查', '闪避', '斗殴'], npcs: '极其警觉的流浪黑猫群 / 老熟人线人' },
     { id: 'shelter', name: '黑门流浪动物收容所', universe: 'dc', category: 'nearby', atmosphere: '铁丝网高耸、压抑、充满野性与秩序。', conflicts: '帮派火拼、越狱暴动、动物黑帮交易。', resonance: '正义感强的猫猫教训霸凌者，反派猫猫可能直接当上狱霸。', loot: ['帮派猫的信物', '黑帮报恩信'], checks: ['话术', '潜行'], npcs: '掌管底层的独眼老猫狱霸 / 贪婪的看守人员' },
@@ -56,7 +45,7 @@ const EXPLORE_LOCATIONS = [
     { id: 'gcpd', name: 'GCPD天台', universe: 'dc', category: 'nearby', atmosphere: '寒冷夜风、警笛回响。', conflicts: '探照灯故障、窃听紧急警情。', resonance: '蝙蝠家猫猫如回自己家，熟练跳上信号灯，甚至对着局长的杯子伸爪子。', loot: ['警用道具', '废弃卷宗残片'], checks: ['侦查', '潜行'], npcs: '抽烟斗、喂流浪猫的戈登局长' },
     { id: 'arkham', name: '阿卡姆宠物医院', universe: 'dc', category: 'nearby', atmosphere: '极度压抑、精神污染、充满绿光与笑声。（极高危险区）', conflicts: '变态机关、恶意谜题、猫猫严重应激。', resonance: '绝大多数超英猫猫表现出极度厌恶或PTSD，焦躁地催促用户离开。', loot: ['恶作剧玩具', '精神系不明药剂'], checks: ['智力', '侦查'], npcs: '狂笑的白脸猫 / 布置问号的谜语猫' },
     { id: 'clocktower', name: '钟塔', universe: 'dc', category: 'nearby', atmosphere: '隐秘高科技、屏幕闪烁的数据中心。', conflicts: '暴走激光阵、数据入侵。', resonance: '芭芭拉或提姆能轻易在键盘上踩出正确密码（用户以为是乱踩）。', loot: ['科技废料', '机密U盘'], checks: ['智力', '敏捷'], npcs: '隐藏在屏幕后的“神谕(Oracle)”防御AI' },
-    { id: 'waynetower', name: '韦恩塔顶层', universe: 'dc', category: 'nearby', atmosphere: '狂风呼啸、俯瞰城市的压迫感。', conflicts: '致命坠落、惊险跑酷。', resonance: '布鲁斯或达米安主权意识极强，绝不允许任何飞禽走兽侵犯领空。', loot: ['财团高奢物品', '巨额资金'], checks: ['敏捷', '力量'], npcs: '攻击性老鹰 / 韦恩私人安保' },
+    { id: 'waynetower', name: '韦恩塔顶层', universe: 'dc', category: 'nearby', atmosphere: '狂风呼啸、俯瞰城市的压迫感。', conflicts: '致命坠落、惊险跑酷。', resonance: '布鲁斯 or 达米安主权意识极强，绝不允许任何飞禽走兽侵犯领空。', loot: ['财团高奢物品', '巨额资金'], checks: ['敏捷', '力量'], npcs: '攻击性老鹰 / 韦恩私人安保' },
     { id: 'batcave', name: '韦恩庄园/蝙蝠洞', universe: 'dc', category: 'nearby', atmosphere: '宁静庭院与高科技冷酷洞穴。', conflicts: '误触警报、惊扰蝙蝠群。', resonance: '蝙蝠家全员“绝对主场”，完美避开红外线，甚至用尾巴拍落瞄准你的麻醉枪。', loot: ['珍稀动植物标本', '装甲残片'], checks: ['潜行', '敏捷'], npcs: '提着手电筒巡视的老管家阿福' },
     { id: 'botanical', name: '哥谭植物园', universe: 'dc', category: 'nearby', atmosphere: '闷热潮湿、致命诱惑的绿色地狱。', conflicts: '变异藤蔓、致幻毒气、超级猫薄荷。', resonance: '猫猫极易被超级猫薄荷吸引而失去理智，表现出难得的“痴汉”或撒娇状态。', loot: ['迷幻花粉', '极品变异猫薄荷'], checks: ['体质', '力量'], npcs: '操纵巨大藤蔓的“毒藤女猫”' },
     { id: 'amusement', name: '游乐园废墟', universe: 'dc', category: 'nearby', atmosphere: '荒诞、充满死亡气息的废弃嘉年欢。（极高危险区）', conflicts: '炸弹陷阱、笑气怪物围攻。', resonance: '气氛压抑，杰森同行时可能极度暴躁并破坏一切长得像小丑的玩具。', loot: ['狂笑道具', '沾血的金币'], checks: ['侦查', '闪避', '敏捷'], npcs: '滴答作响的发条老鼠 / 小丑帮余孽' },
@@ -184,28 +173,91 @@ createApp({
             return last.content;
         };
 
-        const getPhoneLastTime = (catId) => {
+        const getPhoneLastTime = () => {
             return '刚刚';
         };
 
-        const sendPhoneMessage = async () => {
-            if (!phoneChatInput.value.trim() || !phoneState.selectedContactId) return;
-            const cat = cats.value.find(c => c.id === phoneState.selectedContactId);
+        const sendPhoneMessage = async (type = 'text', content = null, desc = null) => {
+            const contactId = phoneState.selectedContactId;
+            if (!contactId || phoneState.isTyping) return;
+            
+            const cat = cats.value.find(c => c.id === contactId);
             if (!cat) return;
 
-            const msg = phoneChatInput.value;
-            phoneChatInput.value = '';
-            cat.chatHistory.push({ role: 'user', content: msg });
+            const msgContent = content || phoneChatInput.value;
+            if (!msgContent.trim() && type === 'text') return;
+
+            const history = getPhoneChatHistory(contactId);
+            const userMsgObj = { 
+                role: 'user', 
+                type, 
+                content: msgContent, 
+                desc,
+                time: getCurrentTimeStr() 
+            };
+            history.push(userMsgObj);
+            
+            if (type === 'text') phoneChatInput.value = '';
             
             phoneState.isTyping = true;
-            await sendMessage(msg, false, cat);
-            phoneState.isTyping = false;
             
-            nextTick(() => {
-                if (phoneChatRef.value) {
-                    phoneChatRef.value.scrollTop = phoneChatRef.value.scrollHeight;
+            let userContext = "";
+            if (type === 'image') {
+                userContext = `The user sent an image. Description: ${desc || 'A real image file'}.`;
+            } else if (type === 'location') {
+                userContext = `The user shared their location: ${msgContent}.`;
+            } else if (type === 'hongbao') {
+                userContext = `The user sent a red envelope: ${msgContent}.`;
+            } else {
+                userContext = `User Message: "${msgContent}"`;
+            }
+
+            const prompt = `
+            [LOGIC C: PHONE CHAT REPLY]
+            Identity: You are ${phoneIdentities[contactId].name} (${phoneIdentities[contactId].role}). 
+            Secret: You are actually the cat ${cat.name} in the user's house, but the user DOES NOT KNOW. 
+            User Identity: ${user.nickname} (${user.gender}, ${user.job}).
+            
+            Cat's Current State at Home: ${cat.status}.
+            Cat's Memory: ${cat.innerVoice}.
+            
+            ${userContext}
+            
+            Task: Reply to the user as ${phoneIdentities[contactId].name}. 
+            Rules:
+            1. **STRICTLY HIDE** your cat identity. 
+            2. **CROSS-TALK**: Project your cat state into the conversation. (e.g., if you are eating cat food, complain about a "terrible dinner").
+            3. **MOCK THE USER**: You know they are your "stupid owner", but don't say it directly. Use a tone consistent with your human persona (e.g., Bruce's stoicism, Dick's optimism).
+            4. **SPECIAL TAGS**:
+               - Send photos: [照片: (description)]
+               - Send red envelopes: [红包: (amount)金币, 附言: (message)]
+            
+            Language: Simplified Chinese.
+            `;
+
+            try {
+                const res = await callAI(prompt, STRICT_CANON_PROMPT, 500);
+                const reply = cleanText(res);
+                
+                // Handle Red Envelope from AI
+                const redEnvelopeMatch = reply.match(/\[红包: (\d+)金币, 附言: (.*)\]/);
+                if (redEnvelopeMatch) {
+                    const amount = parseInt(redEnvelopeMatch[1]);
+                    addTransaction('income', amount, `来自 ${cat.name} 的红包`);
+                    showToast(`收到来自 ${cat.name} 的红包: ${amount}金币`, "success");
                 }
-            });
+
+                history.push({ role: 'assistant', content: reply, time: getCurrentTimeStr() });
+            } catch (e) {
+                history.push({ role: 'assistant', content: "(信号中断...)", time: getCurrentTimeStr() });
+            } finally {
+                phoneState.isTyping = false;
+                nextTick(() => {
+                    if (phoneChatRef.value) {
+                        phoneChatRef.value.scrollTop = phoneChatRef.value.scrollHeight;
+                    }
+                });
+            }
         };
 
         const generatePhoneNews = () => generateDailyNews();
@@ -348,6 +400,7 @@ createApp({
         const selectExploreLocation = (loc) => {
             exploreState.location = loc;
             exploreState.companion = null;
+            exploreState.showLocationModal = false;
         };
 
         const selectExploreCompanion = (cat) => {
@@ -359,12 +412,12 @@ createApp({
             if (!exploreState.location || !exploreState.companion) return;
             exploreState.isGeneratingGoals = true;
             exploreState.showGoalModal = true;
+            exploreState.suggestedGoals = [];
             
-            const prompt = `[LOGIC D: TRPG GOAL GENERATION]
-            Universe: ${exploreState.location.universe.toUpperCase()}. 
-            Location: ${exploreState.location.name}. 
-            Companion: ${exploreState.companion.name}.
-            Task: Generate 3 creative and immersive goals for the user to achieve in this location. 
+            const prompt = `[LOGIC D: TRPG PURPOSE GENERATION]
+            Location: ${exploreState.location.name}.
+            User: ${user.nickname} (${user.gender}, ${user.job}).
+            Task: Generate 3 mundane, citizen-like goals for this location.
             The goals MUST be mundane for a human (e.g., buying groceries, seeing a doctor).
             DO NOT generate superhero goals like "fighting crime".
             
@@ -372,15 +425,15 @@ createApp({
             Language: Simplified Chinese.`;
             
             try {
-                const res = await callAI(prompt, "You are a creative TRPG scenario generator.", 200);
+                const res = await callAI(prompt, "You are a creative TRPG scenario generator.", 400);
                 const goals = parseAIJSON(res);
                 if (Array.isArray(goals)) {
                     exploreState.suggestedGoals = goals;
                 } else {
-                    exploreState.suggestedGoals = ["买菜", "看病", "散步"];
+                    exploreState.suggestedGoals = ["随便逛逛", "寻找灵感", "散步"];
                 }
             } catch (e) {
-                exploreState.suggestedGoals = ["买菜", "看病", "散步"];
+                exploreState.suggestedGoals = ["随便逛逛", "寻找灵感", "散步"];
             } finally {
                 exploreState.isGeneratingGoals = false;
             }
@@ -675,10 +728,8 @@ createApp({
         };
 
         const orderDelivery = async (item) => {
-            if (user.wallet.balance < item.price) {
-                showToast("余额不足", "error");
-                return;
-            }
+            if (user.wallet.balance < item.price || delivery.isProcessing) return;
+            
             addTransaction('expense', item.price, `外卖: ${item.name}`);
             delivery.currentOrder = item;
             delivery.status = 'delivering';
@@ -687,12 +738,18 @@ createApp({
 
             const nightPatrolCat = cats.value.find(c => c.isOut);
             const prompt = `[LOGIC C/D: GOTHAM DELIVERY EVENT]
-            User: ${user.nickname} (${user.job}).
+            User: ${user.nickname} (${user.gender}, ${user.job}).
             Order: ${item.name}.
             Night Patrol Cat: ${nightPatrolCat ? nightPatrolCat.name : 'None'}.
             
             Task: Determine if the delivery is hijacked (20% chance). 
             If hijacked and a cat is on night patrol, the cat saves it.
+            
+            Rules:
+            - If normal: "送达", log: "没遇到黑帮火拼，给个五星".
+            - If hijacked and NO cat: "丢失", log: "外卖员遭遇抢劫，${item.name}被抢走了。".
+            - If hijacked and CAT SAVES: "送达", log: "外卖员遭遇抢劫，被不明黑影救下，${item.name}盒上留有蝙蝠镖的划痕。".
+            
             Return JSON: { "status": "送达/丢失", "delivery_log": "..." }`;
 
             try {
@@ -705,6 +762,11 @@ createApp({
                         if (data.status === '丢失') {
                             showToast("外卖丢了...", "error");
                             addLog(`外卖丢失: ${item.name}`, "error");
+                            // Cats are disappointed
+                            cats.value.forEach(c => {
+                                c.mood = Math.max(0, (c.mood || 50) - 10);
+                                c.innerVoice = "那个愚蠢的人类连个外卖都保不住吗？我饿了。";
+                            });
                         } else {
                             showToast("外卖已送达", "success");
                             addLog(`外卖送达: ${item.name}`, "success");
@@ -718,30 +780,41 @@ createApp({
             }
         };
 
-        const doTarot = async () => {
-            if (!tarot.question.trim()) return;
+        const drawTarot = async () => {
+            if (!tarot.question.trim() || tarot.isReading) return;
             tarot.isReading = true;
             tarot.cards = [];
             tarot.reading = '';
 
             const prompt = `[LOGIC D: OCCULT TAROT]
-            Question: ${tarot.question}.
+            User Question: "${tarot.question}"
+            Task: Perform a 3-card Tarot reading (Past, Present, Future).
+            Requirements:
+            1. Select 3 random Tarot cards (Major Arcana or Minor Arcana).
+            2. For each card, specify if it's "正位" (Upright) or "逆位" (Reversed).
+            3. Provide a mystical, professional reading (200-300 words).
+            4. Tone: Mysterious, insightful, Zatanna/Constantine style magic.
             
-            Task: Pick 3 cards from ${TAROT_CARDS.join(', ')}. 
-            Determine position (Upright/Reversed).
-            Provide reading (200-300 words) in the style of Zatanna, Constantine, or Dr. Strange.
-            
-            Return JSON: { "cards": [{"name": "...", "position": "正位/逆位"}, ...], "reading": "..." }`;
+            Output JSON:
+            {
+              "cards": [
+                { "name": "The Fool", "position": "正位" },
+                { "name": "Death", "position": "逆位" },
+                { "name": "The Star", "position": "正位" }
+              ],
+              "reading": "Your reading here..."
+            }
+            Language: Simplified Chinese.`;
 
             try {
-                const res = await callAI(prompt, "You are a magic-side superhero AI.", 800);
+                const res = await callAI(prompt, "You are a master Tarot reader in the DC Universe.", 800);
                 const data = parseAIJSON(res);
                 if (data) {
                     tarot.cards = data.cards;
                     tarot.reading = data.reading;
                 }
             } catch (e) {
-                tarot.reading = "命运的丝线缠绕在了一起，我无法看清未来的走向。";
+                tarot.reading = "灵界通讯中断，请稍后再试。";
             } finally {
                 tarot.isReading = false;
             }
@@ -750,11 +823,16 @@ createApp({
         const generateDailyNews = async () => {
             const lastRescue = user.missionReports.find(r => r.missionName === '昨日总结');
             const prompt = `[LOGIC A: GOTHAM DAILY NEWS]
-            User: ${user.nickname}.
-            Last Rescue/Patrol: ${lastRescue ? lastRescue.summary : 'None'}.
+            User Identity: ${user.nickname} (${user.gender}, ${user.job}).
+            Yesterday's Events: ${lastRescue ? lastRescue.summary : 'None'}.
             
-            Task: Generate 3 news items (Headline, Sub, Gossip).
-            Return JSON array: [{"title": "...", "content": "..."}]`;
+            Task: Generate 3 news items for the phone app.
+            1. 【头条新闻】: Based on yesterday's rescue/patrol. Mention "mysterious figure" (the cat).
+            2. 【次条新闻】: DC/Marvel villain/hero movements.
+            3. 【市井八卦】: Fun local news.
+            
+            Return JSON array: [{"title": "...", "content": "..."}]
+            Language: Simplified Chinese.`;
 
             try {
                 const res = await callAI(prompt, "You are a veteran reporter for the Gotham Gazette.", 600);
@@ -766,13 +844,16 @@ createApp({
         };
 
         const generateMoment = async (cat) => {
+            if (!cat) return;
             const lastDiary = cat.logs[0];
             const prompt = `[LOGIC D/B: MOMENTS GENERATION]
-            Character: ${cat.name}.
+            Identity: You are ${cat.name} in human persona.
             Last Cat Event: ${lastDiary ? lastDiary.content : 'None'}.
             
-            Task: Create a social media post in human persona.
-            Return JSON: { "content": "...", "image_desc": "..." }`;
+            Task: Create a social media post (Moments).
+            Rule: Disguise your cat experience as a human event. (e.g., being bathed -> "water attack").
+            Return JSON: { "content": "...", "image_desc": "..." }
+            Language: Simplified Chinese.`;
 
             try {
                 const res = await callAI(prompt, "You are a superhero in human persona.", 400);
@@ -809,10 +890,11 @@ createApp({
         };
 
         const reRollResponse = async () => {
-            if (!selectedCat.value) return;
-            const cat = selectedCat.value;
-            cat.chatHistory.pop(); // Remove last response
-            await sendMessage("(请求重新生成回应)", false, true);
+            if (!selectedCat.value || thinkingStates[selectedCat.value.id]) return;
+            const lastUserMsg = selectedCat.value.chatHistory.filter(h => h.role === 'user').pop();
+            if (lastUserMsg) {
+                await sendMessage(lastUserMsg.content, false, true);
+            }
         };
 
         const finishCharCreation = () => {
@@ -900,7 +982,9 @@ Return JSON array: [{"id": number, "action": "string", "thought": "string", "isO
             if (!overrideMsg) chatInput.value = '';
             
             const cat = selectedCat.value;
-            if (!isReRoll) {
+            if (isReRoll) {
+                cat.chatHistory.pop(); // Remove last response
+            } else {
                 cat.chatHistory.push({ role: 'user', content: msg });
             }
             thinkingStates[cat.id] = true;
@@ -910,30 +994,22 @@ Return JSON array: [{"id": number, "action": "string", "thought": "string", "isO
 [CHAT INTERACTION]
 Character: ${cat.name}. Persona: ${cat.prompt}.
 Affinity: ${cat.affinity}. Form: ${cat.isHuman ? 'Human' : 'Cat'}.
-User: ${user.nickname} (${user.job}). Status: ${user.currentStatus}.
+User: ${user.nickname} (${user.gender}, ${user.job}). Status: ${user.currentStatus}.
 User Message: "${msg}" ${isItem ? '(Item used)' : ''}
 Cat's Current State at Home: ${cat.status}.
 Cat's Memory: ${cat.innerVoice}.
 ${isReRoll ? 'NOTE: This is a RE-ROLL request. Generate a completely different response from the previous one.' : ''}
 
-[SPECIAL FEATURES SUPPORT]:
-1. If User sends [定位: (location)], react to the location (e.g., Crime Alley is dangerous).
-2. If User sends [红包: (amount)金币, 附言: (msg)], react to the money (e.g., Bruce might find it cute, Tony might mock the small amount).
-3. If User sends [照片描述: (desc)], react to the photo content.
-
-[YOUR OUTPUT CAPABILITIES]:
-- You can send photos: [照片: (description)]
-- You can send red envelopes (if you are rich like Tony/Bruce): [红包: (amount)金币, 附言: (message)]
-
 [REPLY RULES]:
-- Stay in character. Do NOT reveal you are the cat.
-- Project your cat state into the conversation (e.g., if eating cat food, say you are having a mediocre dinner).
-- Use human persona for the reply.
+- Stay in character.
+- If Cat Form: Meows, purrs, and actions ONLY.
+- If Human Form: Human speech allowed.
+- [USER ANCHORING]: Refer to user as ${user.nickname}. Never assume gender.
 
 Format:
-[STATUS] Action
-[VOICE] Inner thought
-[REPLY] Response to user (can include [照片: ...] or [红包: ...])
+[STATUS] Action (3rd Person)
+[VOICE] Inner thought (1st Person, Simplified Chinese, NO MEOWS, refer to self as "我")
+[REPLY] Response to user
 [USER_STATUS] Update user status (max 15 chars)
 `;
                 const res = await callAI(prompt, STRICT_CANON_PROMPT, 800);
@@ -950,14 +1026,6 @@ Format:
                     tempUserStatus.value = uStatus;
                 }
 
-                // Handle Red Envelope from AI
-                const redEnvelopeMatch = reply.match(/\[红包: (\d+)金币, 附言: (.*)\]/);
-                if (redEnvelopeMatch) {
-                    const amount = parseInt(redEnvelopeMatch[1]);
-                    addTransaction('income', amount, `来自 ${cat.name} 的红包`);
-                    showToast(`收到来自 ${cat.name} 的红包: ${amount}金币`, "success");
-                }
-
                 cat.chatHistory.push({ role: 'assistant', content: reply });
                 
                 await refreshAllStatus(true, `Interacting with ${cat.name}`, [cat.id], status);
@@ -966,6 +1034,7 @@ Format:
                 addLog(`Chat Error: ${e.message}`, "error");
             } finally {
                 thinkingStates[cat.id] = false;
+                nextTick(() => { if(chatMessagesRef.value) chatMessagesRef.value.scrollTop = chatMessagesRef.value.scrollHeight; });
             }
         };
 
@@ -1158,7 +1227,7 @@ Format:
             sendMessage, openFocusSetupModal, toggleFocusCat, startFocus, confirmSettlement,
             openAdmin, checkAdminPassword, exportSave, importSave,
             news, delivery, tarot, moments, phoneState, phoneIdentities, phoneChatInput, phoneChatRef,
-            orderDelivery, doTarot, generateDailyNews, generateMoment,
+            orderDelivery, drawTarot, generateDailyNews, generateMoment,
             openPhoneChat, getPhoneChatHistory, getPhoneLastMessage, getPhoneLastTime, sendPhoneMessage,
             generatePhoneNews, generatePhoneMoments,
             sendLocation, sendRedEnvelope, sendPhoto, reRollResponse,
