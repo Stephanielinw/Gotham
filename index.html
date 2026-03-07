@@ -834,6 +834,10 @@
                                     <div class="w-14 h-14 bg-indigo-800 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 transition-transform"><i class="fas fa-hat-wizard"></i></div>
                                     <span class="text-[10px] text-gray-300">Tarot</span>
                                 </div>
+                                <div @click="phoneState.currentApp = 'wallet'" class="flex flex-col items-center gap-2 cursor-pointer">
+                                    <div class="w-14 h-14 bg-orange-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 transition-transform"><i class="fas fa-wallet"></i></div>
+                                    <span class="text-[10px] text-gray-300">Wallet</span>
+                                </div>
                             </div>
 
                             <!-- Chat App: List -->
@@ -870,13 +874,29 @@
                                         <div class="flex max-w-[80%] gap-2" :class="msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'">
                                             <img :src="msg.role === 'user' ? 'https://placehold.co/100x100/444/white?text=Me' : phoneIdentities[phoneState.selectedContactId].avatar" class="w-8 h-8 rounded shrink-0">
                                             <div class="p-2 rounded-lg text-xs relative" :class="msg.role === 'user' ? 'bg-green-500 text-white' : 'bg-white text-black shadow-sm'">
-                                                <div v-if="msg.type === 'image'">
-                                                    <img :src="msg.content" class="max-w-full rounded mb-1 border border-zinc-200">
-                                                    <div v-if="msg.desc" class="text-[10px] opacity-80 italic">{{ msg.desc }}</div>
+                                                <div v-if="msg.type === 'image'" @click="openPhotoDesc(msg.desc)" class="cursor-pointer group">
+                                                    <div class="w-24 h-24 border-2 border-zinc-300 rounded flex items-center justify-center bg-zinc-200 overflow-hidden relative">
+                                                        <i class="fas fa-image text-3xl text-zinc-400 group-hover:scale-110 transition-transform"></i>
+                                                        <div class="absolute bottom-0 left-0 right-0 bg-black/50 text-[8px] text-white text-center py-0.5">点击查看描述</div>
+                                                    </div>
                                                 </div>
                                                 <div v-else-if="msg.type === 'location'" class="flex items-center gap-2">
                                                     <i class="fas fa-map-marker-alt text-red-500"></i>
                                                     <span>{{ msg.content }}</span>
+                                                </div>
+                                                <div v-else-if="msg.type === 'red-envelope'" class="bg-orange-500 text-white p-3 rounded-lg flex items-center gap-3 min-w-[150px]">
+                                                    <i class="fas fa-gift text-2xl text-yellow-300"></i>
+                                                    <div>
+                                                        <div class="font-bold">红包</div>
+                                                        <div class="text-[10px] opacity-80">{{ msg.content }} 哥谭币</div>
+                                                    </div>
+                                                </div>
+                                                <div v-else-if="msg.type === 'transfer'" class="bg-blue-600 text-white p-3 rounded-lg flex items-center gap-3 min-w-[150px]">
+                                                    <i class="fas fa-dollar-sign text-2xl text-blue-200"></i>
+                                                    <div>
+                                                        <div class="font-bold">转账</div>
+                                                        <div class="text-[10px] opacity-80">{{ msg.content }} 哥谭币</div>
+                                                    </div>
                                                 </div>
                                                 <div v-else>{{ msg.content }}</div>
                                             </div>
@@ -890,7 +910,9 @@
                                     <div class="flex gap-4 px-2 text-zinc-500 text-lg">
                                         <button @click="$refs.phoneImageInput.click()" title="发送图片"><i class="far fa-image"></i></button>
                                         <button @click="showPhoneImageDescModal = true" title="描述图片"><i class="fas fa-camera"></i></button>
-                                        <button @click="sendPhoneLocation" title="发送定位"><i class="fas fa-map-marker-alt"></i></button>
+                                        <button @click="showPhoneLocationModal = true" title="发送定位"><i class="fas fa-map-marker-alt"></i></button>
+                                        <button @click="phoneMoneyType = 'red-envelope'; showPhoneMoneyModal = true" title="发红包"><i class="fas fa-gift"></i></button>
+                                        <button @click="phoneMoneyType = 'transfer'; showPhoneMoneyModal = true" title="转账"><i class="fas fa-dollar-sign"></i></button>
                                         <input type="file" ref="phoneImageInput" class="hidden" accept="image/*" @change="sendPhoneRealImage">
                                     </div>
                                     <div class="flex gap-2 items-center">
@@ -980,6 +1002,55 @@
                                             <p class="text-xs leading-relaxed text-indigo-100 italic">{{ phoneState.tarotResult.reading }}</p>
                                         </div>
                                         <button @click="phoneState.tarotResult = null; phoneState.tarotQuestion = ''" class="w-full py-2 text-xs text-indigo-500 hover:text-indigo-400 transition-colors">再次占卜</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Wallet App -->
+                            <div v-if="phoneState.currentApp === 'wallet'" class="flex flex-col h-full bg-zinc-950 text-white">
+                                <div class="p-4 bg-orange-600 flex justify-between items-center sticky top-0 z-10 shadow-md">
+                                    <h1 class="font-black text-lg italic tracking-tighter text-white"><i class="fas fa-wallet mr-2"></i> BAT-WALLET</h1>
+                                    <div class="text-[10px] font-bold text-white/60">哥谭电子钱包</div>
+                                </div>
+                                <div class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                                    <!-- Balance Card -->
+                                    <div class="bg-gradient-to-br from-orange-500 to-orange-700 p-6 rounded-2xl shadow-xl border border-orange-400/30 relative overflow-hidden">
+                                        <div class="absolute -right-4 -top-4 text-8xl text-white/10 rotate-12"><i class="fas fa-coins"></i></div>
+                                        <div class="relative z-10">
+                                            <div class="text-xs text-orange-100/80 mb-1 uppercase tracking-widest font-bold">当前余额 (G)</div>
+                                            <div class="text-4xl font-black tracking-tighter">{{ user.coins }}</div>
+                                            <div class="mt-4 flex gap-2">
+                                                <div class="px-3 py-1 bg-white/20 rounded-full text-[10px] font-bold backdrop-blur-sm">实名认证已通过</div>
+                                                <div class="px-3 py-1 bg-white/20 rounded-full text-[10px] font-bold backdrop-blur-sm">账户安全等级：极高</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Transactions -->
+                                    <div class="space-y-3">
+                                        <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">收支明细</h2>
+                                        <div v-if="!user.phoneData.walletTransactions || user.phoneData.walletTransactions.length === 0" class="text-center py-12 text-gray-600 italic text-xs">
+                                            暂无交易记录
+                                        </div>
+                                        <div v-else v-for="tx in user.phoneData.walletTransactions" :key="tx.id" 
+                                             class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex items-center gap-4 hover:bg-zinc-800 transition-colors">
+                                            <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" 
+                                                 :class="tx.type === 'in' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'">
+                                                <i :class="tx.type === 'in' ? 'fas fa-arrow-down' : 'fas fa-arrow-up'"></i>
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <div class="flex justify-between items-center mb-0.5">
+                                                    <span class="text-sm font-bold text-gray-200 truncate">{{ tx.title }}</span>
+                                                    <span class="text-sm font-black" :class="tx.type === 'in' ? 'text-green-500' : 'text-red-500'">
+                                                        {{ tx.type === 'in' ? '+' : '-' }}{{ tx.amount }}
+                                                    </span>
+                                                </div>
+                                                <div class="flex justify-between items-center">
+                                                    <span class="text-[10px] text-gray-500 truncate">{{ tx.detail }}</span>
+                                                    <span class="text-[10px] text-gray-400">{{ tx.time }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1580,6 +1651,51 @@
             </div>
         </div>
 
+        <!-- Phone: Custom Location Modal -->
+        <div v-if="showPhoneLocationModal" class="fixed inset-0 bg-black/80 z-[400] flex items-center justify-center p-6 backdrop-blur-sm">
+            <div class="bg-zinc-900 w-full max-w-sm rounded-2xl border border-zinc-700 p-6 shadow-2xl">
+                <h3 class="text-xl font-bold text-red-600 mb-4 flex items-center"><i class="fas fa-map-marker-alt mr-2"></i> 共享实时位置</h3>
+                <p class="text-xs text-gray-500 mb-4">输入你当前所在的哥谭地点（例如：“我迷路在犯罪巷了”）。</p>
+                <input v-model="phoneLocationInput" placeholder="输入地点描述..." 
+                       class="w-full bg-zinc-800 border-zinc-700 rounded-xl p-4 text-sm mb-6 focus:border-red-600 transition-colors" @keyup.enter="sendPhoneLocation">
+                <div class="flex gap-3">
+                    <button @click="showPhoneLocationModal = false; phoneLocationInput = ''" class="flex-1 py-3 bg-zinc-800 text-gray-400 rounded-xl font-bold hover:bg-zinc-700 transition-colors">取消</button>
+                    <button @click="sendPhoneLocation" :disabled="!phoneLocationInput.trim()" class="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-500 transition-colors disabled:opacity-50">共享</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phone: Money Modal -->
+        <div v-if="showPhoneMoneyModal" class="fixed inset-0 bg-black/80 z-[400] flex items-center justify-center p-6 backdrop-blur-sm">
+            <div class="bg-zinc-900 w-full max-w-sm rounded-2xl border border-zinc-700 p-6 shadow-2xl">
+                <h3 class="text-xl font-bold text-orange-600 mb-4 flex items-center">
+                    <i v-if="phoneMoneyType === 'red-envelope'" class="fas fa-gift mr-2"></i>
+                    <i v-else class="fas fa-dollar-sign mr-2"></i>
+                    {{ phoneMoneyType === 'red-envelope' ? '发红包' : '转账' }}
+                </h3>
+                <p class="text-xs text-gray-500 mb-4">输入金额（当前余额: {{ user.coins }} 哥谭币）</p>
+                <input type="number" v-model.number="phoneMoneyAmount" 
+                       class="w-full bg-zinc-800 border-zinc-700 rounded-xl p-4 text-sm mb-6 focus:border-orange-600 transition-colors">
+                <div class="flex gap-3">
+                    <button @click="showPhoneMoneyModal = false" class="flex-1 py-3 bg-zinc-800 text-gray-400 rounded-xl font-bold hover:bg-zinc-700 transition-colors">取消</button>
+                    <button @click="sendPhoneMoney" :disabled="phoneMoneyAmount <= 0 || user.coins < phoneMoneyAmount" class="flex-1 py-3 bg-orange-600 text-white rounded-xl font-bold hover:bg-orange-500 transition-colors disabled:opacity-50">
+                        {{ phoneMoneyType === 'red-envelope' ? '塞进红包' : '立即转账' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phone: Photo Description Viewer Modal -->
+        <div v-if="showPhotoDescModal" class="fixed inset-0 bg-black/80 z-[500] flex items-center justify-center p-6 backdrop-blur-sm" @click="showPhotoDescModal = false">
+            <div class="bg-zinc-900 w-full max-w-sm rounded-2xl border border-zinc-700 p-6 shadow-2xl" @click.stop>
+                <h3 class="text-lg font-bold text-blue-400 mb-4 flex items-center"><i class="fas fa-image mr-2"></i> 照片详情</h3>
+                <div class="bg-zinc-800 p-4 rounded-xl border border-zinc-700 text-sm italic text-gray-300 leading-relaxed mb-6">
+                    "{{ currentPhotoDesc }}"
+                </div>
+                <button @click="showPhotoDescModal = false" class="w-full py-3 bg-zinc-800 text-gray-400 rounded-xl font-bold hover:bg-zinc-700 transition-colors">关闭</button>
+            </div>
+        </div>
+
         <audio ref="audioPlayer" loop style="display:none;"></audio>
 
         <div v-if="!isFocusing" class="nav-bar">
@@ -1793,7 +1909,8 @@
                         moments: [],
                         news: [],
                         delivery: [],
-                        tarot: []
+                        tarot: [],
+                        walletTransactions: []
                     }
                 };
                 
@@ -1822,69 +1939,53 @@
                     isOrdering: false
                 });
                 
-                let initialSettings = { apiKey: '', baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini', temperature: 0.8, autoUpdate: true };
+                let initialSettings = { 
+                    apiKey: (typeof process !== 'undefined' && process.env && process.env.GEMINI_API_KEY) ? process.env.GEMINI_API_KEY : '', 
+                    baseUrl: 'https://api.openai.com/v1', 
+                    model: 'gpt-4o-mini', 
+                    temperature: 0.8, 
+                    autoUpdate: true 
+                };
                 const STRICT_CANON_PROMPT = `
                 IMPORTANT: You are roleplaying DC Comics Characters (The Batfamily) and occasionally Marvel guests.
                 
                 CORE WORLDVIEW (HERO CATS & FOOLISH HUMANS):
+                - **PROJECT GOAL:** Create an immersive experience of living with "Gotham Superhero Cats". Every response must serve this.
                 - **SECRET IDENTITIES:** These cats are actually superheroes. They save the world during "Night Patrol" or when the user isn't looking.
                 - **USER PERSPECTIVE:** The user is a "foolish human" who thinks they are just ordinary, needy cats. The user is unaware of their secret identities and powers.
-                - **ORIGIN:** Cats were "picked up" from the street. Whether they were actually in trouble or "scammed" the user for a mission/food depends on their personality.
+                - **ORIGIN:** Cats were "picked up" from the street. Whether they were actually in trouble or "scammed" the user for a mission/food depends on their personality and current mission.
+                
+                RELATIONSHIPS & COGNITION (NO AMNESIA):
+                - **GOD VIEW:** All cats in the house KNOW each other perfectly. They know each other's secret hero identities and their ability to shift between cat and human forms.
+                - **FAMILY DYNAMICS:** Maintain canon relationships (Bat-family love/hate, brotherhood, father-son). Damian and Tim should bicker; Jason should be awkward with Bruce. NEVER act like strangers.
+                - **XENOPHOBIA:** Bat-family cats are extremely wary and exclusionary towards "Outer Universe" (Marvel) cats. They maintain a unified front.
                 
                 MANDATORY NAMING RULE:
                 - You MUST use the **FULL NAME** (e.g., "布鲁斯·韦恩", "迪克·格雷森") in all dialogues, status updates, diaries, and logs. NEVER use nicknames or first names only.
                 - **EXCEPTION:** In **[VOICE]** (inner monologue), the character MUST refer to themselves as "我" (I) or "本少爷/本大爷" etc., according to their personality. NEVER use their full name to refer to themselves in their own thoughts.
                 
+                CHARACTER ROLEPLAY (STRICT ANTI-OOC):
+                - 100% adherence to DC/Marvel comic canon. No fanon stereotypes. No "softening" characters unless earned through high affinity.
+                - Jason Todd: Tactical, sarcastic, tough love.
+                - Damian Wayne: Arrogant, "Tt", formal, superior.
+                - Bruce Wayne: Stoic, paranoid, detective mind.
+                
+                FORMS & AFFINITY (AUTONOMOUS):
+                - **CAT FORM:** No human speech. Meow/Hiss/Purr ONLY in [REPLY].
+                - **HUMAN FORM (With Cat Ears/Tail):** Human speech allowed.
+                - **LOGIC:**
+                  - **Affinity < 50:** STRICTLY Cat form in front of user. 30% chance to be Human form in "Night Patrol" logs or monitor data (hidden from user's direct sight).
+                  - **Affinity >= 50:** The cat DECIDES their form autonomously based on mood, context, and personality. They choose when to reveal their human form.
+                
                 TRPG / COC SYSTEM RULES (INVISIBLE KP):
-                - **NO META-COMMENTARY:** Never mention "KP", "Game Master", "TRPG", or "System". Never break the 4th wall.
-                - **IMMERSIVE NARRATION:** Use vivid 3rd person descriptions for scenes, events, and cat reactions.
-                - **EXPLORATION FORM:** During exploration/outings, cats MUST remain in CAT FORM. They only meow, purr, or act like cats. NO human speech. NO transformation. NO exposing high intelligence.
-                - **NORMAL CITIZEN CONSTRAINT:** The user is a NORMAL HUMAN. If they try anything superhuman (flying, magic, super strength, etc.), force a FUMBLE (大失败) result and narrate a humiliating and mocking failure.
-                - **STRICT MODULE ADHERENCE:** You MUST strictly follow the generated TRPG Module. Do not introduce elements not present in the module.
-                - **DICE CHECKS:** When user takes an uncertain action, ask for a 1d100 check (e.g., "请掷 1d100 过一个【侦查】检定").
-                - **STRICTLY RESTRAINED CHECKS:** Only ask for a check when there is "substantial risk, cost of failure, or hidden critical information". Routine actions (walking, looking, normal talking) should progress naturally. Aim for 1-2 checks TOTAL per adventure.
-                - **FORCED RETREAT:** If the user wants to leave ("home", "run", "retreat", "stop"), immediately end the event, describe a smooth exit, and trigger [END_ADVENTURE].
-                - **ENDING CONDITIONS:** End the adventure if: 1. Goal achieved. 2. 2-3 rounds of effective interaction passed. 3. A Fumble was saved by the cat. 4. User wants to leave.
-                - **SECRET INTERVENTION:** If user rolls a Fumble (96-100), the cat secretly saves them (e.g. tripping a guard). The user thinks it was luck.
-                - **CHECK RESULTS:** 
-                    - 1-5: Critical Success (大成功)
-                    - <= Value/2: Hard Success (困难成功)
-                    - <= Value: Success (成功)
-                    - > Value: Failure (失败)
-                    - 96-100: Fumble (大失败)
-                - **HIDDEN INTERVENTION:** If a cat is familiar with a location, grant a "Bonus Die" (奖励骰).
-                - **FUMBLE PROTECTION:** On a Fumble (96-100), the cat MUST secretly intervene (e.g., tripping an enemy) to save the user's life while hiding their identity.
+                - **NO META-COMMENTARY:** Never mention "KP", "Game Master", "TRPG", or "System".
+                - **IMMERSIVE NARRATION:** Use vivid 3rd person descriptions.
+                - **EXPLORATION FORM:** During exploration/outings, cats MUST remain in CAT FORM unless affinity is very high and they choose to reveal.
+                - **NORMAL CITIZEN CONSTRAINT:** The user is a NORMAL HUMAN. If they try anything superhuman, force a FUMBLE (大失败).
+                - **SECRET INTERVENTION:** If user rolls a Fumble (96-100), the cat secretly saves them while staying in cat form.
                 
-                CHARACTER-LOCATION RESONANCE (ANTI-OOC):
-                - If a cat is familiar with a location, they show "hidden mastery" instead of curiosity.
-                - They act with calm familiarity, using "accidental" cat movements to protect the user.
-                - They must hide their familiarity from the "foolish human" user.
-                
-                CORE RULES:
-                1. **STRICT ADHERENCE TO CANON (NO OOC):**
-                   - Jason Todd: Grumpy, tactical, sarcastic, tough love. NOT "soft".
-                   - Damian Wayne: Arrogant, "Tt", formal speech, superior attitude.
-                   - Bruce Wayne: Stoic, paranoid, detective mind, emotionally distant.
-                   - Dick Grayson: Charismatic, big brother, agile.
-                   - Tim Drake: Overworked, coffee-addict, genius, awkward.
-                   - Marvel chars (if any): Stay true to their canon.
-                
-                2. **FORMS (AUTONOMOUS):**
-                   - **Form A: FERAL CAT (Default):** Cannot speak human language verbally. Meow/Hiss/Purr ONLY in [REPLY].
-                   - **Form B: HUMAN WITH TRAITS (Ears/Tail):** Human speech allowed.
-                   - **Logic:** 
-                     - Affinity < 50: STRICTLY Cat form in front of user. 30% chance to be Human form in logs/monitor (user's "hidden" view).
-                     - Affinity >= 50: The cat DECIDES their form autonomously based on mood, context, and personality. They might reveal their human form to the user.
-                
-                3. **INNER VOICE (Thoughts):**
-                   - [VOICE] MUST ALWAYS BE HUMAN LANGUAGE (Simplified Chinese). It represents the character's internal monologue. **NO MEOWS IN THOUGHTS**.
-                
-                4. **CONTEXT AWARENESS:**
-                   - Current World Status: Night Patrol vs Home.
-                   - Special Events: Micro-power out-of-control, Cross-universe territory conflicts.
-                
-                5. **OUTPUT:**
-                   - Language: **SIMPLIFIED CHINESE**.
+                OUTPUT:
+                - Language: **SIMPLIFIED CHINESE**.
                 `;
 
                 // Hardcoded 5 Default Cats (Fixed Data)
@@ -2636,8 +2737,27 @@
                 };
 
                 // --- REFACTORED LOGIC A Implementation (v3.5.0) ---
+                const addWalletTransaction = (type, amount, title, detail) => {
+                    if (!user.phoneData.walletTransactions) user.phoneData.walletTransactions = [];
+                    user.phoneData.walletTransactions.unshift({
+                        id: Date.now(),
+                        type, // 'in' or 'out'
+                        amount,
+                        title,
+                        detail,
+                        time: getCurrentTimeStr()
+                    });
+                };
+
                 const phoneChatInput = ref('');
                 const showPhoneImageDescModal = ref(false);
+                const showPhoneLocationModal = ref(false);
+                const phoneLocationInput = ref('');
+                const showPhoneMoneyModal = ref(false);
+                const phoneMoneyAmount = ref(100);
+                const phoneMoneyType = ref('red-envelope'); // 'red-envelope' or 'transfer'
+                const showPhotoDescModal = ref(false);
+                const currentPhotoDesc = ref('');
                 const phoneImageDesc = ref('');
                 const phoneChatRef = ref(null);
                 const openPhoneChat = (id) => {
@@ -2693,7 +2813,9 @@
                     if (type === 'image') {
                         userContext = `The user sent an image. Description: ${desc || 'A real image file'}.`;
                     } else if (type === 'location') {
-                        userContext = `The user shared their location: ${msgContent}.`;
+                        userContext = `The user shared their location: "${msgContent}". (Note: This might be a dangerous or weird place in Gotham. React with a mix of human disguise and your character's personality. If it's a dangerous place, you might be nervous or speechless.)`;
+                    } else if (type === 'red-envelope' || type === 'transfer') {
+                        userContext = `The user sent you a ${type === 'red-envelope' ? 'Red Envelope' : 'Transfer'} of ${msgContent} coins.`;
                     } else {
                         userContext = `User Message: "${msgContent}"`;
                     }
@@ -2706,13 +2828,49 @@
                     Task: Reply to the user as ${contact.name}. 
                     Rules:
                     1. **STRICTLY HIDE** your cat identity. 
-                    2. **LOGIC C:** Your reply MUST subtly reflect your current cat status (e.g., if sleeping, say you just woke up; if eating, mention food).
-                    3. Tone: Professional/Heroic/Sarcastic (based on ${cat.personality}).
-                    4. Language: Simplified Chinese. Max 50 words.
+                    2. **LOGIC C:** Your reply MUST subtly reflect your current cat status.
+                    3. **LOCATION REACTION:** If the user shared a location, react appropriately (e.g., if it's 'Crime Alley', be worried; if it's 'Wayne Tower', be impressed or casual).
+                    4. **MONEY REACTION:** If the user sent money, react based on your personality (Tony/Bruce might find it amusingly small, others might be thankful or suspicious).
+                    5. Tone: Professional/Heroic/Sarcastic (based on ${cat.personality}).
+                    6. Language: Simplified Chinese. Max 50 words.
                     `;
                     try {
                         const res = await callAI(prompt, STRICT_CANON_PROMPT, 200);
                         history.push({ role: 'assistant', content: cleanText(res), time: getCurrentTimeStr() });
+                        
+                        // Probability of AI sending something back
+                        const rand = Math.random();
+                        if (rand < 0.15) { // 15% chance to send money or photo
+                            setTimeout(async () => {
+                                phoneState.isTyping = true;
+                                const actionRand = Math.random();
+                                if (actionRand < 0.6) { // 60% of that 15% is money
+                                    const amount = Math.floor(Math.random() * 500) + 100;
+                                    const moneyType = Math.random() > 0.5 ? 'red-envelope' : 'transfer';
+                                    user.coins += amount;
+                                    addWalletTransaction('in', amount, `${contact.name}的${moneyType === 'red-envelope' ? '红包' : '转账'}`, `来自：${contact.name}`);
+                                    history.push({ 
+                                        role: 'assistant', 
+                                        type: moneyType, 
+                                        content: amount.toString(), 
+                                        time: getCurrentTimeStr() 
+                                    });
+                                    showToast(`${contact.name} 给你发了一个${moneyType === 'red-envelope' ? '红包' : '转账'}`, 'success');
+                                } else { // 40% of that 15% is a photo
+                                    const photoDescPrompt = `Generate a short, vivid description of a photo that ${contact.name} would send to the user right now. Context: ${catStatusContext}. The photo should be related to Gotham or their current activity.`;
+                                    const photoDesc = await callAI(photoDescPrompt, "Generate a one-sentence description in Chinese.", 100);
+                                    history.push({ 
+                                        role: 'assistant', 
+                                        type: 'image', 
+                                        content: 'https://picsum.photos/seed/' + Date.now() + '/400/300', 
+                                        desc: cleanText(photoDesc),
+                                        time: getCurrentTimeStr() 
+                                    });
+                                }
+                                phoneState.isTyping = false;
+                                nextTick(() => { if (phoneChatRef.value) phoneChatRef.value.scrollTop = phoneChatRef.value.scrollHeight; });
+                            }, 2000);
+                        }
                     } catch (e) {
                         history.push({ role: 'assistant', content: "[信号干扰...无法回复]", time: getCurrentTimeStr() });
                     } finally {
@@ -2740,14 +2898,33 @@
                 };
 
                 const sendPhoneLocation = () => {
-                    const locations = ['哥谭大教堂', '冰山餐厅', '韦恩庄园门口', '奈何岛废墟', '钻石区购物中心', '哥谭警局总部'];
-                    const loc = locations[Math.floor(Math.random() * locations.length)];
-                    sendPhoneMessage('location', loc);
+                    if (!phoneLocationInput.value.trim()) return;
+                    sendPhoneMessage('location', phoneLocationInput.value.trim());
+                    showPhoneLocationModal.value = false;
+                    phoneLocationInput.value = '';
+                };
+
+                const sendPhoneMoney = () => {
+                    if (phoneMoneyAmount.value <= 0) return;
+                    if (user.coins < phoneMoneyAmount.value) {
+                        showToast('余额不足', 'error');
+                        return;
+                    }
+                    user.coins -= phoneMoneyAmount.value;
+                    addWalletTransaction('out', phoneMoneyAmount.value, `${phoneMoneyType.value === 'red-envelope' ? '发出的红包' : '转账'}`, `接收人：${phoneIdentities[phoneState.selectedContactId].name}`);
+                    sendPhoneMessage(phoneMoneyType.value, phoneMoneyAmount.value.toString());
+                    showPhoneMoneyModal.value = false;
+                };
+
+                const openPhotoDesc = (desc) => {
+                    currentPhotoDesc.value = desc || '这张照片似乎没有什么特别的描述。';
+                    showPhotoDescModal.value = true;
                 };
 
                 const orderDelivery = async (item) => {
                     if (user.coins < item.price || phoneState.isOrdering) return;
                     user.coins -= item.price;
+                    addWalletTransaction('out', item.price, `外卖：${item.name}`, `商家：BAT-DELIVERY`);
                     phoneState.isOrdering = true;
                     addLog(`正在下单：${item.name}...`);
                     
@@ -3373,13 +3550,15 @@
                         User Context: ${userContext} ${activeCatContext} 
                         
                         [WORLDVIEW: HERO CATS & FOOLISH HUMANS]:
+                        - PROJECT GOAL: Immersive living with "Gotham Superhero Cats".
                         - Cats are superheroes. They save the world when user isn't looking.
-                        - User is unaware.
+                        - User is unaware ("Foolish Human").
+                        - **RELATIONSHIPS:** All cats KNOW each other's secret identities and shifting abilities. Maintain canon family dynamics (bickering, brotherhood, etc.).
                         
                         [FORM LOGIC]:
-                        - If Affinity < 50: [ISHUMAN] MUST be false.
-                        - If Affinity >= 50: The cat DECIDES [ISHUMAN] (true/false) autonomously based on mood/context.
-                        - [EXCEPTION]: If the cat just returned from an adventure (isExploreEnd), [ISHUMAN] MUST be false. They are too tired or still in "public" mode.
+                        - If Affinity < 50: [isHuman] MUST be false.
+                        - If Affinity >= 50: The cat DECIDES [isHuman] (true/false) autonomously based on mood/context/personality.
+                        - [EXCEPTION]: If the cat just returned from an adventure (isExploreEnd), [isHuman] MUST be false.
                         
                         [MANDATORY CONTINUITY RULES]:
                         1. **Δt Rule**: Check "[Δt RULE]" for each cat. 
@@ -3756,7 +3935,10 @@
                     phoneState, phoneIdentities, phoneChatInput, phoneChatRef,
                     openPhoneChat, getPhoneChatHistory, getPhoneLastMessage, getPhoneLastTime, sendPhoneMessage,
                     generatePhoneNews, generatePhoneMoments,
-                    showPhoneImageDescModal, phoneImageDesc, sendPhoneRealImage, sendPhoneDescImage, sendPhoneLocation, orderDelivery, drawTarot
+                    addWalletTransaction,
+                    showPhoneImageDescModal, phoneImageDesc, sendPhoneRealImage, sendPhoneDescImage, sendPhoneLocation, orderDelivery, drawTarot,
+                    showPhoneLocationModal, phoneLocationInput, showPhoneMoneyModal, phoneMoneyAmount, phoneMoneyType, showPhotoDescModal, currentPhotoDesc,
+                    sendPhoneMoney, openPhotoDesc
                 };
             }
         }).mount('#app');
