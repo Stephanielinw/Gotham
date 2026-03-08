@@ -1998,6 +1998,117 @@
                     { id: 5, name: '达米安·韦恩', breed: '黑色东方短毛猫', eyeColor: '祖母绿', personality: '傲慢、暴力、贵族气派', status: '正在磨爪子准备战斗', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/006400/white?text=Robin', image_human: '', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: 'Tt. 愚蠢的家具。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Robin (Damian Wayne). Arrogant, skilled assassin, heir. Says 'Tt'. Haughty. Canon compliance: Green eyes, Black hair.", birthday: "08-01", isMarvel: false }
                 ];
 
+                const parseAIJSON = (text) => {
+                    try {
+                        if (!text) return null;
+                        let cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+                        
+                        // Try to find the JSON block
+                        const firstBrace = cleaned.indexOf('{');
+                        const firstBracket = cleaned.indexOf('[');
+                        
+                        let start = -1;
+                        if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
+                            start = firstBrace;
+                        } else if (firstBracket !== -1) {
+                            start = firstBracket;
+                        }
+                        
+                        if (start === -1) return null;
+                        
+                        // Extract from start to the end of the string
+                        let jsonCandidate = cleaned.substring(start);
+                        
+                        // Attempt to parse directly first
+                        try {
+                            // Find the last valid closing character
+                            const lastBrace = jsonCandidate.lastIndexOf('}');
+                            const lastBracket = jsonCandidate.lastIndexOf(']');
+                            const end = Math.max(lastBrace, lastBracket);
+                            if (end !== -1) {
+                                return JSON.parse(jsonCandidate.substring(0, end + 1));
+                            }
+                        } catch (e) {
+                            // If direct parse fails, it might be truncated
+                        }
+                        
+                        // Robust Truncated JSON Repair Logic
+                        const repairJSON = (str) => {
+                            let stack = [];
+                            let inString = false;
+                            let escaped = false;
+                            let lastValidIndex = -1;
+                            
+                            for (let i = 0; i < str.length; i++) {
+                                const char = str[i];
+                                
+                                if (escaped) {
+                                    escaped = false;
+                                    continue;
+                                }
+                                
+                                if (char === '\\') {
+                                    escaped = true;
+                                    continue;
+                                }
+                                
+                                if (char === '"') {
+                                    inString = !inString;
+                                    if (!inString) lastValidIndex = i;
+                                    continue;
+                                }
+                                
+                                if (inString) continue;
+                                
+                                if (char === '{' || char === '[') {
+                                    stack.push(char === '{' ? '}' : ']');
+                                    lastValidIndex = i;
+                                } else if (char === '}' || char === ']') {
+                                    if (stack.length > 0 && stack[stack.length - 1] === char) {
+                                        stack.pop();
+                                        lastValidIndex = i;
+                                    }
+                                } else if (char === ',' || char === ':' || /\d/.test(char) || char === 't' || char === 'f' || char === 'n') {
+                                    // These are potentially valid mid-structure characters
+                                    // We don't update lastValidIndex here because we want to cut at a structural boundary if possible
+                                }
+                            }
+                            
+                            // If we are in a string, close it
+                            let repaired = str;
+                            if (inString) {
+                                repaired += '"';
+                            }
+                            
+                            // Close all open structures in reverse order
+                            while (stack.length > 0) {
+                                repaired += stack.pop();
+                            }
+                            
+                            return repaired;
+                        };
+                        
+                        try {
+                            const repaired = repairJSON(jsonCandidate);
+                            return JSON.parse(repaired);
+                        } catch (finalError) {
+                            // If repair fails, try one last ditch effort: find the last complete object in an array
+                            if (jsonCandidate.startsWith('[')) {
+                                const lastCompleteObjectEnd = jsonCandidate.lastIndexOf('}');
+                                if (lastCompleteObjectEnd !== -1) {
+                                    try {
+                                        return JSON.parse(jsonCandidate.substring(0, lastCompleteObjectEnd + 1) + ']');
+                                    } catch (e) {}
+                                }
+                            }
+                            throw finalError;
+                        }
+                    } catch (e) { 
+                        console.error("JSON Parse Error:", e, text);
+                        return null;
+                    }
+                };
+
                 let initialCats = [...defaultCats];
                 let initialShopItems = [
                     { id: 1, name: '阿尔弗雷德特制猫饭', price: 50, icon: '🍲', desc: '管家侠亲手制作，回复体力', effect: 2, type: 'consumable', category: 'food' },
@@ -2092,36 +2203,7 @@
                     return cleaned.trim();
                 };
 
-                const parseAIJSON = (text) => {
-                    try {
-                        if (!text) return null;
-                        let cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
-                        const firstBrace = cleaned.indexOf('{');
-                        const firstBracket = cleaned.indexOf('[');
-                        const lastBrace = cleaned.lastIndexOf('}');
-                        const lastBracket = cleaned.lastIndexOf(']');
-                        
-                        let start = -1;
-                        let end = -1;
-                        
-                        if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
-                            start = firstBrace;
-                            end = lastBrace;
-                        } else if (firstBracket !== -1) {
-                            start = firstBracket;
-                            end = lastBracket;
-                        }
-                        
-                        if (start !== -1 && end !== -1 && end > start) {
-                            cleaned = cleaned.substring(start, end + 1);
-                        }
-                        return JSON.parse(cleaned);
-                    } catch (e) { 
-                        console.error("JSON Parse Error:", e, text);
-                        return null; 
-                    }
-                };
-                
+
                 const extractSection = (text, tag) => {
                     const regex = new RegExp(`\\[${tag}\\]([\\s\\S]*?)(?=\\[|$)`, 'i');
                     const match = text.match(regex);
@@ -2225,11 +2307,27 @@
                             throw new Error("AI returned no candidates. Check safety filters or API status.");
                         }
 
-                        const content = result.text;
-                        if (!content) {
-                            const reason = result.candidates[0].finishReason;
+                        let content = "";
+                        try {
+                            content = result.text || "";
+                        } catch (e) {
+                            if (result.candidates?.[0]?.content?.parts) {
+                                content = result.candidates[0].content.parts.map(p => p.text || "").join("");
+                            }
+                        }
+
+                        if (!content || content.trim().length === 0) {
+                            const reason = result.candidates?.[0]?.finishReason;
                             console.error("AI Result Object (Empty Text):", result);
-                            throw new Error(`AI returned empty text. Finish Reason: ${reason}. This usually means the content was blocked by safety filters.`);
+                            let errorMsg = `AI returned empty text. Finish Reason: ${reason}.`;
+                            if (reason === 'SAFETY') {
+                                errorMsg += " This usually means the content was blocked by safety filters.";
+                            } else if (reason === 'MAX_TOKENS') {
+                                errorMsg += " The model hit the output token limit. Try increasing maxTokens or simplifying the prompt.";
+                            } else if (reason === 'OTHER') {
+                                errorMsg += " The generation stopped for an unknown reason.";
+                            }
+                            throw new Error(errorMsg);
                         }
 
                         showToast("数据传输完成", "success");
@@ -3493,7 +3591,7 @@
                          const formStr = targetCat.isHuman ? "Human Form" : "Cat Form";
                          const prompt = `User harasses you. You: ${targetCat.name} (${formStr}). Traits: ${targetCat.personality}. Reaction Action (30 words, 3rd Person). Output: [ACTION] Action`;
                          try {
-                             const res = await callAI(prompt, STRICT_CANON_PROMPT, 100);
+                             const res = await callAI(prompt, STRICT_CANON_PROMPT, 300);
                              const action = extractSection(res, 'ACTION') || cleanText(res);
                              if(isFocusing.value) { const timeStr = getCurrentTimeStr(); currentFocusLog.value.unshift(`${timeStr} [${targetCat.name}] ${action}`); focusMessage.value = "骚扰成功！"; playLogSound(); setTimeout(() => focusMessage.value = '', 2000); } else { alert(`${targetCat.name}: ${action}`); }
                          } catch(e) {}
@@ -3609,7 +3707,7 @@
                           }
                         ]`;
 
-                        const res = await callAI(characterBlock + "\n" + prompt, STRICT_CANON_PROMPT, 1200);
+                        const res = await callAI(characterBlock + "\n" + prompt, STRICT_CANON_PROMPT, 2000);
                         const updates = parseAIJSON(res);
                         
                         if (Array.isArray(updates)) {
@@ -3854,7 +3952,7 @@
                         let affinityBonus = 0;
                         if(settings.apiKey) {
                             const prompt = `User gives [${item.name}] to ${selectedCat.value.name}. Cat Personality: ${selectedCat.value.personality}. Does cat like it? JSON: { "liked": boolean, "reaction": "Action description" }`;
-                            try { const res = await callAI(prompt, "Game AI", 100); const data = parseAIJSON(res); if(data) { affinityBonus = data.liked ? (Math.floor(Math.random()*3)+1) : -(Math.floor(Math.random()*3)+2); selectedCat.value.status = data.reaction || 'Interaction'; } else { affinityBonus = 1; } } catch(e) { affinityBonus = 1; }
+                            try { const res = await callAI(prompt, "Game AI", 300); const data = parseAIJSON(res); if(data) { affinityBonus = data.liked ? (Math.floor(Math.random()*3)+1) : -(Math.floor(Math.random()*3)+2); selectedCat.value.status = data.reaction || 'Interaction'; } else { affinityBonus = 1; } } catch(e) { affinityBonus = 1; }
                         } else { affinityBonus = 2; }
                         selectedCat.value.affinity = Math.max(0, selectedCat.value.affinity + affinityBonus);
                         await checkAffinityThreshold(selectedCat.value);
