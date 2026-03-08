@@ -1708,7 +1708,7 @@
     </div>
 
     <script type="module">
-        import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
+        import { GoogleGenAI, HarmCategory, HarmBlockThreshold, ThinkingLevel } from "@google/genai";
         const { createApp, ref, reactive, onMounted, watch, computed, nextTick } = Vue;
 
         createApp({
@@ -2203,7 +2203,6 @@
                     return cleaned.trim();
                 };
 
-
                 const extractSection = (text, tag) => {
                     const regex = new RegExp(`\\[${tag}\\]([\\s\\S]*?)(?=\\[|$)`, 'i');
                     const match = text.match(regex);
@@ -2237,41 +2236,7 @@
                     todayEvent.value = eventName; todayEventContext.value = eventCtx;
                 };
 
-                const getUserRealLifeContext = () => {
-                    const pendingTodos = user.todos ? user.todos.filter(t => !t.done) : [];
-                    const pendingTodosStr = pendingTodos.map(t => t.text).join(', ');
-                    let ddlContext = "None";
-                    if (nearestDDL.value) { const diff = new Date(nearestDDL.value.time).getTime() - Date.now(); const days = diff / (1000 * 60 * 60 * 24); if (days <= 5) { ddlContext = `URGENT DEADLINE: ${nearestDDL.value.title} in ${days.toFixed(1)} days!`; } else { ddlContext = `${nearestDDL.value.title} (Time left: ${ddlCountdownStr.value})`; } }
-                    const eventContext = todayEventContext.value ? todayEventContext.value : "None";
-                    const lastMail = user.mailbox.length > 0 ? user.mailbox[user.mailbox.length - 1] : null;
-                    const mailContext = lastMail ? `Recent Mail from ${lastMail.from}: ${lastMail.content.substring(0, 30)}...` : "No recent mail.";
-                    
-                    // --- NEW USER IDENTITY BLOCK ---
-                    const userProfile = `[USER PROFILE] Name: ${user.nickname || 'Citizen'}. Gender: ${user.gender}. Job/Role: ${user.job || 'Unknown'}. Current Status: ${user.currentStatus || 'Unknown'}.`;
-                    const realLifeContext = `[REAL LIFE CONTEXT] Pending Tasks: ${pendingTodosStr}. DDL Context: ${ddlContext}. Special Event: ${eventContext}. Mail Context: ${mailContext}`;
-                    
-                    return `${userProfile}\n${realLifeContext}`;
-                };
-
-                const generateMail = async () => {
-                    if (user.mailbox.length >= 4) return;
-                    if (Math.random() > 0.25) return; 
-                    const catsOut = cats.value.filter(c => c.isOut);
-                    let sender = ''; let isRandomDC = false;
-                    if (catsOut.length > 0 && Math.random() < 0.7) { sender = catsOut[Math.floor(Math.random() * catsOut.length)].name; } else { isRandomDC = true; sender = 'Random DC Character'; }
-                    
-                    // Pass Explicit Recipient Info
-                    const recipientInfo = `To: ${user.nickname} (Gender: ${user.gender}, Job: ${user.job})`;
-                    
-                    const prompt = `Generate a short letter/message. ${recipientInfo}. Sender Context: ${isRandomDC ? 'A random DC character (e.g., Joker, Catwoman, Gordon, etc.)' : 'Character ' + sender + ' who is currently OUT on patrol/mission'}. Length: Max 50 words. Language: Simplified Chinese. Tone: In-character. Include Item? 60% chance. Output JSON: { "sender": "Name", "content": "Message...", "item": { "name": "ItemName", "icon": "Emoji", "desc": "Short Desc" } or null }`;
-                    try {
-                        const res = await callAI(prompt, "Mail System", 150);
-                        const data = parseAIJSON(res);
-                        if (data && data.sender && data.content) { const newItem = data.item ? { ...data.item, id: Date.now(), type: 'collectible' } : null; user.mailbox.push({ from: data.sender, date: getCurrentTimeStr(), content: cleanText(data.content), item: newItem, read: false, claimed: false }); user.dailyMailCount++; }
-                    } catch(e) {}
-                };
-
-                const callAI = async (prompt, systemPrompt, maxTokens = 100) => {
+                const callAI = async (prompt, systemPrompt, maxTokens = 8192, thinkingLevel = null) => {
                     if (!settings.apiKey) {
                         showToast("连接失败: 缺少 API 密钥", "error");
                         throw new Error("No API Key");
@@ -2284,22 +2249,27 @@
                         const genAI = new GoogleGenAI({ apiKey: settings.apiKey });
                         const modelName = settings.model || "gemini-3-flash-preview";
                         
-                        // Use a simpler content structure for better compatibility
+                        const config = {
+                            systemInstruction: systemPrompt,
+                            temperature: settings.temperature,
+                            maxOutputTokens: maxTokens,
+                            safetySettings: [
+                                { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                                { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+                                { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                                { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                                { category: HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY, threshold: HarmBlockThreshold.BLOCK_NONE }
+                            ]
+                        };
+
+                        if (thinkingLevel && modelName.includes("gemini-3")) {
+                            config.thinkingConfig = { thinkingLevel };
+                        }
+
                         const result = await genAI.models.generateContent({
                             model: modelName,
                             contents: prompt,
-                            config: {
-                                systemInstruction: systemPrompt,
-                                temperature: settings.temperature,
-                                maxOutputTokens: maxTokens,
-                                safetySettings: [
-                                    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                                    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-                                    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                                    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                                    { category: HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY, threshold: HarmBlockThreshold.BLOCK_NONE }
-                                ]
-                            },
+                            config: config
                         });
                         
                         if (!result.candidates || result.candidates.length === 0) {
@@ -2341,6 +2311,40 @@
                     }
                 };
 
+                const getUserRealLifeContext = () => {
+                    const pendingTodos = user.todos ? user.todos.filter(t => !t.done) : [];
+                    const pendingTodosStr = pendingTodos.map(t => t.text).join(', ');
+                    let ddlContext = "None";
+                    if (nearestDDL.value) { const diff = new Date(nearestDDL.value.time).getTime() - Date.now(); const days = diff / (1000 * 60 * 60 * 24); if (days <= 5) { ddlContext = `URGENT DEADLINE: ${nearestDDL.value.title} in ${days.toFixed(1)} days!`; } else { ddlContext = `${nearestDDL.value.title} (Time left: ${ddlCountdownStr.value})`; } }
+                    const eventContext = todayEventContext.value ? todayEventContext.value : "None";
+                    const lastMail = user.mailbox.length > 0 ? user.mailbox[user.mailbox.length - 1] : null;
+                    const mailContext = lastMail ? `Recent Mail from ${lastMail.from}: ${lastMail.content.substring(0, 30)}...` : "No recent mail.";
+                    
+                    // --- NEW USER IDENTITY BLOCK ---
+                    const userProfile = `[USER PROFILE] Name: ${user.nickname || 'Citizen'}. Gender: ${user.gender}. Job/Role: ${user.job || 'Unknown'}. Current Status: ${user.currentStatus || 'Unknown'}.`;
+                    const realLifeContext = `[REAL LIFE CONTEXT] Pending Tasks: ${pendingTodosStr}. DDL Context: ${ddlContext}. Special Event: ${eventContext}. Mail Context: ${mailContext}`;
+                    
+                    return `${userProfile}\n${realLifeContext}`;
+                };
+
+                const generateMail = async () => {
+                    if (user.mailbox.length >= 4) return;
+                    if (Math.random() > 0.25) return; 
+                    const catsOut = cats.value.filter(c => c.isOut);
+                    let sender = ''; let isRandomDC = false;
+                    if (catsOut.length > 0 && Math.random() < 0.7) { sender = catsOut[Math.floor(Math.random() * catsOut.length)].name; } else { isRandomDC = true; sender = 'Random DC Character'; }
+                    
+                    // Pass Explicit Recipient Info
+                    const recipientInfo = `To: ${user.nickname} (Gender: ${user.gender}, Job: ${user.job})`;
+                    
+                    const prompt = `Generate a short letter/message. ${recipientInfo}. Sender Context: ${isRandomDC ? 'A random DC character (e.g., Joker, Catwoman, Gordon, etc.)' : 'Character ' + sender + ' who is currently OUT on patrol/mission'}. Length: Max 50 words. Language: Simplified Chinese. Tone: In-character. Include Item? 60% chance. Output JSON: { "sender": "Name", "content": "Message...", "item": { "name": "ItemName", "icon": "Emoji", "desc": "Short Desc" } or null }`;
+                    try {
+                        const res = await callAI(prompt, "Mail System", 1000, ThinkingLevel.LOW);
+                        const data = parseAIJSON(res);
+                        if (data && data.sender && data.content) { const newItem = data.item ? { ...data.item, id: Date.now(), type: 'collectible' } : null; user.mailbox.push({ from: data.sender, date: getCurrentTimeStr(), content: cleanText(data.content), item: newItem, read: false, claimed: false }); user.dailyMailCount++; }
+                    } catch(e) {}
+                };
+
                 const handleCatClick = (cat) => { selectedCat.value = cat; currentTab.value = 'detail'; showEasterEggBtn.value = (cat.affinity >= 90 && Math.random() < 0.05); };
                 
                 const triggerEasterEgg = async () => { 
@@ -2349,7 +2353,7 @@
                     selectedCat.value.affinity -= 10;
                     const prompt = `Generate Special Event for ${selectedCat.value.name} and User (${user.nickname}). Type: Letter, Postcard, or Romantic Date Invitation. Content (350 words): Very sweet, immersive. Language: Simplified Chinese.`;
                     try {
-                        const res = await callAI(prompt, STRICT_CANON_PROMPT, 500);
+                        const res = await callAI(prompt, STRICT_CANON_PROMPT, 2000);
                         const content = cleanText(res);
                         currentSpecialEventContent.value = content;
                         showSpecialEventModal.value = true;
@@ -2366,7 +2370,7 @@
                     Output: A short narrative bubble. 
                     Language: Simplified Chinese.`;
                     try {
-                        const res = await callAI(prompt, STRICT_CANON_PROMPT, 200);
+                        const res = await callAI(prompt, STRICT_CANON_PROMPT, 1500);
                         const content = cleanText(res);
                         cat.innerVoice = content;
                         cat.diary.push({ time: getCurrentTimeStr(), content: `[首次拟人化] ${content}` });
@@ -2851,7 +2855,7 @@
                     `;
                     
                     try {
-                        const content = await callAI(prompt, STRICT_CANON_PROMPT, 200);
+                        const content = await callAI(prompt, STRICT_CANON_PROMPT, 1000);
                         currentSpecialEventContent.value = cleanText(content);
                         pendingSpecialEvent.value = { cat: cat, content: cleanText(content) };
                         showSpecialEventModal.value = true;
@@ -2960,7 +2964,7 @@
                     6. Language: Simplified Chinese. Max 50 words.
                     `;
                     try {
-                        const res = await callAI(prompt, STRICT_CANON_PROMPT, 200);
+                        const res = await callAI(prompt, STRICT_CANON_PROMPT, 1000);
                         history.push({ role: 'assistant', content: cleanText(res), time: getCurrentTimeStr() });
                         
                         // Probability of AI sending something back
@@ -3263,7 +3267,7 @@
                     Language: Simplified Chinese.`;
 
                     try {
-                        const summary = await callAI(prompt, "You are Alfred Pennyworth, the loyal butler of the Wayne family.", 250);
+                        const summary = await callAI(prompt, "You are Alfred Pennyworth, the loyal butler of the Wayne family.", 1000, ThinkingLevel.LOW);
                         user.missionReports.push({ 
                             missionName: '昨日总结报告', 
                             date: new Date(Date.now() - 86400000).toLocaleDateString(), 
@@ -3304,7 +3308,7 @@
                              Language: Simplified Chinese.`;
                              
                              try {
-                                 const res = await callAI(prompt, STRICT_CANON_PROMPT, 500);
+                                 const res = await callAI(prompt, STRICT_CANON_PROMPT, 4000, ThinkingLevel.LOW);
                                  cat.logs.push({ 
                                      date: yesterdayStr, 
                                      content: cleanText(res) 
@@ -3461,7 +3465,7 @@
                     const nowH = new Date().getHours();
                     const prompt = `Task: Generate status logs for ${selectedCat.value.name} from 00:00 to ${nowH}:00. Output: HH:MM|Status Content (3rd Person)`;
                     try {
-                        const res = await callAI(prompt, STRICT_CANON_PROMPT, 300);
+                        const res = await callAI(prompt, STRICT_CANON_PROMPT, 2000, ThinkingLevel.LOW);
                         const lines = res.split('\n');
                         lines.forEach(l => { if(l.includes('|')) { const [t, c] = l.split('|'); selectedCat.value.diary.push({ time: t.trim(), content: c.trim() }); } });
                         selectedCat.value.diary.sort((a,b) => a.time.localeCompare(b.time));
@@ -3473,7 +3477,7 @@
                     isReleasing.value = true;
                     const prompt = `Character: ${selectedCat.value.name}. Task: Say goodbye forever to ${user.nickname}. (30 words). Tone: Sad.`;
                     try {
-                        const msg = await callAI(prompt, STRICT_CANON_PROMPT, 100);
+                        const msg = await callAI(prompt, STRICT_CANON_PROMPT, 500);
                         alert(`${selectedCat.value.name}: "${cleanText(msg)}"`);
                         const idx = cats.value.indexOf(selectedCat.value);
                         if(idx > -1) cats.value.splice(idx, 1);
@@ -3491,7 +3495,7 @@
                      const otherCatsContext = otherCats ? `Other cats present: ${otherCats}.` : "";
                      const prompt = `Identity: ${activeCat.name}. Breed: ${activeCat.breed}. Traits: ${activeCat.personality}. Scenario: User (${user.nickname}) is focusing on ${focusAction.value}. You are ${formStr}. ${otherCatsContext} [PREVIOUS ACTIONS]: ${previousLogs || "Just started supervising."} Task: Describe NEXT Action (3rd Person) and Inner Voice (1st Person). Output: [ACTION] Action (3rd Person ONLY) [VOICE] Voice (Human Language, NO MEOWS)`;
                      try {
-                         const res = await callAI(prompt, STRICT_CANON_PROMPT, 150);
+                         const res = await callAI(prompt, STRICT_CANON_PROMPT, 500);
                          const action = extractSection(res, 'ACTION');
                          const voice = extractSection(res, 'VOICE');
                          if (action) {
@@ -3707,7 +3711,7 @@
                           }
                         ]`;
 
-                        const res = await callAI(characterBlock + "\n" + prompt, STRICT_CANON_PROMPT, 2000);
+                        const res = await callAI(characterBlock + "\n" + prompt, STRICT_CANON_PROMPT, 8192, ThinkingLevel.LOW);
                         const updates = parseAIJSON(res);
                         
                         if (Array.isArray(updates)) {
