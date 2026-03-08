@@ -1707,7 +1707,8 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
         const { createApp, ref, reactive, onMounted, watch, computed, nextTick } = Vue;
 
         createApp({
@@ -1940,9 +1941,9 @@
                 });
                 
                 let initialSettings = { 
-                    apiKey: (typeof process !== 'undefined' && process.env && process.env.GEMINI_API_KEY) ? process.env.GEMINI_API_KEY : '', 
-                    baseUrl: 'https://api.openai.com/v1', 
-                    model: 'gpt-4o-mini', 
+                    apiKey: process.env.GEMINI_API_KEY || '', 
+                    baseUrl: '', 
+                    model: 'gemini-3-flash-preview', 
                     temperature: 0.8, 
                     autoUpdate: true 
                 };
@@ -2029,7 +2030,14 @@
                     try {
                         const parsed = JSON.parse(savedData);
                         if (parsed.user) Object.assign(user, parsed.user);
-                        if (parsed.settings) Object.assign(settings, parsed.settings);
+                        if (parsed.settings) {
+                            // Migration: If old model is OpenAI, switch to Gemini
+                            if (parsed.settings.model && parsed.settings.model.includes('gpt')) {
+                                parsed.settings.model = 'gemini-3-flash-preview';
+                                parsed.settings.baseUrl = '';
+                            }
+                            Object.assign(settings, parsed.settings);
+                        }
                         if (parsed.cats && parsed.cats.length > 0) cats.value = parsed.cats;
                         if (parsed.shopItems && parsed.shopItems.length > 0) shopItems.value = parsed.shopItems;
                     } catch (e) {
@@ -2191,27 +2199,46 @@
                     addLog(`API REQUEST [${settings.model}]: Initiated.`);
 
                     try {
-                        const res = await fetch(`${settings.baseUrl}/chat/completions`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.apiKey}` },
-                            body: JSON.stringify({ model: settings.model, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: prompt }], temperature: settings.temperature, max_tokens: maxTokens })
+                        const genAI = new GoogleGenAI({ apiKey: settings.apiKey });
+                        const modelName = settings.model || "gemini-3-flash-preview";
+                        
+                        // Use a simpler content structure for better compatibility
+                        const result = await genAI.models.generateContent({
+                            model: modelName,
+                            contents: prompt,
+                            config: {
+                                systemInstruction: systemPrompt,
+                                temperature: settings.temperature,
+                                maxOutputTokens: maxTokens,
+                                safetySettings: [
+                                    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                                    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+                                    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                                    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                                    { category: HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY, threshold: HarmBlockThreshold.BLOCK_NONE }
+                                ]
+                            },
                         });
                         
-                        if (!res.ok) {
-                            const errorText = await res.text();
-                            addLog(`API ERROR: ${res.status} - ${errorText}`, "error");
-                            showToast(`信号被阻断: ${res.status}`, "error");
-                            throw new Error(`API Error: ${res.status}`);
+                        if (!result.candidates || result.candidates.length === 0) {
+                            console.error("AI Result Object:", result);
+                            throw new Error("AI returned no candidates. Check safety filters or API status.");
                         }
 
-                        const data = await res.json();
+                        const content = result.text;
+                        if (!content) {
+                            const reason = result.candidates[0].finishReason;
+                            console.error("AI Result Object (Empty Text):", result);
+                            throw new Error(`AI returned empty text. Finish Reason: ${reason}. This usually means the content was blocked by safety filters.`);
+                        }
+
                         showToast("数据传输完成", "success");
-                        const content = data.choices[0].message.content;
                         addLog(`API SUCCESS. Length: ${content.length} chars.`, "sent");
                         return content;
                     } catch (e) { 
+                        console.error("callAI Exception:", e);
                         addLog(`EXCEPTION: ${e.message}`, "error");
-                        showToast("信号中断", "error");
+                        showToast(`信号中断: ${e.message}`, "error");
                         throw e; 
                     }
                 };
@@ -3483,6 +3510,7 @@
                     }
                     
                     if (!forceUpdate && !settings.autoUpdate) return false; 
+                    if (cats.value.length === 0) return false;
                     
                     isUpdatingStatus.value = true;
                     addLog(`STATUS SYNC: ${forceUpdate ? 'Manual' : 'Auto'} update initiated...`, "info");
@@ -3709,7 +3737,7 @@
                 const stopFocus = () => { if(confirm("确定中止任务？")) { const plannedMinutes = focusTotalTime.value / 60; finishFocus(plannedMinutes, false); } };
                 const playLogSound = () => { const audio = new Audio('https://files.catbox.moe/mz99nm.mp3'); audio.volume = 0.5; audio.play().catch(() => {}); };
                 const fetchModels = async () => { 
-                    if (!settings.apiKey) return alert("配置API Key"); 
+                    if (!settings.apiKey || !settings.baseUrl) return; 
                     showToast("正在同步韦恩企业服务器...", "loading");
                     isFetchingModels.value = true; 
                     try { 
@@ -3850,11 +3878,9 @@
                     try {
                         const isMarvel = Math.random() < 0.2; const universe = isMarvel ? "MARVEL Universe (Avengers/X-Men)" : "DC Universe (Batfamily/Justice League)"; const existingNames = cats.value.map(c => c.name).join(', ');
                         const prompt = `Generate random superhero cat from ${universe}. DO NOT generate these characters: ${existingNames}. If Marvel, mark isMarvel: true. Requirements: 1. Breed/Appearance MUST match canon hair/eye color. 2. Use Simplified Chinese for personality/desc. 3. Generate specific Breed and Eye Color in Simplified Chinese ONLY. 4. Provide a "quote" (first interaction line). JSON Only: {"name":"","codename":"","color":"Hex#","breed":"Breed Name","eyeColor":"Eye Color","personality":"","quote":"One sentence interaction","prompt":"","isMarvel":${isMarvel}}`;
-                        // Using raw fetch here to preserve custom temperature/messages, but wrapped with Toast
-                        const res = await fetch(`${settings.baseUrl}/chat/completions`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.apiKey}` }, body: JSON.stringify({ model: settings.model, messages: [{ role: 'user', content: prompt }], temperature: 1.0 }) });
-                        if (!res.ok) throw new Error(res.status);
-                        const data = await res.json();
-                        const charData = parseAIJSON(data.choices[0].message.content);
+                        
+                        const res = await callAI(prompt, "Character Generator", 500);
+                        const charData = parseAIJSON(res);
                         if(charData) { gachaResult.value = { ...charData, image: `https://placehold.co/200x200/${charData.color.replace('#','')}/white?text=${charData.codename}` }; showToast("新成员已定位", "success"); }
                     } catch(e) { user.coins += 100; showToast(`招募失败: ${e.message}`, "error"); } finally { isGachaLoading.value = false; }
                 };
