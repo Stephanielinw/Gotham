@@ -1941,7 +1941,7 @@
                 });
                 
                 let initialSettings = { 
-                    apiKey: (typeof process !== 'undefined' && process.env && process.env.GEMINI_API_KEY) || '', 
+                    apiKey: '', 
                     baseUrl: '', 
                     model: 'gemini-3-flash-preview', 
                     temperature: 0.8, 
@@ -2238,75 +2238,76 @@
 
                 const callAI = async (prompt, systemPrompt, maxTokens = 8192, thinkingLevel = null) => {
                     const apiKey = (settings.apiKey || "").trim();
-                    const baseUrl = (settings.baseUrl || "").trim();
+                    let baseUrl = (settings.baseUrl || "").trim();
 
                     if (!apiKey) {
                         showToast("连接失败: 缺少 API 密钥", "error");
                         throw new Error("No API Key");
                     }
                     
+                    if (baseUrl && baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+                    const modelName = settings.model || "gemini-3-flash-preview";
+                    const endpoint = baseUrl || "https://generativelanguage.googleapis.com";
+                    const url = `${endpoint}/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+                    
                     showToast("正在建立加密通道...", "loading");
                     const maskedKey = apiKey.length > 8 ? `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}` : "***";
-                    addLog(`API REQUEST [${settings.model}]: Target: ${baseUrl || 'Google Official'}. Key: ${maskedKey}`);
+                    addLog(`API REQUEST: ${modelName} via ${endpoint}. Key: ${maskedKey}`);
 
                     try {
-                        const genAI = new GoogleGenAI({ 
-                            apiKey: apiKey,
-                            baseUrl: baseUrl || undefined
-                        });
-                        const modelName = settings.model || "gemini-3-flash-preview";
-                        
-                        const config = {
-                            systemInstruction: systemPrompt,
-                            temperature: settings.temperature,
-                            maxOutputTokens: maxTokens,
+                        const payload = {
+                            contents: [{ parts: [{ text: prompt }] }],
+                            systemInstruction: { parts: [{ text: systemPrompt }] },
+                            generationConfig: {
+                                temperature: settings.temperature,
+                                maxOutputTokens: maxTokens,
+                            },
                             safetySettings: [
-                                { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                                { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-                                { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                                { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                                { category: HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY, threshold: HarmBlockThreshold.BLOCK_NONE }
+                                { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+                                { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+                                { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+                                { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+                                { category: "HARM_CATEGORY_CIVIC_INTEGRITY", threshold: "BLOCK_NONE" }
                             ]
                         };
 
                         if (thinkingLevel && modelName.includes("gemini-3")) {
-                            config.thinkingConfig = { thinkingLevel };
+                            payload.generationConfig.thinkingConfig = { includeProcess: true };
                         }
 
-                        const result = await genAI.models.generateContent({
-                            model: modelName,
-                            contents: prompt,
-                            config: config
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
                         });
-                        
+
+                        const result = await response.json();
+
+                        if (result.error) {
+                            throw new Error(result.error.message || JSON.stringify(result.error));
+                        }
+
                         if (!result.candidates || result.candidates.length === 0) {
                             console.error("AI Result Object:", result);
                             throw new Error("AI returned no candidates. Check safety filters or API status.");
                         }
 
                         let content = "";
-                        try {
-                            content = result.text || "";
-                        } catch (e) {
-                            if (result.candidates?.[0]?.content?.parts) {
-                                content = result.candidates[0].content.parts.map(p => p.text || "").join("");
-                            }
+                        const candidate = result.candidates[0];
+                        if (candidate.content && candidate.content.parts) {
+                            content = candidate.content.parts.map(p => p.text).join("");
                         }
-
+                        
                         if (!content || content.trim().length === 0) {
-                            const reason = result.candidates?.[0]?.finishReason;
+                            const reason = candidate.finishReason;
                             console.error("AI Result Object (Empty Text):", result);
                             let errorMsg = `AI returned empty text. Finish Reason: ${reason}.`;
                             if (reason === 'SAFETY') {
-                                errorMsg += " This usually means the content was blocked by safety filters.";
-                            } else if (reason === 'MAX_TOKENS') {
-                                errorMsg += " The model hit the output token limit. Try increasing maxTokens or simplifying the prompt.";
-                            } else if (reason === 'OTHER') {
-                                errorMsg += " The generation stopped for an unknown reason.";
+                                errorMsg = "AI 内容被安全过滤器拦截。请尝试调整提示词。";
                             }
                             throw new Error(errorMsg);
                         }
-
+                        
                         showToast("数据传输完成", "success");
                         addLog(`API SUCCESS. Length: ${content.length} chars.`, "sent");
                         return content;
