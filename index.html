@@ -2246,7 +2246,10 @@
                     addLog(`API REQUEST [${settings.model}]: Initiated.`);
 
                     try {
-                        const genAI = new GoogleGenAI({ apiKey: settings.apiKey });
+                        const genAI = new GoogleGenAI({ 
+                            apiKey: settings.apiKey,
+                            baseUrl: settings.baseUrl || undefined
+                        });
                         const modelName = settings.model || "gemini-3-flash-preview";
                         
                         const config = {
