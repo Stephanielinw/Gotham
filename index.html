@@ -2237,18 +2237,22 @@
                 };
 
                 const callAI = async (prompt, systemPrompt, maxTokens = 8192, thinkingLevel = null) => {
-                    if (!settings.apiKey) {
+                    const apiKey = (settings.apiKey || "").trim();
+                    const baseUrl = (settings.baseUrl || "").trim();
+
+                    if (!apiKey) {
                         showToast("连接失败: 缺少 API 密钥", "error");
                         throw new Error("No API Key");
                     }
                     
                     showToast("正在建立加密通道...", "loading");
-                    addLog(`API REQUEST [${settings.model}]: Initiated.`);
+                    const maskedKey = apiKey.length > 8 ? `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}` : "***";
+                    addLog(`API REQUEST [${settings.model}]: Target: ${baseUrl || 'Google Official'}. Key: ${maskedKey}`);
 
                     try {
                         const genAI = new GoogleGenAI({ 
-                            apiKey: settings.apiKey,
-                            baseUrl: settings.baseUrl || undefined
+                            apiKey: apiKey,
+                            baseUrl: baseUrl || undefined
                         });
                         const modelName = settings.model || "gemini-3-flash-preview";
                         
