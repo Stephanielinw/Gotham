@@ -2501,7 +2501,7 @@
                     Language: Simplified Chinese.`;
 
                     try {
-                        const res = await callAI(prompt, "You are an invisible narrator for an immersive text adventure. Never break character.", 300);
+                        const res = await callAI(prompt, "You are an invisible narrator for an immersive text adventure. Never break character.", 1200);
                         let content = cleanText(res);
                         
                         // Check if AI is asking for another dice roll
@@ -2560,7 +2560,7 @@
                     Language: Simplified Chinese.`;
                     
                     try {
-                        const res = await callAI(prompt, "You are a creative TRPG scenario generator.", 200);
+                        const res = await callAI(prompt, "You are a creative TRPG scenario generator.", 1000);
                         const goals = parseAIJSON(res);
                         if (Array.isArray(goals)) {
                             exploreState.suggestedGoals = goals;
@@ -2652,7 +2652,7 @@
                     Language: Simplified Chinese.`;
 
                     try {
-                        const res = await callAI(prompt, "You are an invisible narrator for an immersive text adventure. You MUST strictly follow the provided module.", 400);
+                        const res = await callAI(prompt, "You are an invisible narrator for an immersive text adventure. You MUST strictly follow the provided module.", 1200);
                         exploreState.history.push({ role: 'kp', content: cleanText(res) });
                         exploreState.active = true; // Switch to chat view now
                         exploreState.showGoalModal = false; // Close the modal
@@ -2721,7 +2721,7 @@
                     Language: Simplified Chinese.`;
 
                     try {
-                        const res = await callAI(prompt, "You are an invisible narrator for an immersive text adventure. Never break character.", 300);
+                        const res = await callAI(prompt, "You are an invisible narrator for an immersive text adventure. Never break character.", 1200);
                         let content = cleanText(res);
                         
                         // Check if AI is asking for a dice roll
@@ -2760,7 +2760,7 @@
                     Language: Simplified Chinese.`;
 
                     try {
-                        const res = await callAI(settlementPrompt, "You are a settlement system for a text adventure.", 300);
+                        const res = await callAI(settlementPrompt, "You are a settlement system for a text adventure.", 1000);
                         const data = parseAIJSON(res);
                         if (data) {
                             exploreState.settlement = data;
@@ -2788,7 +2788,7 @@
                             - The travelogue should feel like a secret report or a diary entry that the human is never supposed to see.
                             - Language: Simplified Chinese.`;
                             
-                            const travelogueRes = await callAI(traveloguePrompt, STRICT_CANON_PROMPT, 600);
+                            const travelogueRes = await callAI(traveloguePrompt, STRICT_CANON_PROMPT, 1500, ThinkingLevel.LOW);
                             const travelogueContent = cleanText(travelogueRes);
                             
                             if (!exploreState.companion.travelogues) exploreState.companion.travelogues = [];
@@ -2987,7 +2987,7 @@
                                     showToast(`${contact.name} 给你发了一个${moneyType === 'red-envelope' ? '红包' : '转账'}`, 'success');
                                 } else { // 40% of that 15% is a photo
                                     const photoDescPrompt = `Generate a short, vivid description of a photo that ${contact.name} would send to the user right now. Context: ${catStatusContext}. The photo should be related to Gotham or their current activity.`;
-                                    const photoDesc = await callAI(photoDescPrompt, "Generate a one-sentence description in Chinese.", 100);
+                                    const photoDesc = await callAI(photoDescPrompt, "Generate a one-sentence description in Chinese.", 300);
                                     history.push({ 
                                         role: 'assistant', 
                                         type: 'image', 
@@ -3120,7 +3120,7 @@
                     `;
                     
                     try {
-                        const res = await callAI(prompt, "You are a master Tarot reader in the DC Universe.", 500);
+                        const res = await callAI(prompt, "You are a master Tarot reader in the DC Universe.", 1500);
                         const data = parseAIJSON(res);
                         if (data) {
                             phoneState.tarotResult = data;
@@ -3160,7 +3160,7 @@
                     Language: Simplified Chinese.
                     `;
                     try {
-                        const res = await callAI(prompt, "You are a news generator for Gotham City.", 600);
+                        const res = await callAI(prompt, "You are a news generator for Gotham City.", 1500, ThinkingLevel.LOW);
                         const news = parseAIJSON(res);
                         if (Array.isArray(news)) {
                             user.phoneData.news = news;
@@ -3196,7 +3196,7 @@
                     Language: Simplified Chinese.
                     `;
                     try {
-                        const res = await callAI(prompt, "You are a social media manager for superheroes.", 400);
+                        const res = await callAI(prompt, "You are a social media manager for superheroes.", 1000, ThinkingLevel.LOW);
                         const moment = parseAIJSON(res);
                         if (moment) {
                             if (!user.phoneData.moments) user.phoneData.moments = [];
@@ -3407,7 +3407,7 @@
                         - If they are just talking to you, use "正在和${sendingCat.name}..."
                         `;
 
-                        const responseRaw = await callAI(prompt, STRICT_CANON_PROMPT, 600);
+                        const responseRaw = await callAI(prompt, STRICT_CANON_PROMPT, 1500);
                         
                         const status = extractSection(responseRaw, 'STATUS');
                         const voice = extractSection(responseRaw, 'VOICE');
@@ -3449,7 +3449,7 @@
                     isSubmittingItem.value = true;
                     const prompt = `Task: Evaluate Shop Item: ${newItem.name} (${newItem.desc}). Category: ${newItem.category}. Output JSON: {"approved": true, "price": 100, "effect": 2, "reason": ""}`;
                     try {
-                        const res = await callAI(prompt, "Shop AI", 150);
+                        const res = await callAI(prompt, "Shop AI", 500);
                         const decision = parseAIJSON(res);
                         if (decision && decision.approved) {
                             shopItems.value.push({ ...newItem, id: Date.now(), price: decision.price, effect: decision.effect, type: 'consumable' });
@@ -3477,7 +3477,7 @@
                     isReleasing.value = true;
                     const prompt = `Character: ${selectedCat.value.name}. Task: Say goodbye forever to ${user.nickname}. (30 words). Tone: Sad.`;
                     try {
-                        const msg = await callAI(prompt, STRICT_CANON_PROMPT, 500);
+                        const msg = await callAI(prompt, STRICT_CANON_PROMPT, 1000);
                         alert(`${selectedCat.value.name}: "${cleanText(msg)}"`);
                         const idx = cats.value.indexOf(selectedCat.value);
                         if(idx > -1) cats.value.splice(idx, 1);
@@ -3495,7 +3495,7 @@
                      const otherCatsContext = otherCats ? `Other cats present: ${otherCats}.` : "";
                      const prompt = `Identity: ${activeCat.name}. Breed: ${activeCat.breed}. Traits: ${activeCat.personality}. Scenario: User (${user.nickname}) is focusing on ${focusAction.value}. You are ${formStr}. ${otherCatsContext} [PREVIOUS ACTIONS]: ${previousLogs || "Just started supervising."} Task: Describe NEXT Action (3rd Person) and Inner Voice (1st Person). Output: [ACTION] Action (3rd Person ONLY) [VOICE] Voice (Human Language, NO MEOWS)`;
                      try {
-                         const res = await callAI(prompt, STRICT_CANON_PROMPT, 500);
+                         const res = await callAI(prompt, STRICT_CANON_PROMPT, 1000);
                          const action = extractSection(res, 'ACTION');
                          const voice = extractSection(res, 'VOICE');
                          if (action) {
@@ -3559,7 +3559,7 @@
                         const catNames = focusCats.value.map(c => c.name).join(', ');
                         const catTraits = focusCats.value.map(c => `${c.name}: ${c.personality}`).join('; ');
                         const prompt = success ? `Identities: ${catNames}. Traits: ${catTraits}. User (${user.nickname}) finished task "${focusAction.value}". Write Evaluation (150 words). Subjective, In-character (can be from one or multiple cats' perspective). Language: Simplified Chinese.` : `Identities: ${catNames}. Traits: ${catTraits}. User (${user.nickname}) GAVE UP task "${focusAction.value}". Write Scolding/Evaluation (150 words). Subjective, In-character. Language: Simplified Chinese.`;
-                        summary = await callAI(prompt, STRICT_CANON_PROMPT, 300);
+                        summary = await callAI(prompt, STRICT_CANON_PROMPT, 1000);
                     }
                     currentSettlement.summary = cleanText(summary);
                     showMissionSettlementModal.value = true; 
@@ -3595,7 +3595,7 @@
                          const formStr = targetCat.isHuman ? "Human Form" : "Cat Form";
                          const prompt = `User harasses you. You: ${targetCat.name} (${formStr}). Traits: ${targetCat.personality}. Reaction Action (30 words, 3rd Person). Output: [ACTION] Action`;
                          try {
-                             const res = await callAI(prompt, STRICT_CANON_PROMPT, 300);
+                             const res = await callAI(prompt, STRICT_CANON_PROMPT, 800);
                              const action = extractSection(res, 'ACTION') || cleanText(res);
                              if(isFocusing.value) { const timeStr = getCurrentTimeStr(); currentFocusLog.value.unshift(`${timeStr} [${targetCat.name}] ${action}`); focusMessage.value = "骚扰成功！"; playLogSound(); setTimeout(() => focusMessage.value = '', 2000); } else { alert(`${targetCat.name}: ${action}`); }
                          } catch(e) {}
@@ -3889,7 +3889,7 @@
                     `;
 
                     try {
-                        const res = await callAI(prompt, "Character Generator", 500);
+                        const res = await callAI(prompt, "Character Generator", 1000);
                         const data = parseAIJSON(res);
                         if (data) {
                             const imgUrl = `https://placehold.co/200x200/${data.color.replace('#','')}/white?text=${newCat.codename}`;
@@ -3956,7 +3956,7 @@
                         let affinityBonus = 0;
                         if(settings.apiKey) {
                             const prompt = `User gives [${item.name}] to ${selectedCat.value.name}. Cat Personality: ${selectedCat.value.personality}. Does cat like it? JSON: { "liked": boolean, "reaction": "Action description" }`;
-                            try { const res = await callAI(prompt, "Game AI", 300); const data = parseAIJSON(res); if(data) { affinityBonus = data.liked ? (Math.floor(Math.random()*3)+1) : -(Math.floor(Math.random()*3)+2); selectedCat.value.status = data.reaction || 'Interaction'; } else { affinityBonus = 1; } } catch(e) { affinityBonus = 1; }
+                            try { const res = await callAI(prompt, "Game AI", 600); const data = parseAIJSON(res); if(data) { affinityBonus = data.liked ? (Math.floor(Math.random()*3)+1) : -(Math.floor(Math.random()*3)+2); selectedCat.value.status = data.reaction || 'Interaction'; } else { affinityBonus = 1; } } catch(e) { affinityBonus = 1; }
                         } else { affinityBonus = 2; }
                         selectedCat.value.affinity = Math.max(0, selectedCat.value.affinity + affinityBonus);
                         await checkAffinityThreshold(selectedCat.value);
@@ -3981,7 +3981,7 @@
                         const isMarvel = Math.random() < 0.2; const universe = isMarvel ? "MARVEL Universe (Avengers/X-Men)" : "DC Universe (Batfamily/Justice League)"; const existingNames = cats.value.map(c => c.name).join(', ');
                         const prompt = `Generate random superhero cat from ${universe}. DO NOT generate these characters: ${existingNames}. If Marvel, mark isMarvel: true. Requirements: 1. Breed/Appearance MUST match canon hair/eye color. 2. Use Simplified Chinese for personality/desc. 3. Generate specific Breed and Eye Color in Simplified Chinese ONLY. 4. Provide a "quote" (first interaction line). JSON Only: {"name":"","codename":"","color":"Hex#","breed":"Breed Name","eyeColor":"Eye Color","personality":"","quote":"One sentence interaction","prompt":"","isMarvel":${isMarvel}}`;
                         
-                        const res = await callAI(prompt, "Character Generator", 500);
+                        const res = await callAI(prompt, "Character Generator", 1000);
                         const charData = parseAIJSON(res);
                         if(charData) { gachaResult.value = { ...charData, image: `https://placehold.co/200x200/${charData.color.replace('#','')}/white?text=${charData.codename}` }; showToast("新成员已定位", "success"); }
                     } catch(e) { user.coins += 100; showToast(`招募失败: ${e.message}`, "error"); } finally { isGachaLoading.value = false; }

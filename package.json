@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "vite build --dry-run"
+    "lint": "vite build"
   },
   "devDependencies": {
     "vite": "^6.2.0"
