@@ -2246,66 +2246,101 @@
                     }
                     
                     if (baseUrl && baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+                    // 确保 baseUrl 包含协议
+                    if (baseUrl && !baseUrl.startsWith('http')) {
+                        baseUrl = 'https://' + baseUrl;
+                    }
+
                     const modelName = settings.model || "gemini-3-flash-preview";
-                    const endpoint = baseUrl || "https://generativelanguage.googleapis.com";
-                    const url = `${endpoint}/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-                    
                     showToast("正在建立加密通道...", "loading");
-                    const maskedKey = apiKey.length > 8 ? `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}` : "***";
-                    addLog(`API REQUEST: ${modelName} via ${endpoint}. Key: ${maskedKey}`);
-
+                    
                     try {
-                        const payload = {
-                            contents: [{ parts: [{ text: prompt }] }],
-                            systemInstruction: { parts: [{ text: systemPrompt }] },
-                            generationConfig: {
-                                temperature: settings.temperature,
-                                maxOutputTokens: maxTokens,
-                            },
-                            safetySettings: [
-                                { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-                                { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-                                { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-                                { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
-                                { category: "HARM_CATEGORY_CIVIC_INTEGRITY", threshold: "BLOCK_NONE" }
-                            ]
-                        };
+                        let url, payload, headers;
 
-                        if (thinkingLevel && modelName.includes("gemini-3")) {
-                            payload.generationConfig.thinkingConfig = { includeProcess: true };
+                        if (baseUrl) {
+                            // --- 模式 B: OpenAI 兼容模式 (适配中转站) ---
+                            url = `${baseUrl}/chat/completions`;
+                            headers = {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${apiKey}`
+                            };
+                            payload = {
+                                model: modelName,
+                                messages: [
+                                    { role: "system", content: systemPrompt },
+                                    { role: "user", content: prompt }
+                                ],
+                                temperature: settings.temperature,
+                                max_tokens: maxTokens
+                            };
+                            addLog(`API REQUEST (OpenAI Mode): ${modelName} via ${url}`);
+                        } else {
+                            // --- 模式 A: Google 官方模式 ---
+                            url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+                            headers = { 'Content-Type': 'application/json' };
+                            payload = {
+                                contents: [{ parts: [{ text: prompt }] }],
+                                systemInstruction: { parts: [{ text: systemPrompt }] },
+                                generationConfig: {
+                                    temperature: settings.temperature,
+                                    maxOutputTokens: maxTokens,
+                                },
+                                safetySettings: [
+                                    { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+                                    { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+                                    { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+                                    { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+                                    { category: "HARM_CATEGORY_CIVIC_INTEGRITY", threshold: "BLOCK_NONE" }
+                                ]
+                            };
+                            if (thinkingLevel && modelName.includes("gemini-3")) {
+                                payload.generationConfig.thinkingConfig = { includeProcess: true };
+                            }
+                            addLog(`API REQUEST (Google Mode): ${modelName}`);
                         }
 
                         const response = await fetch(url, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: headers,
                             body: JSON.stringify(payload)
                         });
 
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            let errorData;
+                            try { errorData = JSON.parse(errorText); } catch(e) {}
+                            const msg = errorData?.error?.message || errorData?.message || errorText || `HTTP ${response.status}`;
+                            throw new Error(`服务器响应错误: ${msg}`);
+                        }
+
                         const result = await response.json();
-
-                        if (result.error) {
-                            throw new Error(result.error.message || JSON.stringify(result.error));
-                        }
-
-                        if (!result.candidates || result.candidates.length === 0) {
-                            console.error("AI Result Object:", result);
-                            throw new Error("AI returned no candidates. Check safety filters or API status.");
-                        }
-
                         let content = "";
-                        const candidate = result.candidates[0];
-                        if (candidate.content && candidate.content.parts) {
-                            content = candidate.content.parts.map(p => p.text).join("");
-                        }
                         
-                        if (!content || content.trim().length === 0) {
-                            const reason = candidate.finishReason;
-                            console.error("AI Result Object (Empty Text):", result);
-                            let errorMsg = `AI returned empty text. Finish Reason: ${reason}.`;
-                            if (reason === 'SAFETY') {
-                                errorMsg = "AI 内容被安全过滤器拦截。请尝试调整提示词。";
+                        if (baseUrl) {
+                            if (result.choices && result.choices.length > 0) {
+                                content = result.choices[0].message.content;
+                            } else if (result.error) {
+                                throw new Error(result.error.message || JSON.stringify(result.error));
                             }
-                            throw new Error(errorMsg);
+                        } else {
+                            if (result.promptFeedback && result.promptFeedback.blockReason) {
+                                throw new Error(`提示词被拦截 (原因: ${result.promptFeedback.blockReason})`);
+                            }
+                            if (result.candidates && result.candidates.length > 0) {
+                                const candidate = result.candidates[0];
+                                if (candidate.finishReason === 'SAFETY') {
+                                    throw new Error("内容因安全策略被拦截");
+                                }
+                                if (candidate.content && candidate.content.parts) {
+                                    content = candidate.content.parts.map(p => p.text).join("");
+                                }
+                            } else if (result.error) {
+                                throw new Error(result.error.message || JSON.stringify(result.error));
+                            }
+                        }
+
+                        if (!content || content.trim().length === 0) {
+                            throw new Error("AI 未返回有效内容，请检查模型名称是否正确。");
                         }
                         
                         showToast("数据传输完成", "success");
