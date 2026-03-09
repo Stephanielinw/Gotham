@@ -1708,7 +1708,7 @@
     </div>
 
     <script type="module">
-        import { GoogleGenAI, HarmCategory, HarmBlockThreshold, ThinkingLevel } from "@google/genai";
+        import { GoogleGenAI, HarmCategory, HarmBlockThreshold, ThinkingLevel } from "https://esm.sh/@google/genai";
         const { createApp, ref, reactive, onMounted, watch, computed, nextTick } = Vue;
 
         createApp({
@@ -1941,7 +1941,7 @@
                 });
                 
                 let initialSettings = { 
-                    apiKey: process.env.GEMINI_API_KEY || '', 
+                    apiKey: (typeof process !== 'undefined' && process.env && process.env.GEMINI_API_KEY) || '', 
                     baseUrl: '', 
                     model: 'gemini-3-flash-preview', 
                     temperature: 0.8, 
