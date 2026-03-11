@@ -2582,29 +2582,36 @@
                     exploreState.showGoalModal = true;
                     exploreState.suggestedGoals = [];
                     
+                    // Memory extraction (Logic D)
+                    const cat = exploreState.companion;
+                    const recentDiaries = (cat.diary || []).slice(-5).map(d => d.content).join(" | ");
+                    const recentLogs = (cat.logs || []).slice(-5).map(l => l.content).join(" | ");
+                    const todayInteractions = (cat.todayInteractions || []).map(i => i.content).join(" | ");
+                    const memoryContext = `[RECENT MEMORY]: Diary: ${recentDiaries}. Logs: ${recentLogs}. Today's Interactions: ${todayInteractions}.`;
+
                     const prompt = `Location: ${exploreState.location.name}. 
                     Atmosphere: ${exploreState.location.atmosphere}.
                     Universe: ${exploreState.location.universe.toUpperCase()}.
                     Resident NPCs: ${exploreState.location.npcs || 'None'}.
                     Companion: ${exploreState.companion.name}.
+                    ${memoryContext}
                     
                     [STRICT PERSPECTIVE RULE]:
                     The user is a "FOOLISH HUMAN" who knows NOTHING about superheroes.
                     The goals MUST be ordinary, everyday tasks for a pet owner.
+                    ABSOLUTELY NO "fighting crime", "investigating villains", or "superhero missions".
                     
-                    Task: Generate 3 specific, thematic exploration goals for the user to choose from. 
-                    Goals should be grounded in the world (Gotham/Marvel) but from a "clueless human" perspective.
+                    Task: Generate 3 specific, thematic exploration goals.
+                    
+                    GOAL TYPES:
+                    - Option 1 & 2: MUST be directly linked to the [RECENT MEMORY] (e.g., if the cat broke something, go buy a new one; if the cat was sick, go to the vet; if the cat was happy with a toy, go buy more; if the user just fed it, go for a walk to digest).
+                    - Option 3: A random daily purpose based on the location (e.g., "just walking around", "looking at the view", "visiting a local shop").
                     
                     PHRASING RULES:
                     1. Use THIRD PERSON (e.g., "带小猫去...", "去...").
                     2. NO "猫主子" or similar terms.
                     3. Simple ONE-SENTENCE statements.
-                    
-                    Examples: 
-                    - "带小猫去冰山餐厅吃一份打折的奢华猫饭"
-                    - "去钟塔附近的电脑城修硬盘，顺便带小猫散步"
-                    - "去阿卡姆宠物医院给小猫打便宜的社区疫苗"
-                    - "去犯罪巷的杂货铺买点便宜猫砂"
+                    4. Add a touch of humor/comedy if possible.
                     
                     Format: JSON array of strings. ["Goal 1", "Goal 2", "Goal 3"]
                     Language: Simplified Chinese.`;
@@ -2615,10 +2622,10 @@
                         if (Array.isArray(goals)) {
                             exploreState.suggestedGoals = goals;
                         } else {
-                            exploreState.suggestedGoals = ["随便逛逛", "寻找线索", "寻找宝藏"];
+                            exploreState.suggestedGoals = ["随便逛逛", "带它散散步", "看看风景"];
                         }
                     } catch (e) {
-                        exploreState.suggestedGoals = ["随便逛逛", "寻找线索", "寻找宝藏"];
+                        exploreState.suggestedGoals = ["随便逛逛", "带它散散步", "看看风景"];
                     } finally {
                         exploreState.isGeneratingGoals = false;
                     }
@@ -2822,20 +2829,27 @@
                             
                             // Generate Travelogue (Logic C)
                             const traveloguePrompt = `[LOGIC C: TRAVELOGUE GENERATION]
-                            Character: ${exploreState.companion.name} (A secret superhero cat)
+                            Character: ${exploreState.companion.name}
+                            Personality: ${exploreState.companion.personality}
+                            Core Prompt: ${exploreState.companion.prompt}
                             Location: ${exploreState.location.name}
                             Module Background: ${exploreState.module}
                             Adventure Log: ${exploreState.history.map(h => h.role + ": " + h.content).join("\n")}
                             Summary: ${data.summary}
                             
                             Task: Write a first-person travelogue (150-300 words) from the perspective of ${exploreState.companion.name}.
-                            Tone: **EXTREMELY TSUNDERE (傲娇), ARROGANT, SUPERHERO CAT**. 
+                            Tone: **STRICTLY FOLLOW THE CHARACTER'S PERSONALITY**. 
+                            - If Tim Drake: Sleepy, tech-savvy, polite but awkward. DO NOT say 'Tt'.
+                            - If Damian Wayne: Arrogant, says 'Tt', haughty.
+                            - If Jason Todd: Grumpy, street-smart, uses slang.
+                            - If Bruce Wayne: Stoic, paranoid, detective-like.
+                            - If Dick Grayson: Energetic, charming, big brother.
+                            
                             Requirements:
-                            - You MUST mock the user ("foolish human", "that idiot", "my clumsy servant") for their "pathetic" decisions, "terrible" luck (dice rolls), or "clueless" behavior.
-                            - You MUST detail how you "secretly protected" or "guided" them without them noticing (e.g., "I had to trip that thug so the idiot wouldn't get hit", "I meowed to distract the guard while the human was fumbling with the lock").
-                            - You are NOT a normal cat, you are a HERO who happens to be in a cat's body for this mission.
+                            - You MUST mock the user ("foolish human", "that idiot", "my clumsy servant") for their "pathetic" decisions or "clueless" behavior, but in YOUR OWN VOICE.
+                            - You MUST detail how you "secretly protected" or "guided" them without them noticing.
+                            - You are NOT a normal cat, you are a HERO who happens to be in a cat's body.
                             - Mention specific events from the Adventure Log.
-                            - The travelogue should feel like a secret report or a diary entry that the human is never supposed to see.
                             - Language: Simplified Chinese.`;
                             
                             const travelogueRes = await callAI(traveloguePrompt, STRICT_CANON_PROMPT, 1500, ThinkingLevel.LOW);
