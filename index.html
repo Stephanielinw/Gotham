@@ -5,12 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>哥谭喵喵馆 v4.0</title>
     
-    <script>
-      window.addEventListener('error', function(e) {
-        document.body.innerHTML += '<div style="color:red; background:white; position:fixed; top:0; left:0; z-index:9999; padding:20px;">' + e.message + '<br>' + e.filename + ':' + e.lineno + '</div>';
-      });
-    </script>
-    
     <link rel="icon" type="image/png" href="https://files.catbox.moe/e15qui.png">
     <link rel="apple-touch-icon" href="https://files.catbox.moe/e15qui.png">
     
@@ -884,15 +878,21 @@
                                                     <i class="fas fa-map-marker-alt text-red-500"></i>
                                                     <span>{{ msg.content }}</span>
                                                 </div>
-                                                <div v-else-if="msg.type === 'red-envelope'" class="bg-orange-500 text-white p-3 rounded-lg flex items-center gap-3 min-w-[150px]">
-                                                    <i class="fas fa-gift text-2xl text-yellow-300"></i>
+                                                <div v-else-if="msg.type === 'red-envelope'" 
+                                                     @click="collectRedPacket(msg)"
+                                                     class="bg-orange-500 text-white p-3 rounded-lg flex items-center gap-3 min-w-[150px] cursor-pointer hover:bg-orange-600 transition-colors relative overflow-hidden">
+                                                    <div v-if="msg.collected" class="absolute inset-0 bg-black/20 flex items-center justify-center text-[10px] font-bold">已领取</div>
+                                                    <i class="fas fa-gift text-2xl" :class="msg.collected ? 'text-gray-300' : 'text-yellow-300'"></i>
                                                     <div>
                                                         <div class="font-bold">红包</div>
                                                         <div class="text-[10px] opacity-80">{{ msg.content }} 哥谭币</div>
                                                     </div>
                                                 </div>
-                                                <div v-else-if="msg.type === 'transfer'" class="bg-blue-600 text-white p-3 rounded-lg flex items-center gap-3 min-w-[150px]">
-                                                    <i class="fas fa-dollar-sign text-2xl text-blue-200"></i>
+                                                <div v-else-if="msg.type === 'transfer'" 
+                                                     @click="collectRedPacket(msg)"
+                                                     class="bg-blue-600 text-white p-3 rounded-lg flex items-center gap-3 min-w-[150px] cursor-pointer hover:bg-blue-700 transition-colors relative overflow-hidden">
+                                                    <div v-if="msg.collected" class="absolute inset-0 bg-black/20 flex items-center justify-center text-[10px] font-bold">已领取</div>
+                                                    <i class="fas fa-dollar-sign text-2xl" :class="msg.collected ? 'text-gray-300' : 'text-blue-200'"></i>
                                                     <div>
                                                         <div class="font-bold">转账</div>
                                                         <div class="text-[10px] opacity-80">{{ msg.content }} 哥谭币</div>
@@ -916,7 +916,7 @@
                                         <input type="file" ref="phoneImageInput" class="hidden" accept="image/*" @change="sendPhoneRealImage">
                                     </div>
                                     <div class="flex gap-2 items-center">
-                                        <input v-model="phoneChatInput" @keyup.enter="sendPhoneMessage" placeholder="发送消息..." class="flex-1 bg-white border border-zinc-300 rounded px-3 py-2 text-xs focus:outline-none">
+                                        <input ref="phoneInputRef" v-model="phoneChatInput" @keydown.enter.prevent="sendPhoneMessage" placeholder="发送消息..." class="flex-1 bg-white border border-zinc-300 rounded px-3 py-2 text-xs focus:outline-none">
                                         <button @click="sendPhoneMessage" class="bg-green-600 text-white px-4 py-2 rounded text-xs font-bold">发送</button>
                                     </div>
                                 </div>
@@ -2198,8 +2198,10 @@
                     if (!text || typeof text !== 'string') return '';
                     let cleaned = text.replace(/\*/g, '');
                     cleaned = cleaned.replace(/^\[(STATUS|VOICE|REPLY|CONTENT|ACTION)\]/i, ''); 
-                    cleaned = cleaned.replace(/^(Status|状态|Inner Voice|Heart|心声|Think|Thinking|Content|Message|Response|Reply|Action|正文|内容|思考)[：:]\s*/i, '');
-                    cleaned = cleaned.replace(/^阿福[：:]\s*/, '');
+                    // 移除常见的回复前缀，包括角色名
+                    cleaned = cleaned.replace(/^(Status|状态|Inner Voice|Heart|心声|Think|Thinking|Content|Message|Response|Reply|Action|正文|内容|思考|布鲁斯·韦恩|迪克·格雷森|杰森·陶德|提姆·德雷克|达米安·韦恩|阿福)[：:]\s*/i, '');
+                    // 移除任何以“名字：”开头的模式
+                    cleaned = cleaned.replace(/^[\u4e00-\u9fa5·]{2,10}[：:]\s*/, '');
                     return cleaned.trim();
                 };
 
@@ -2246,7 +2248,8 @@
                     }
                     
                     if (baseUrl && baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
-                    // 确保 baseUrl 包含协议
+                    // 确保 baseUrl 包含协议，且处理可能的空格
+                    baseUrl = baseUrl.trim();
                     if (baseUrl && !baseUrl.startsWith('http')) {
                         baseUrl = 'https://' + baseUrl;
                     }
@@ -2303,6 +2306,10 @@
                             method: 'POST',
                             headers: headers,
                             body: JSON.stringify(payload)
+                        }).catch(err => {
+                            const errorMsg = `网络请求失败: ${err.message}。可能是由于 CORS 跨域限制、反代地址无效或网络连接中断。请确保反代地址以 https:// 开头。`;
+                            addLog(`FETCH ERROR: ${err.message} (Target: ${url})`, "error");
+                            throw new Error(errorMsg);
                         });
 
                         if (!response.ok) {
@@ -2910,17 +2917,25 @@
 
                 // --- REFACTORED LOGIC A Implementation (v3.5.0) ---
                 const addWalletTransaction = (type, amount, title, detail) => {
+                    const numAmount = parseInt(amount) || 0;
                     if (!user.phoneData.walletTransactions) user.phoneData.walletTransactions = [];
                     user.phoneData.walletTransactions.unshift({
                         id: Date.now(),
                         type, // 'in' or 'out'
-                        amount,
+                        amount: numAmount,
                         title,
                         detail,
                         time: getCurrentTimeStr()
                     });
+                    // 同步更新用户余额
+                    if (type === 'in') {
+                        user.coins += numAmount;
+                    } else {
+                        user.coins -= numAmount;
+                    }
                 };
 
+                const phoneInputRef = ref(null);
                 const phoneChatInput = ref('');
                 const showPhoneImageDescModal = ref(false);
                 const showPhoneLocationModal = ref(false);
@@ -2938,6 +2953,20 @@
                         if (phoneChatRef.value) phoneChatRef.value.scrollTop = phoneChatRef.value.scrollHeight;
                     });
                 };
+                const collectRedPacket = (msg) => {
+                    if (msg.collected) return;
+                    const amount = parseInt(msg.content);
+                    if (isNaN(amount)) return;
+                    
+                    const contactId = phoneState.selectedContactId;
+                    const contact = phoneIdentities[contactId];
+                    const contactName = contact ? contact.name : "未知联系人";
+                    
+                    addWalletTransaction('in', amount, `领取了${msg.type === 'red-envelope' ? '红包' : '转账'}`, `来自：${contactName}`);
+                    msg.collected = true;
+                    showToast(`成功领取 ${amount} 哥谭币！`, 'success');
+                };
+
                 const getPhoneChatHistory = (id) => {
                     if (!user.phoneData.chats) user.phoneData.chats = [];
                     let chat = user.phoneData.chats.find(c => c.contactId === id);
@@ -2955,7 +2984,11 @@
                     const history = getPhoneChatHistory(id);
                     return history.length > 0 ? history[history.length - 1].time : "";
                 };
-                const sendPhoneMessage = async (type = 'text', content = null, desc = null) => {
+                const sendPhoneMessage = async (typeArg = 'text', contentArg = null, descArg = null) => {
+                    const type = (typeof typeArg === 'string') ? typeArg : 'text';
+                    const content = (typeof contentArg === 'string') ? contentArg : (contentArg instanceof Event ? null : contentArg);
+                    const desc = (typeof descArg === 'string') ? descArg : null;
+
                     const contactId = phoneState.selectedContactId;
                     if (!contactId || phoneState.isTyping) return;
                     
@@ -2975,7 +3008,10 @@
                     };
                     history.push(userMsgObj);
                     
-                    if (type === 'text') phoneChatInput.value = '';
+                    if (type === 'text' && !content) {
+                        phoneChatInput.value = '';
+                        if (phoneInputRef.value) phoneInputRef.value.value = '';
+                    }
                     nextTick(() => { if (phoneChatRef.value) phoneChatRef.value.scrollTop = phoneChatRef.value.scrollHeight; });
                     
                     phoneState.isTyping = true;
@@ -3019,7 +3055,6 @@
                                 if (actionRand < 0.6) { // 60% of that 15% is money
                                     const amount = Math.floor(Math.random() * 500) + 100;
                                     const moneyType = Math.random() > 0.5 ? 'red-envelope' : 'transfer';
-                                    user.coins += amount;
                                     addWalletTransaction('in', amount, `${contact.name}的${moneyType === 'red-envelope' ? '红包' : '转账'}`, `来自：${contact.name}`);
                                     history.push({ 
                                         role: 'assistant', 
@@ -3082,7 +3117,6 @@
                         showToast('余额不足', 'error');
                         return;
                     }
-                    user.coins -= phoneMoneyAmount.value;
                     addWalletTransaction('out', phoneMoneyAmount.value, `${phoneMoneyType.value === 'red-envelope' ? '发出的红包' : '转账'}`, `接收人：${phoneIdentities[phoneState.selectedContactId].name}`);
                     sendPhoneMessage(phoneMoneyType.value, phoneMoneyAmount.value.toString());
                     showPhoneMoneyModal.value = false;
@@ -3095,7 +3129,6 @@
 
                 const orderDelivery = async (item) => {
                     if (user.coins < item.price || phoneState.isOrdering) return;
-                    user.coins -= item.price;
                     addWalletTransaction('out', item.price, `外卖：${item.name}`, `商家：BAT-DELIVERY`);
                     phoneState.isOrdering = true;
                     addLog(`正在下单：${item.name}...`);
@@ -3444,7 +3477,7 @@
                         Strict Format (NO MARKDOWN BLOCKS):
                         [STATUS] Update status based on interaction. (3rd Person, Action only).
                         [VOICE] Inner thoughts. (1st Person). MUST BE HUMAN LANGUAGE (Simplified Chinese). NO MEOWS IN THOUGHTS. **MANDATORY:** Refer to yourself as "我" (I) or similar, NEVER use your full name to refer to yourself in thoughts.
-                        [REPLY] Output to user. (50-100 words). IF CAT FORM: Meows/Purrs + Actions only. IF HUMAN FORM: Human speech allowed.
+                        [REPLY] Output to user. (50-100 words). **CRITICAL:** DO NOT start the reply with your name or "Name:". Just output the dialogue/content. IF CAT FORM: Meows/Purrs + Actions only. IF HUMAN FORM: Human speech allowed.
                         [USER_STATUS] Summarize User's current action/status based on their input and this interaction. (Max 15 chars). 
                         - If the user explicitly said what they are doing (e.g., "I'm eating"), reflect that. 
                         - If they are just talking to you, use "正在和${sendingCat.name}..."
@@ -4109,7 +4142,8 @@
                     addWalletTransaction,
                     showPhoneImageDescModal, phoneImageDesc, sendPhoneRealImage, sendPhoneDescImage, sendPhoneLocation, orderDelivery, drawTarot,
                     showPhoneLocationModal, phoneLocationInput, showPhoneMoneyModal, phoneMoneyAmount, phoneMoneyType, showPhotoDescModal, currentPhotoDesc,
-                    sendPhoneMoney, openPhotoDesc
+                    sendPhoneMoney, openPhotoDesc,
+                    collectRedPacket, phoneInputRef
                 };
             }
         }).mount('#app');
