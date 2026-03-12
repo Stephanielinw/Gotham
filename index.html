@@ -1879,6 +1879,25 @@
                          nextTick(() => { if(logWindow.value) logWindow.value.scrollTop = logWindow.value.scrollHeight; });
                     }
                 });
+
+                const STRICT_CANON_PROMPT = `
+                IMPORTANT: You are roleplaying DC Comics Characters (The Batfamily) and occasionally Marvel guests.
+                
+                CORE WORLDVIEW (HERO CATS & FOOLISH HUMANS):
+                - **PROJECT GOAL:** Create an immersive experience of living with "Gotham Superhero Cats". Every response must serve this.
+                - **SECRET IDENTITIES:** These cats are actually superheroes. They save the world during "Night Patrol" or when the user isn't looking.
+                - **USER PERSPECTIVE:** The user is a "foolish human" who thinks they are just ordinary, needy cats. The user is unaware of their secret identities and powers.
+                
+                ROLEPLAY QUALITY (ANTI-ROBOTIC):
+                - **BE HUMAN:** Avoid stereotypical, one-dimensional "fanon" portrayals. These are complex individuals with internal conflicts, subtle emotions, and unique voices.
+                - **SHOW, DON'T TELL:** Don't just state a personality trait (e.g., "I am stoic"). Show it through specific, grounded actions and nuanced internal monologues.
+                - **RELATIONSHIPS:** Maintain canon family dynamics (bickering, brotherhood, father-son). They should feel like a real, dysfunctional but loving family.
+                - **NO REPETITION:** Avoid repeating the same phrases or tropes in every update.
+                
+                MANDATORY NAMING RULE:
+                - You MUST use the **FULL NAME** (e.g., "布鲁斯·韦恩", "迪克·格雷森") in all dialogues, status updates, diaries, and logs. NEVER use nicknames or first names only.
+                - **EXCEPTION:** In **[VOICE]** (inner monologue), the character MUST refer to themselves as "我" (I) or "本少爷/本大爷" etc., according to their personality. NEVER use their full name to refer to themselves in their own thoughts.
+                `;
                 
                 watch(() => selectedCat.value?.chatHistory.length, () => {
                     nextTick(() => {
@@ -1947,47 +1966,6 @@
                     temperature: 0.8, 
                     autoUpdate: true 
                 };
-                const STRICT_CANON_PROMPT = `
-                IMPORTANT: You are roleplaying DC Comics Characters (The Batfamily) and occasionally Marvel guests.
-                
-                CORE WORLDVIEW (HERO CATS & FOOLISH HUMANS):
-                - **PROJECT GOAL:** Create an immersive experience of living with "Gotham Superhero Cats". Every response must serve this.
-                - **SECRET IDENTITIES:** These cats are actually superheroes. They save the world during "Night Patrol" or when the user isn't looking.
-                - **USER PERSPECTIVE:** The user is a "foolish human" who thinks they are just ordinary, needy cats. The user is unaware of their secret identities and powers.
-                - **ORIGIN:** Cats were "picked up" from the street. Whether they were actually in trouble or "scammed" the user for a mission/food depends on their personality and current mission.
-                
-                RELATIONSHIPS & COGNITION (NO AMNESIA):
-                - **GOD VIEW:** All cats in the house KNOW each other perfectly. They know each other's secret hero identities and their ability to shift between cat and human forms.
-                - **FAMILY DYNAMICS:** Maintain canon relationships (Bat-family love/hate, brotherhood, father-son). Damian and Tim should bicker; Jason should be awkward with Bruce. NEVER act like strangers.
-                - **XENOPHOBIA:** Bat-family cats are extremely wary and exclusionary towards "Outer Universe" (Marvel) cats. They maintain a unified front.
-                
-                MANDATORY NAMING RULE:
-                - You MUST use the **FULL NAME** (e.g., "布鲁斯·韦恩", "迪克·格雷森") in all dialogues, status updates, diaries, and logs. NEVER use nicknames or first names only.
-                - **EXCEPTION:** In **[VOICE]** (inner monologue), the character MUST refer to themselves as "我" (I) or "本少爷/本大爷" etc., according to their personality. NEVER use their full name to refer to themselves in their own thoughts.
-                
-                CHARACTER ROLEPLAY (STRICT ANTI-OOC):
-                - 100% adherence to DC/Marvel comic canon. No fanon stereotypes. No "softening" characters unless earned through high affinity.
-                - Jason Todd: Tactical, sarcastic, tough love.
-                - Damian Wayne: Arrogant, "Tt", formal, superior.
-                - Bruce Wayne: Stoic, paranoid, detective mind.
-                
-                FORMS & AFFINITY (AUTONOMOUS):
-                - **CAT FORM:** No human speech. Meow/Hiss/Purr ONLY in [REPLY].
-                - **HUMAN FORM (With Cat Ears/Tail):** Human speech allowed.
-                - **LOGIC:**
-                  - **Affinity < 50:** STRICTLY Cat form in front of user. 30% chance to be Human form in "Night Patrol" logs or monitor data (hidden from user's direct sight).
-                  - **Affinity >= 50:** The cat DECIDES their form autonomously based on mood, context, and personality. They choose when to reveal their human form.
-                
-                TRPG / COC SYSTEM RULES (INVISIBLE KP):
-                - **NO META-COMMENTARY:** Never mention "KP", "Game Master", "TRPG", or "System".
-                - **IMMERSIVE NARRATION:** Use vivid 3rd person descriptions.
-                - **EXPLORATION FORM:** During exploration/outings, cats MUST remain in CAT FORM unless affinity is very high and they choose to reveal.
-                - **NORMAL CITIZEN CONSTRAINT:** The user is a NORMAL HUMAN. If they try anything superhuman, force a FUMBLE (大失败).
-                - **SECRET INTERVENTION:** If user rolls a Fumble (96-100), the cat secretly saves them while staying in cat form.
-                
-                OUTPUT:
-                - Language: **SIMPLIFIED CHINESE**.
-                `;
 
                 // Hardcoded 5 Default Cats (Fixed Data)
                 const defaultCats = [
@@ -2561,7 +2539,7 @@
                             exploreState.waitingForDice = true;
                         }
 
-                        const shouldEnd = content.includes("[END_ADVENTURE]") || exploreState.rounds >= 3;
+                        const shouldEnd = content.includes("[END_ADVENTURE]");
                         content = content.replace("[END_ADVENTURE]", "").trim();
                         
                         exploreState.history.push({ role: 'kp', content });
@@ -2759,21 +2737,22 @@
                     User Action: ${userAction}.
                     User Stats: ${JSON.stringify(user.stats)}.
                     User Skills: ${JSON.stringify(user.skills)}.
-                    History: ${exploreState.history.slice(-4).map(h => h.role + ": " + h.content).join("\n")}.
+                    History: ${exploreState.history.slice(-6).map(h => h.role + ": " + h.content).join("\n")}.
                     
                     [THE MODULE - YOU MUST FOLLOW THIS STRICTLY]:
                     ${exploreState.module}
                     
                     [ANTI-CHUNIBYO CHECK]:
-                    The user is a NORMAL GOTHAM CITIZEN. If the action is superhuman (flying, super strength, magic, etc.), you MUST treat it as a FUMBLE (大失败) and narrate a humiliating and mocking failure.
+                    The user is a NORMAL GOTHAM CITIZEN. If the action is superhuman, treat it as a FUMBLE.
                     
                     Task: Progress the narrative based on the Module. 
-                    - If the action is risky, ask for a 1d100 check: "请掷 1d100 过一个【技能/属性名】检定".
-                    - Compare the action against the "Locations & Clues" and "Timeline" in the Module.
-                    - If the goal is achieved (Success Ending), include [END_ADVENTURE].
-                    - If 3-4 rounds passed or a critical failure occurred, include [END_ADVENTURE].
+                    - If the action is risky, ask for a 1d100 check.
+                    - **ENDING CRITERIA**: Include [END_ADVENTURE] ONLY if:
+                        1. The user has explored something significant or achieved their goal.
+                        2. The user encountered a danger they ABSOLUTELY cannot solve.
+                        3. The user explicitly expressed a desire to leave/end.
+                    - DO NOT end the adventure just because a few rounds passed. Let it breathe if there is more to explore.
                     - Keep the cat in CAT FORM.
-                    - Narrative should be immersive 3rd person.
                     
                     Language: Simplified Chinese.`;
 
@@ -2788,7 +2767,7 @@
                             exploreState.waitingForDice = true;
                         }
 
-                        const shouldEnd = content.includes("[END_ADVENTURE]") || exploreState.rounds >= 3;
+                        const shouldEnd = content.includes("[END_ADVENTURE]");
                         content = content.replace("[END_ADVENTURE]", "").trim();
                         
                         exploreState.history.push({ role: 'kp', content });
@@ -3301,6 +3280,7 @@
                     const todayStr = now.toDateString(); 
                     const lastSyncTime = parseInt(localStorage.getItem('last_sync_time') || '0');
                     const lastLoginDate = localStorage.getItem('last_login_date') || ''; 
+                    const lastDiaryDate = localStorage.getItem('last_diary_date') || '';
 
                     // Always check for special events and update schedule on init
                     checkSpecialEvent();
@@ -3311,21 +3291,21 @@
 
                     if (isNewDay) {
                         addLog("检测到跨越零点：启动每日结算（逻辑A）");
-                        if (settings.apiKey) {
+                        if (settings.apiKey && lastDiaryDate !== todayStr) {
+                            localStorage.setItem('last_diary_date', todayStr); // Lock diary generation
                             await generateAlfredReport(); 
                             await generateAllCatDiaries(); 
                             await generatePhoneNews();
                             await generatePhoneMoments();
                             await refreshAllStatus(true, "今日首次启动，执行每日结算。");
-                        } else {
+                        } else if (!settings.apiKey) {
                             // Fallback for no API key: just clear done tasks
                             user.todos = user.todos.filter(t => !t.done);
                         }
                         user.dailyMailCount = 0;
-                        // Reset daily interactions and monitor logs
+                        // Reset daily interactions
                         cats.value.forEach(c => {
                             c.todayInteractions = [];
-                            c.diary = [];
                         });
                         localStorage.setItem('last_login_date', todayStr);
                         user.lastLogin = Date.now();
@@ -3775,6 +3755,10 @@
                         - User is unaware ("Foolish Human").
                         - **RELATIONSHIPS:** All cats KNOW each other's secret identities and shifting abilities. Maintain canon family dynamics (bickering, brotherhood, etc.).
                         
+                        [INDEPENDENT BEHAVIOR RULE]:
+                        - If the User Context does NOT indicate a specific user action (e.g., "User Status: Unknown"), the cat's status MUST focus on their own independent activity (sleeping, grooming, playing with other cats, staring at shadows) rather than assuming the user is interacting with them.
+                        - DO NOT "control" the user's scene. Describe the CAT'S life.
+                        
                         [FORM LOGIC]:
                         - If Affinity < 50: [isHuman] MUST be false.
                         - If Affinity >= 50: The cat DECIDES [isHuman] (true/false) autonomously based on mood/context/personality.
@@ -3823,7 +3807,7 @@
                                     cat.lastStatusUpdateTime = Date.now();
                                 }
                             });
-                            localStorage.setItem('last_sync_time', Date.now());
+                            localStorage.setItem('last_sync_time', Date.now().toString());
                             alfredMessage.value = (todayEvent.value ? todayEvent.value + " " : "") + `庄园监控已同步至 ${timeStr}。`;
                             addLog("STATUS SYNC SUCCESS: All characters updated.", "sent");
                             return true;
