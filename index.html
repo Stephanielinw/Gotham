@@ -1708,8 +1708,8 @@
     </div>
 
     <script type="module">
-        import { GoogleGenAI, HarmCategory, HarmBlockThreshold, ThinkingLevel } from "https://esm.sh/@google/genai";
         const { createApp, ref, reactive, onMounted, watch, computed, nextTick } = Vue;
+        const ThinkingLevel = { LOW: "LOW", HIGH: "HIGH" };
 
         createApp({
             setup() {
@@ -2275,7 +2275,10 @@
                                 ]
                             };
                             if (thinkingLevel && modelName.includes("gemini-3")) {
-                                payload.generationConfig.thinkingConfig = { includeProcess: true };
+                                payload.generationConfig.thinkingConfig = { 
+                                    thinkingLevel: thinkingLevel,
+                                    includeProcess: thinkingLevel === ThinkingLevel.HIGH 
+                                };
                             }
                             addLog(`API REQUEST (Google Mode): ${modelName}`);
                         }
