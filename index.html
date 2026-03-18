@@ -372,9 +372,6 @@
                 <span v-else>GOTHAM CAT CAFE</span>
             </div>
             <div class="flex space-x-3">
-                <div @click="showShopModal = true" class="relative text-gray-400 cursor-pointer">
-                    <i class="fas fa-shopping-basket text-xl"></i>
-                </div>
                 <div @click="showReportModal = true" class="relative text-gray-400 cursor-pointer">
                     <i class="fas fa-archive text-xl"></i>
                 </div>
@@ -832,6 +829,10 @@
                                     <div class="w-14 h-14 bg-orange-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 transition-transform"><i class="fas fa-wallet"></i></div>
                                     <span class="text-[10px] text-gray-300">Wallet</span>
                                 </div>
+                                <div @click="phoneState.currentApp = 'shop'" class="flex flex-col items-center gap-2 cursor-pointer">
+                                    <div class="w-14 h-14 bg-orange-700 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 transition-transform"><i class="fas fa-shopping-basket"></i></div>
+                                    <span class="text-[10px] text-gray-300">Shop</span>
+                                </div>
                             </div>
 
                             <!-- Chat App: List -->
@@ -1002,6 +1003,56 @@
                                             <p class="text-xs leading-relaxed text-indigo-100 italic">{{ phoneState.tarotResult.reading }}</p>
                                         </div>
                                         <button @click="phoneState.tarotResult = null; phoneState.tarotQuestion = ''" class="w-full py-2 text-xs text-indigo-500 hover:text-indigo-400 transition-colors">再次占卜</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Shop App -->
+                            <div v-if="phoneState.currentApp === 'shop'" class="flex flex-col h-full bg-zinc-900 text-white">
+                                <div class="p-4 bg-orange-600 flex justify-between items-center sticky top-0 z-10 shadow-md">
+                                    <h1 class="font-bold text-lg tracking-tighter text-white"><i class="fas fa-shopping-basket mr-2"></i> 补给站</h1>
+                                    <div class="text-[10px] font-bold text-white/60">GOTHAM SUPPLY</div>
+                                </div>
+                                <div class="p-2 flex space-x-2 overflow-x-auto bg-zinc-800 border-b border-zinc-700 shrink-0">
+                                    <button @click="currentShopCategory='food'" :class="currentShopCategory==='food'?'bg-orange-700 text-white':'bg-zinc-900 text-gray-400'" class="px-3 py-1 rounded text-[10px] whitespace-nowrap transition-colors">食品</button>
+                                    <button @click="currentShopCategory='toy'" :class="currentShopCategory==='toy'?'bg-orange-700 text-white':'bg-zinc-900 text-gray-400'" class="px-3 py-1 rounded text-[10px] whitespace-nowrap transition-colors">玩具</button>
+                                    <button @click="currentShopCategory='supply'" :class="currentShopCategory==='supply'?'bg-orange-700 text-white':'bg-zinc-900 text-gray-400'" class="px-3 py-1 rounded text-[10px] whitespace-nowrap transition-colors">日用</button>
+                                    <button @click="currentShopCategory='import'" :class="currentShopCategory==='import'?'bg-blue-700 text-white':'bg-zinc-900 text-gray-400'" class="px-3 py-1 rounded text-[10px] whitespace-nowrap transition-colors"><i class="fas fa-truck-loading mr-1"></i>进货</button>
+                                </div>
+                                <div class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                                    <div v-if="currentShopCategory !== 'import'" class="space-y-3">
+                                         <div v-for="item in filteredShopItems" :key="item.id" class="bg-zinc-800 p-3 rounded-xl flex justify-between items-center border border-zinc-700 shadow-sm">
+                                            <div class="flex items-center gap-3">
+                                                <div class="text-2xl w-10 h-10 flex items-center justify-center bg-zinc-950 rounded-lg">{{ item.icon }}</div>
+                                                <div class="min-w-0">
+                                                    <div class="font-bold text-xs text-gray-200">{{ item.name }}</div>
+                                                    <div class="text-[9px] text-gray-500 mt-0.5 truncate max-w-[120px]">{{ item.desc }}</div>
+                                                </div>
+                                            </div>
+                                            <button @click="buyItem(item)" class="bg-orange-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold shadow hover:bg-orange-500 transition-colors">
+                                                {{ item.price }} G
+                                            </button>
+                                        </div>
+                                        <div v-if="filteredShopItems.length === 0" class="text-center text-gray-600 mt-10 text-xs italic">该货架暂时空置</div>
+                                    </div>
+                                    <div v-if="currentShopCategory === 'import'" class="bg-zinc-800 p-4 rounded-xl border border-dashed border-zinc-600 shadow-inner space-y-3">
+                                        <h3 class="font-bold text-xs text-gray-300 flex items-center"><i class="fas fa-box-open mr-2"></i> 供应商进货通道</h3>
+                                        <div class="space-y-2">
+                                            <input v-model="newItem.name" placeholder="商品名称" class="w-full text-[10px] bg-zinc-900 border-zinc-700 rounded p-2 text-white focus:outline-none focus:border-orange-500">
+                                            <input v-model="newItem.desc" placeholder="商品描述" class="w-full text-[10px] bg-zinc-900 border-zinc-700 rounded p-2 text-white focus:outline-none focus:border-orange-500">
+                                            <div class="flex gap-2">
+                                                <input v-model="newItem.icon" placeholder="图标(emoji)" class="text-[10px] bg-zinc-900 border-zinc-700 rounded p-2 text-white w-1/3 focus:outline-none focus:border-orange-500">
+                                                <select v-model="newItem.category" class="text-[10px] bg-zinc-900 border-zinc-700 rounded p-2 text-white flex-1 focus:outline-none focus:border-orange-500">
+                                                    <option value="food">食品</option>
+                                                    <option value="toy">玩具</option>
+                                                    <option value="supply">日用</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <button @click="submitShopItem" :disabled="isSubmittingItem" class="w-full bg-zinc-700 hover:bg-zinc-600 text-white text-[10px] font-bold py-2.5 rounded-lg flex justify-center items-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                            <i v-if="isSubmittingItem" class="fas fa-circle-notch fa-spin mr-2"></i> 
+                                            {{ isSubmittingItem ? 'AI正在审核中...' : '提交上架申请' }}
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -1893,10 +1944,15 @@
                 - **SHOW, DON'T TELL:** Don't just state a personality trait (e.g., "I am stoic"). Show it through specific, grounded actions and nuanced internal monologues.
                 - **RELATIONSHIPS:** Maintain canon family dynamics (bickering, brotherhood, father-son). They should feel like a real, dysfunctional but loving family.
                 - **NO REPETITION:** Avoid repeating the same phrases or tropes in every update.
+                - **AFFINITY (好感度) INFLUENCE:** 
+                  - High Affinity (80+): The cat is more protective, affectionate (in their own way), and trusts the user.
+                  - Mid Affinity (40-79): The cat is neutral, cooperative but maintains distance.
+                  - Low Affinity (<40): The cat is suspicious, cold, or even hostile.
+                - **NO AI FLAVOR:** Avoid generic AI greetings or "As an AI..." phrases. Speak naturally as the character would.
                 
-                MANDATORY NAMING RULE:
-                - You MUST use the **FULL NAME** (e.g., "布鲁斯·韦恩", "迪克·格雷森") in all dialogues, status updates, diaries, and logs. NEVER use nicknames or first names only.
-                - **EXCEPTION:** In **[VOICE]** (inner monologue), the character MUST refer to themselves as "我" (I) or "本少爷/本大爷" etc., according to their personality. NEVER use their full name to refer to themselves in their own thoughts.
+                NAMING RULE:
+                - Use names naturally. You don't have to use full names every time. Nicknames or first names are fine if it fits the character and relationship.
+                - **EXCEPTION:** In **[VOICE]** (inner monologue), the character MUST refer to themselves as "我" (I) or "本少爷/本大爷" etc., according to their personality.
                 `;
                 
                 watch(() => selectedCat.value?.chatHistory.length, () => {
@@ -2210,7 +2266,18 @@
                         if(lunarEvents[lKey]) { eventName = lunarEvents[lKey] + "快乐"; eventCtx = `Today is ${lunarEvents[lKey]} (Lunar Calendar).`; }
                         if (lunarMonth === 12) { const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1); const lunarTomorrow = Lunar.fromDate(tomorrow); if (lunarTomorrow.getMonth() === 1 && lunarTomorrow.getDay() === 1) { eventName = "除夕快乐"; eventCtx = "Today is Chinese New Year's Eve (除夕). Family reunion dinner tonight."; } }
                     }
-                    if(user.birthday) { const birthDate = new Date(user.birthday); if(birthDate.getMonth() === now.getMonth() && birthDate.getDate() === now.getDate()) { eventName = `🎂 祝 ${user.nickname} 生日快乐！`; eventCtx = `IMPORTANT: TODAY IS USER'S BIRTHDAY.`; } }
+                    if(user.birthday) { 
+                        const parts = user.birthday.split('-');
+                        if (parts.length === 3) {
+                            const bMonth = parseInt(parts[1]) - 1;
+                            const bDay = parseInt(parts[2]);
+                            if (bMonth === now.getMonth() && bDay === now.getDate()) {
+                                eventName = `🎂 祝 ${user.nickname} 生日快乐！`; 
+                                eventCtx = `IMPORTANT: TODAY IS USER'S BIRTHDAY.`; 
+                                showToast(`🎉 祝您生日快乐，${user.nickname}！`, "success");
+                            }
+                        }
+                    }
                     const bdayCat = cats.value.find(c => c.birthday === solarStr);
                     if (bdayCat) { if(eventName) { eventName += ` & ${bdayCat.name}生日`; eventCtx += ` Also, today is ${bdayCat.name}'s birthday.`; } else { eventName = `🎂 今天是 ${bdayCat.name} 的生日！`; eventCtx = `IMPORTANT: TODAY IS ${bdayCat.name}'s BIRTHDAY.`; } }
                     todayEvent.value = eventName; todayEventContext.value = eventCtx;
@@ -3141,16 +3208,21 @@
                             status = "送达";
                             log = `外卖员遭遇抢劫，被不明黑影救下，${item.name}盒上留有蝙蝠镖的划痕。`;
                             addLog(`【紧急事件】外卖员遭遇抢劫！但被正在外出的${heroCat.name}秘密救下。`);
+                            // Add to inventory
+                            user.inventory.push({ ...item, id: Date.now() });
                         } else {
                             status = "丢失";
                             log = `外卖员遭遇抢劫，${item.name}被抢走了。`;
                             addLog(`【紧急事件】外卖员遭遇抢劫！${item.name}丢失了。`);
                             // Cats are disappointed
                             cats.value.forEach(c => {
-                                c.mood = Math.max(0, c.mood - 10);
+                                c.affinity = Math.max(0, c.affinity - 5);
                                 c.innerVoice = "那个愚蠢的人类连个外卖都保不住吗？我饿了。";
                             });
                         }
+                    } else {
+                        // Success
+                        user.inventory.push({ ...item, id: Date.now() });
                     }
 
                     user.phoneData.delivery.push({
@@ -3452,11 +3524,15 @@
                         (Please address the user appropriately based on their Job/Role)
 
                         Role: ${sendingCat.name}. Affinity: ${sendingCat.affinity}/100.
+                        [AFFINITY INFLUENCE]: Your response MUST reflect your affinity level (${sendingCat.affinity}/100). High affinity means more trust/affection, low affinity means more distance/suspicion.
+                        [NO AI FLAVOR]: Avoid generic AI greetings or "As an AI..." phrases. Speak naturally as the character would.
+                        
                         Specific Character Traits: ${sendingCat.personality}.
                         Specific Instructions: ${sendingCat.prompt}
                         Current Form: ${sendingCat.isHuman ? 'HUMAN (Can speak)' : 'CAT (Meow/Hiss/Purr ONLY)'}.
                         
                         NEGATIVE PROMPT: DO NOT ACT LIKE OTHER CHARACTERS. YOU ARE ${sendingCat.name}.
+                        DO NOT BE OOC (Out Of Character). Stay true to your DC/Marvel canon personality.
 
                         [FORCED MEMORY CONTEXT]:
                         1. Recent History: ${recentHistory}
@@ -3630,8 +3706,10 @@
                     let summary = "任务结束。";
                     if(settings.apiKey) {
                         const catNames = focusCats.value.map(c => c.name).join(', ');
-                        const catTraits = focusCats.value.map(c => `${c.name}: ${c.personality}`).join('; ');
-                        const prompt = success ? `Identities: ${catNames}. Traits: ${catTraits}. User (${user.nickname}) finished task "${focusAction.value}". Write Evaluation (150 words). Subjective, In-character (can be from one or multiple cats' perspective). Language: Simplified Chinese.` : `Identities: ${catNames}. Traits: ${catTraits}. User (${user.nickname}) GAVE UP task "${focusAction.value}". Write Scolding/Evaluation (150 words). Subjective, In-character. Language: Simplified Chinese.`;
+                        const catTraits = focusCats.value.map(c => `${c.name}: ${c.personality} (Affinity: ${c.affinity}/100)`).join('; ');
+                        const prompt = success ? 
+                            `Identities: ${catNames}. Traits: ${catTraits}. User (${user.nickname}) finished task "${focusAction.value}". Each cat MUST write a separate "Written Mission Report" (书面任务报告) in their own unique voice. Combine them into one response. Format: [Cat Name]: [Report Content]. Language: Simplified Chinese.` : 
+                            `Identities: ${catNames}. Traits: ${catTraits}. User (${user.nickname}) GAVE UP task "${focusAction.value}". Each cat MUST write a separate "Written Mission Report" (书面任务报告) expressing their disappointment or scolding in their own unique voice. Combine them into one response. Format: [Cat Name]: [Report Content]. Language: Simplified Chinese.`;
                         summary = await callAI(prompt, STRICT_CANON_PROMPT, 1000);
                     }
                     currentSettlement.summary = cleanText(summary);
@@ -3774,6 +3852,11 @@
                         2. **Memory Rule**: You MUST read the [FORCED MEMORY CONTEXT] for each cat. Their behavior, mood, and inner voice MUST reflect recent events.
                         3. **Physical Logic**: Actions must follow the passage of time.
                         4. **Global Scenario**: At least 2 cats must stay home ([ISOUT] false).
+                        
+                        [ROLEPLAY QUALITY]:
+                        - NO AI FLAVOR. Stay in character.
+                        - AFFINITY MATTERS: Reflect Affinity level in status and inner voice.
+                        - NO OOC.
                         
                         Task: Update status for ALL characters.
                         [MANDATORY OUTPUT FORMAT]:
