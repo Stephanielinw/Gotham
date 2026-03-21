@@ -342,7 +342,6 @@
         }
         @keyframes slideDown { from { transform: translate(-50%, -20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
     </style>
-<link rel="stylesheet" href="/index.css">
 </head>
 <body>
     <div id="app" class="app-container" v-cloak>
@@ -813,10 +812,6 @@
                                     <div class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 transition-transform"><i class="fas fa-newspaper"></i></div>
                                     <span class="text-[10px] text-gray-300">Gazette</span>
                                 </div>
-                                <div @click="phoneState.currentApp = 'moments'" class="flex flex-col items-center gap-2 cursor-pointer">
-                                    <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 transition-transform"><i class="fas fa-camera-retro"></i></div>
-                                    <span class="text-[10px] text-gray-300">Moments</span>
-                                </div>
                                 <div @click="phoneState.currentApp = 'delivery'" class="flex flex-col items-center gap-2 cursor-pointer">
                                     <div class="w-14 h-14 bg-yellow-500 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 transition-transform"><i class="fas fa-motorcycle"></i></div>
                                     <span class="text-[10px] text-gray-300">Delivery</span>
@@ -830,95 +825,539 @@
                                     <span class="text-[10px] text-gray-300">Wallet</span>
                                 </div>
                                 <div @click="phoneState.currentApp = 'shop'" class="flex flex-col items-center gap-2 cursor-pointer">
-                                    <div class="w-14 h-14 bg-orange-700 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 transition-transform"><i class="fas fa-shopping-basket"></i></div>
+                                    <div class="w-14 h-14 bg-orange-500 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 transition-transform"><i class="fas fa-shopping-basket"></i></div>
                                     <span class="text-[10px] text-gray-300">Shop</span>
                                 </div>
                             </div>
 
-                            <!-- Chat App: List -->
-                            <div v-if="phoneState.currentApp === 'chat' && !phoneState.selectedContactId" class="flex flex-col h-full bg-zinc-900">
-                                <div class="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900 sticky top-0 z-10">
-                                    <h3 class="font-bold text-gray-200">消息</h3>
-                                    <i class="fas fa-search text-gray-500"></i>
-                                </div>
-                                <div class="flex-1 overflow-y-auto">
-                                    <div v-for="cat in cats" :key="'phone-chat-' + cat.id" 
-                                         @click="openPhoneChat(cat.id)"
-                                         class="flex items-center gap-3 p-4 border-b border-zinc-800 hover:bg-zinc-800 transition-colors cursor-pointer">
-                                        <img :src="phoneIdentities[cat.id].avatar" class="w-12 h-12 rounded-lg object-cover">
-                                        <div class="flex-1 min-w-0">
-                                            <div class="flex justify-between items-center mb-1">
-                                                <span class="text-sm font-bold text-gray-200">{{ phoneIdentities[cat.id].name }}</span>
-                                                <span class="text-[10px] text-gray-500">{{ getPhoneLastTime() }}</span>
+                            <!-- WeChat App (Unified) -->
+                            <div v-if="phoneState.currentApp === 'chat'" class="flex flex-col h-full bg-zinc-900">
+                                <!-- Main Content Area -->
+                                <div class="flex-1 overflow-hidden relative">
+                                    <!-- Chats Tab -->
+                                    <div v-if="phoneState.chatTab === 'chat' && !phoneState.selectedContactId" class="h-full flex flex-col">
+                                        <!-- Chat List -->
+                                        <div class="flex flex-col h-full bg-[#f7f7f7]">
+                                            <div class="h-12 bg-[#f7f7f7] flex justify-between items-center px-4 sticky top-0 z-10">
+                                                <div class="w-8"></div>
+                                                <h3 class="font-bold text-black text-base">微信</h3>
+                                                <button class="w-8 text-black text-xl"><i class="fas fa-plus-circle"></i></button>
                                             </div>
-                                            <div class="text-xs text-gray-500 truncate">{{ getPhoneLastMessage(cat.id) }}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                                            <div class="flex-1 overflow-y-auto">
+                                                <!-- Search Bar -->
+                                                <div class="px-2 py-2">
+                                                    <div class="bg-white rounded-md h-8 flex items-center justify-center text-gray-400 text-sm">
+                                                        <i class="fas fa-search mr-1"></i> 搜索
+                                                    </div>
+                                                </div>
 
-                            <!-- Chat App: Detail -->
-                            <div v-if="phoneState.currentApp === 'chat' && phoneState.selectedContactId" class="flex flex-col h-full bg-zinc-100 text-black">
-                                <div class="h-12 bg-zinc-100 border-b border-zinc-300 flex items-center px-4 sticky top-0 z-10">
-                                    <button @click="phoneState.selectedContactId = null" class="mr-4 text-zinc-600"><i class="fas fa-chevron-left"></i></button>
-                                    <span class="font-bold text-sm">{{ phoneIdentities[phoneState.selectedContactId].name }}</span>
-                                </div>
-                                <div class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-[#ededed]" ref="phoneChatRef">
-                                    <div v-for="(msg, idx) in getPhoneChatHistory(phoneState.selectedContactId)" :key="idx" 
-                                         class="flex" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
-                                        <div class="flex max-w-[80%] gap-2" :class="msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'">
-                                            <img :src="msg.role === 'user' ? 'https://placehold.co/100x100/444/white?text=Me' : phoneIdentities[phoneState.selectedContactId].avatar" class="w-8 h-8 rounded shrink-0">
-                                            <div class="p-2 rounded-lg text-xs relative" :class="msg.role === 'user' ? 'bg-green-500 text-white' : 'bg-white text-black shadow-sm'">
-                                                <div v-if="msg.type === 'image'" @click="openPhotoDesc(msg.desc)" class="cursor-pointer group">
-                                                    <div class="w-24 h-24 border-2 border-zinc-300 rounded flex items-center justify-center bg-zinc-200 overflow-hidden relative">
-                                                        <i class="fas fa-image text-3xl text-zinc-400 group-hover:scale-110 transition-transform"></i>
-                                                        <div class="absolute bottom-0 left-0 right-0 bg-black/50 text-[8px] text-white text-center py-0.5">点击查看描述</div>
+                                                <div v-if="friendsList.length === 0" class="p-10 text-center text-gray-400 text-sm italic">
+                                                    暂无消息。去通讯录看看有没有新的朋友？
+                                                </div>
+                                                <div class="bg-white">
+                                                    <div v-for="cat in friendsList" :key="'phone-chat-' + cat.id" 
+                                                         @click="openPhoneChat(cat.id)"
+                                                         class="flex items-center gap-3 p-3 border-b border-gray-50 active:bg-gray-100 cursor-pointer">
+                                                        <img :src="phoneIdentities[cat.id].avatar" class="w-12 h-12 rounded-md object-cover">
+                                                        <div class="flex-1 min-w-0">
+                                                            <div class="flex justify-between items-center mb-1">
+                                                                <span class="text-black text-base font-medium">{{ phoneIdentities[cat.id].name }}</span>
+                                                                <span class="text-[10px] text-gray-400">{{ getPhoneLastTime(cat.id) }}</span>
+                                                            </div>
+                                                            <div class="text-xs text-gray-400 truncate">{{ getPhoneLastMessage(cat.id) }}</div>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <div v-else-if="msg.type === 'location'" class="flex items-center gap-2">
-                                                    <i class="fas fa-map-marker-alt text-red-500"></i>
-                                                    <span>{{ msg.content }}</span>
-                                                </div>
-                                                <div v-else-if="msg.type === 'red-envelope'" 
-                                                     @click="collectRedPacket(msg)"
-                                                     class="bg-orange-500 text-white p-3 rounded-lg flex items-center gap-3 min-w-[150px] cursor-pointer hover:bg-orange-600 transition-colors relative overflow-hidden">
-                                                    <div v-if="msg.collected" class="absolute inset-0 bg-black/20 flex items-center justify-center text-[10px] font-bold">已领取</div>
-                                                    <i class="fas fa-gift text-2xl" :class="msg.collected ? 'text-gray-300' : 'text-yellow-300'"></i>
-                                                    <div>
-                                                        <div class="font-bold">红包</div>
-                                                        <div class="text-[10px] opacity-80">{{ msg.content }} 哥谭币</div>
-                                                    </div>
-                                                </div>
-                                                <div v-else-if="msg.type === 'transfer'" 
-                                                     @click="collectRedPacket(msg)"
-                                                     class="bg-blue-600 text-white p-3 rounded-lg flex items-center gap-3 min-w-[150px] cursor-pointer hover:bg-blue-700 transition-colors relative overflow-hidden">
-                                                    <div v-if="msg.collected" class="absolute inset-0 bg-black/20 flex items-center justify-center text-[10px] font-bold">已领取</div>
-                                                    <i class="fas fa-dollar-sign text-2xl" :class="msg.collected ? 'text-gray-300' : 'text-blue-200'"></i>
-                                                    <div>
-                                                        <div class="font-bold">转账</div>
-                                                        <div class="text-[10px] opacity-80">{{ msg.content }} 哥谭币</div>
-                                                    </div>
-                                                </div>
-                                                <div v-else>{{ msg.content }}</div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div v-if="phoneState.isTyping" class="flex justify-start">
-                                        <div class="bg-white p-2 rounded-lg text-[10px] text-gray-400 animate-pulse shadow-sm">正在输入...</div>
+
+                                    <!-- Contacts List -->
+                                        <div v-if="!phoneState.selectedContactId && !phoneState.selectedFriendRequestId && phoneState.chatTab === 'contacts'" class="flex flex-col h-full bg-[#f7f7f7]">
+                                            <div class="h-12 bg-[#f7f7f7] flex justify-between items-center px-4 sticky top-0 z-10">
+                                                <div class="w-8"></div>
+                                                <h3 class="font-bold text-black text-base">通讯录</h3>
+                                                <button class="w-8 text-black text-xl"><i class="fas fa-user-plus"></i></button>
+                                            </div>
+                                            
+                                            <div class="flex-1 overflow-y-auto pb-4 relative">
+                                                <!-- Search Bar -->
+                                                <div class="px-2 py-2">
+                                                    <div class="bg-white rounded-md h-8 flex items-center justify-center text-gray-400 text-sm">
+                                                        <i class="fas fa-search mr-1"></i> 搜索
+                                                    </div>
+                                                </div>
+
+                                                <!-- Top Menu Items -->
+                                                <div class="bg-white">
+                                                    <div @click="phoneState.chatTab = 'new-friends'" class="flex items-center gap-3 p-3 border-b border-gray-100 active:bg-gray-100 cursor-pointer">
+                                                        <div class="w-10 h-10 bg-[#fa9d3b] rounded flex items-center justify-center text-white text-xl">
+                                                            <i class="fas fa-user-plus"></i>
+                                                        </div>
+                                                        <div class="flex-1 flex justify-between items-center">
+                                                            <span class="text-black text-base">新的朋友</span>
+                                                            <span v-if="user.phoneData.friendRequests.filter(r => r.status === 'pending').length > 0" class="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">
+                                                                {{ user.phoneData.friendRequests.filter(r => r.status === 'pending').length }}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex items-center gap-3 p-3 border-b border-gray-100 active:bg-gray-100 cursor-pointer">
+                                                        <div class="w-10 h-10 bg-[#fa9d3b] rounded flex items-center justify-center text-white text-xl">
+                                                            <i class="fas fa-user-lock"></i>
+                                                        </div>
+                                                        <span class="text-black text-base">仅聊天的朋友</span>
+                                                    </div>
+                                                    <div class="flex items-center gap-3 p-3 border-b border-gray-100 active:bg-gray-100 cursor-pointer">
+                                                        <div class="w-10 h-10 bg-[#07c160] rounded flex items-center justify-center text-white text-xl">
+                                                            <i class="fas fa-users"></i>
+                                                        </div>
+                                                        <span class="text-black text-base">群聊</span>
+                                                    </div>
+                                                    <div class="flex items-center gap-3 p-3 border-b border-gray-100 active:bg-gray-100 cursor-pointer">
+                                                        <div class="w-10 h-10 bg-[#2782d7] rounded flex items-center justify-center text-white text-xl">
+                                                            <i class="fas fa-tag"></i>
+                                                        </div>
+                                                        <span class="text-black text-base">标签</span>
+                                                    </div>
+                                                    <div class="flex items-center gap-3 p-3 border-b border-gray-100 active:bg-gray-100 cursor-pointer">
+                                                        <div class="w-10 h-10 bg-[#2782d7] rounded flex items-center justify-center text-white text-xl">
+                                                            <i class="fas fa-bullhorn"></i>
+                                                        </div>
+                                                        <span class="text-black text-base">公众号</span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Friends List -->
+                                                <div class="px-4 py-1 text-[11px] text-gray-500 bg-[#f7f7f7]">我的好友</div>
+                                                <div class="bg-white">
+                                                    <div v-if="friendsList.length === 0" class="p-10 text-center text-gray-400 text-sm">暂无好友</div>
+                                                    <div v-for="cat in friendsList" :key="'contact-' + cat.id" 
+                                                         @click="openPhoneChat(cat.id)"
+                                                         class="flex items-center gap-3 p-3 border-b border-gray-50 active:bg-gray-100 cursor-pointer">
+                                                        <img :src="phoneIdentities[cat.id].avatar" class="w-10 h-10 rounded-md object-cover">
+                                                        <span class="text-black text-base">{{ phoneIdentities[cat.id].name }}</span>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Alphabet Index -->
+                                                <div class="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col items-center gap-0.5 text-[9px] font-bold text-gray-600">
+                                                    <span>🔍</span>
+                                                    <span v-for="char in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ#'.split('')" :key="char">{{ char }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- New Friends View -->
+                                        <div v-if="!phoneState.selectedFriendRequestId && phoneState.chatTab === 'new-friends'" class="flex flex-col h-full bg-[#f7f7f7] text-black">
+                                            <div class="h-12 bg-[#f7f7f7] flex items-center justify-between px-4 sticky top-0 z-10">
+                                                <button @click="phoneState.chatTab = 'contacts'" class="text-black text-lg"><i class="fas fa-chevron-left"></i></button>
+                                                <span class="font-bold text-base">新的朋友</span>
+                                                <button class="text-black text-sm">添加朋友</button>
+                                            </div>
+                                            <div class="flex-1 overflow-y-auto">
+                                                <!-- Search Bar -->
+                                                <div class="px-2 py-2">
+                                                    <div class="bg-white rounded-md h-8 flex items-center justify-center text-gray-400 text-sm">
+                                                        <i class="fas fa-search mr-1"></i> 账号/手机号
+                                                    </div>
+                                                </div>
+
+                                                <div class="px-4 py-2 text-[11px] text-gray-500 bg-[#f7f7f7]">三天前</div>
+                                                <div class="bg-white">
+                                                    <div v-if="user.phoneData.friendRequests.length === 0" class="p-10 text-center text-gray-400 text-sm italic">暂无好友申请。</div>
+                                                    <div v-for="req in user.phoneData.friendRequests.slice().reverse()" :key="req.id" 
+                                                         @click="req.status === 'pending' ? phoneState.selectedFriendRequestId = req.id : null"
+                                                         class="flex items-center gap-3 p-3 border-b border-gray-50 active:bg-gray-100 cursor-pointer">
+                                                        <img :src="phoneIdentities[req.catId].avatar" class="w-12 h-12 rounded-md object-cover">
+                                                        <div class="flex-1 min-w-0">
+                                                            <div class="text-black text-base font-medium">{{ phoneIdentities[req.catId].name }}</div>
+                                                            <div class="text-xs text-gray-500 truncate">{{ req.message }}</div>
+                                                        </div>
+                                                        <div class="shrink-0">
+                                                            <button v-if="req.status === 'pending'" @click.stop="phoneState.selectedFriendRequestId = req.id" class="bg-[#07c160] text-white px-3 py-1 rounded text-xs font-bold">查看</button>
+                                                            <span v-else class="text-xs text-gray-400">已添加</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Friend Request Detail View -->
+                                        <div v-if="phoneState.selectedFriendRequestId" class="flex flex-col h-full bg-[#ededed] text-black">
+                                            <div class="h-12 bg-[#ededed] flex items-center px-4 sticky top-0 z-10">
+                                                <button @click="phoneState.selectedFriendRequestId = null" class="text-black text-lg"><i class="fas fa-chevron-left"></i></button>
+                                            </div>
+                                            <div class="flex-1 overflow-y-auto">
+                                                <div class="bg-white p-6 flex flex-col items-center">
+                                                    <img :src="phoneIdentities[user.phoneData.friendRequests.find(r => r.id === phoneState.selectedFriendRequestId).catId].avatar" 
+                                                         class="w-20 h-20 rounded-lg object-cover mb-4">
+                                                    <h2 class="text-xl font-bold mb-1">{{ phoneIdentities[user.phoneData.friendRequests.find(r => r.id === phoneState.selectedFriendRequestId).catId].name }}</h2>
+                                                    <p class="text-xs text-gray-500 mb-6">地区: 哥谭市</p>
+                                                    
+                                                    <div class="w-full bg-[#f7f7f7] p-4 rounded-lg text-sm text-gray-600 mb-6">
+                                                        "{{ user.phoneData.friendRequests.find(r => r.id === phoneState.selectedFriendRequestId).message }}"
+                                                    </div>
+                                                </div>
+
+                                                <div class="mt-2 bg-white">
+                                                    <div class="p-4 border-b border-gray-100 flex justify-between items-center">
+                                                        <span class="text-sm">朋友资料</span>
+                                                        <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
+                                                    </div>
+                                                    <div class="p-4 border-b border-gray-100 flex gap-10">
+                                                        <span class="text-sm text-gray-500 w-16">签名</span>
+                                                        <span class="text-sm text-gray-800">{{ cats.find(c => c.id === user.phoneData.friendRequests.find(r => r.id === phoneState.selectedFriendRequestId).catId).personality }}</span>
+                                                    </div>
+                                                    <div class="p-4 flex gap-10">
+                                                        <span class="text-sm text-gray-500 w-16">来源</span>
+                                                        <span class="text-sm text-gray-800">通过雷达搜索添加</span>
+                                                    </div>
+                                                </div>
+
+                                                    <div class="p-4 mt-2 bg-white flex gap-10">
+                                                    <span class="text-sm text-gray-500 w-16">视频号</span>
+                                                    <div class="flex flex-col gap-2">
+                                                        <span class="text-sm text-gray-800">{{ phoneIdentities[user.phoneData.friendRequests.find(r => r.id === phoneState.selectedFriendRequestId).catId].name }}</span>
+                                                        <div class="w-12 h-12 bg-gray-200 rounded overflow-hidden">
+                                                            <img :src="cats.find(c => c.id === user.phoneData.friendRequests.find(r => r.id === phoneState.selectedFriendRequestId).catId).image" class="w-full h-full object-cover">
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="p-6 mt-4">
+                                                    <button @click="acceptFriendRequest(user.phoneData.friendRequests.find(r => r.id === phoneState.selectedFriendRequestId)); phoneState.selectedFriendRequestId = null; phoneState.chatTab = 'chat'" 
+                                                            class="w-full bg-white text-[#576b95] py-3 rounded-lg font-bold text-base shadow-sm active:bg-gray-100">
+                                                        添加到通讯录
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Chat Detail -->
+                                        <div v-if="phoneState.selectedContactId" class="flex flex-col h-full bg-zinc-100 text-black">
+                                            <div class="h-12 bg-zinc-100 border-b border-zinc-300 flex items-center px-4 sticky top-0 z-10">
+                                                <button @click="phoneState.selectedContactId = null" class="mr-4 text-zinc-600"><i class="fas fa-chevron-left"></i></button>
+                                                <span class="font-bold text-sm">{{ phoneIdentities[phoneState.selectedContactId].name }}</span>
+                                            </div>
+                                            <div class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-[#ededed]" ref="phoneChatRef">
+                                                <div v-for="(msg, idx) in getPhoneChatHistory(phoneState.selectedContactId)" :key="idx" 
+                                                     class="flex" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
+                                                    <div class="flex max-w-[80%] gap-2" :class="msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'">
+                                                        <img :src="msg.role === 'user' ? 'https://placehold.co/100x100/444/white?text=Me' : phoneIdentities[phoneState.selectedContactId].avatar" class="w-8 h-8 rounded shrink-0">
+                                                        <div class="p-2 rounded-lg text-xs relative" :class="msg.role === 'user' ? 'bg-green-500 text-white' : 'bg-white text-black shadow-sm'">
+                                                            <div v-if="msg.type === 'image'" @click="openPhotoDesc(msg.desc)" class="cursor-pointer group">
+                                                                <div class="w-24 h-24 border-2 border-zinc-300 rounded flex items-center justify-center bg-zinc-200 overflow-hidden relative">
+                                                                    <i class="fas fa-image text-3xl text-zinc-400 group-hover:scale-110 transition-transform"></i>
+                                                                    <div class="absolute bottom-0 left-0 right-0 bg-black/50 text-[8px] text-white text-center py-0.5">点击查看描述</div>
+                                                                </div>
+                                                            </div>
+                                                            <div v-else-if="msg.type === 'location'" class="flex items-center gap-2">
+                                                                <i class="fas fa-map-marker-alt text-red-500"></i>
+                                                                <span>{{ msg.content }}</span>
+                                                            </div>
+                                                            <div v-else-if="msg.type === 'red-envelope'" 
+                                                                 @click="collectRedPacket(msg)"
+                                                                 class="bg-orange-500 text-white p-3 rounded-lg flex items-center gap-3 min-w-[150px] cursor-pointer hover:bg-orange-600 transition-colors relative overflow-hidden">
+                                                                <div v-if="msg.collected" class="absolute inset-0 bg-black/20 flex items-center justify-center text-[10px] font-bold">已领取</div>
+                                                                <i class="fas fa-gift text-2xl" :class="msg.collected ? 'text-gray-300' : 'text-yellow-300'"></i>
+                                                                <div>
+                                                                    <div class="font-bold">红包</div>
+                                                                    <div class="text-[10px] opacity-80">{{ msg.content }} 哥谭币</div>
+                                                                </div>
+                                                            </div>
+                                                            <div v-else-if="msg.type === 'transfer'" 
+                                                                 @click="collectRedPacket(msg)"
+                                                                 class="bg-blue-600 text-white p-3 rounded-lg flex items-center gap-3 min-w-[150px] cursor-pointer hover:bg-blue-700 transition-colors relative overflow-hidden">
+                                                                <div v-if="msg.collected" class="absolute inset-0 bg-black/20 flex items-center justify-center text-[10px] font-bold">已领取</div>
+                                                                <i class="fas fa-dollar-sign text-2xl" :class="msg.collected ? 'text-gray-300' : 'text-blue-200'"></i>
+                                                                <div>
+                                                                    <div class="font-bold">转账</div>
+                                                                    <div class="text-[10px] opacity-80">{{ msg.content }} 哥谭币</div>
+                                                                </div>
+                                                            </div>
+                                                            <div v-else>{{ msg.content }}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div v-if="phoneState.isTyping" class="flex justify-start">
+                                                    <div class="bg-white p-2 rounded-lg text-[10px] text-gray-400 animate-pulse shadow-sm">正在输入...</div>
+                                                </div>
+                                            </div>
+                                            <div class="p-2 bg-zinc-100 border-t border-zinc-300 flex flex-col gap-2">
+                                                <div class="flex gap-4 px-2 text-zinc-500 text-lg">
+                                                    <button @click="$refs.phoneImageInput.click()" title="发送图片"><i class="far fa-image"></i></button>
+                                                    <button @click="showPhoneImageDescModal = true" title="描述图片"><i class="fas fa-camera"></i></button>
+                                                    <button @click="showPhoneLocationModal = true" title="发送定位"><i class="fas fa-map-marker-alt"></i></button>
+                                                    <button @click="phoneMoneyType = 'red-envelope'; showPhoneMoneyModal = true" title="发红包"><i class="fas fa-gift"></i></button>
+                                                    <button @click="phoneMoneyType = 'transfer'; showPhoneMoneyModal = true" title="转账"><i class="fas fa-dollar-sign"></i></button>
+                                                    <input type="file" ref="phoneImageInput" class="hidden" accept="image/*" @change="sendPhoneRealImage">
+                                                </div>
+                                                <div class="flex gap-2 items-center">
+                                                    <input ref="phoneInputRef" v-model="phoneChatInput" @keydown.enter.prevent="sendPhoneMessage" placeholder="发送消息..." class="flex-1 bg-white border border-zinc-300 rounded px-3 py-2 text-xs focus:outline-none">
+                                                    <button @click="sendPhoneMessage" class="bg-green-600 text-white px-4 py-2 rounded text-xs font-bold">发送</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Me Tab -->
+                                    <div v-if="phoneState.chatTab === 'me'" class="h-full flex flex-col bg-[#f7f7f7] text-black">
+                                        <div class="h-12 bg-white flex justify-center items-center px-4 sticky top-0 z-10">
+                                            <h3 class="font-bold text-black text-base">我</h3>
+                                        </div>
+                                        <div class="flex-1 overflow-y-auto">
+                                            <div class="bg-white p-6 flex items-center gap-4 mb-4">
+                                                <img :src="user.phoneData.momentsAvatar" class="w-16 h-16 rounded-lg object-cover">
+                                                <div class="flex-1">
+                                                    <h2 class="text-xl font-bold">{{ user.phoneData.momentsNickname }}</h2>
+                                                    <p class="text-sm text-gray-500">微信号: {{ user.name }}</p>
+                                                </div>
+                                                <i class="fas fa-qrcode text-gray-400"></i>
+                                                <i class="fas fa-chevron-right text-gray-300"></i>
+                                            </div>
+
+                                            <div class="bg-white mb-4">
+                                                <div class="p-4 flex items-center justify-between border-b border-gray-50 active:bg-gray-100 cursor-pointer">
+                                                    <div class="flex items-center gap-3">
+                                                        <i class="fas fa-wallet text-blue-500 text-xl w-6"></i>
+                                                        <span class="text-base">支付</span>
+                                                    </div>
+                                                    <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
+                                                </div>
+                                            </div>
+
+                                            <div class="bg-white mb-4">
+                                                <div @click="phoneState.chatTab = 'moments'" class="p-4 flex items-center justify-between border-b border-gray-50 active:bg-gray-100 cursor-pointer">
+                                                    <div class="flex items-center gap-3">
+                                                        <i class="fas fa-bookmark text-red-500 text-xl w-6"></i>
+                                                        <span class="text-base">收藏</span>
+                                                    </div>
+                                                    <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
+                                                </div>
+                                                <div @click="phoneState.chatTab = 'moments'" class="p-4 flex items-center justify-between border-b border-gray-50 active:bg-gray-100 cursor-pointer">
+                                                    <div class="flex items-center gap-3">
+                                                        <i class="fas fa-image text-blue-400 text-xl w-6"></i>
+                                                        <span class="text-base">朋友圈</span>
+                                                    </div>
+                                                    <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
+                                                </div>
+                                                <div class="p-4 flex items-center justify-between border-b border-gray-50 active:bg-gray-100 cursor-pointer">
+                                                    <div class="flex items-center gap-3">
+                                                        <i class="fas fa-smile text-yellow-500 text-xl w-6"></i>
+                                                        <span class="text-base">表情</span>
+                                                    </div>
+                                                    <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
+                                                </div>
+                                            </div>
+
+                                            <div class="bg-white">
+                                                <div @click="openMomentsSettings" class="p-4 flex items-center justify-between active:bg-gray-100 cursor-pointer">
+                                                    <div class="flex items-center gap-3">
+                                                        <i class="fas fa-cog text-blue-600 text-xl w-6"></i>
+                                                        <span class="text-base">设置</span>
+                                                    </div>
+                                                    <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Discover Tab -->
+                                    <div v-if="phoneState.chatTab === 'discover'" class="h-full flex flex-col bg-[#f7f7f7]">
+                                        <div class="h-12 bg-[#f7f7f7] flex justify-center items-center px-4 sticky top-0 z-10">
+                                            <h3 class="font-bold text-black text-base">发现</h3>
+                                        </div>
+                                        <div class="flex-1 overflow-y-auto py-4 space-y-4">
+                                            <div @click="phoneState.chatTab = 'moments'" class="bg-white p-3 flex items-center justify-between cursor-pointer active:bg-gray-100">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded flex items-center justify-center text-white text-lg"><i class="fas fa-camera-retro"></i></div>
+                                                    <span class="text-base text-black">朋友圈</span>
+                                                </div>
+                                                <div class="flex items-center gap-2">
+                                                    <div v-if="phoneState.hasNewMoments" class="w-2 h-2 bg-red-500 rounded-full"></div>
+                                                    <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
+                                                </div>
+                                            </div>
+
+                                            <div class="bg-white">
+                                                <div class="p-3 flex items-center justify-between cursor-pointer active:bg-gray-100 border-b border-gray-50">
+                                                    <div class="flex items-center gap-3">
+                                                        <div class="w-8 h-8 bg-red-500 rounded flex items-center justify-center text-white text-lg"><i class="fas fa-qrcode"></i></div>
+                                                        <span class="text-base text-black">扫一扫</span>
+                                                    </div>
+                                                    <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
+                                                </div>
+                                                <div class="p-3 flex items-center justify-between cursor-pointer active:bg-gray-100">
+                                                    <div class="flex items-center gap-3">
+                                                        <div class="w-8 h-8 bg-blue-500 rounded flex items-center justify-center text-white text-lg"><i class="fas fa-shake"></i></div>
+                                                        <span class="text-base text-black">摇一摇</span>
+                                                    </div>
+                                                    <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
+                                                </div>
+                                            </div>
+
+                                            <div class="bg-white">
+                                                <div class="p-3 flex items-center justify-between cursor-pointer active:bg-gray-100 border-b border-gray-50">
+                                                    <div class="flex items-center gap-3">
+                                                        <div class="w-8 h-8 bg-yellow-500 rounded flex items-center justify-center text-white text-lg"><i class="fas fa-search"></i></div>
+                                                        <span class="text-base text-black">看一看</span>
+                                                    </div>
+                                                    <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
+                                                </div>
+                                                <div class="p-3 flex items-center justify-between cursor-pointer active:bg-gray-100">
+                                                    <div class="flex items-center gap-3">
+                                                        <div class="w-8 h-8 bg-red-400 rounded flex items-center justify-center text-white text-lg"><i class="fas fa-bullseye"></i></div>
+                                                        <span class="text-base text-black">搜一搜</span>
+                                                    </div>
+                                                    <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Moments View (Sub-view of Discover) -->
+                                    <div v-if="phoneState.chatTab === 'moments'" class="h-full flex flex-col bg-white text-black relative">
+                                        <div class="h-12 bg-white border-b border-zinc-200 flex items-center px-4 sticky top-0 z-20">
+                                            <button @click="phoneState.chatTab = 'discover'" class="mr-4 text-zinc-600"><i class="fas fa-chevron-left"></i></button>
+                                            <span class="font-bold text-sm flex-1">朋友圈</span>
+                                            <div class="flex items-center gap-4">
+                                                <button @click="phoneState.showPostMomentModal = true" class="text-zinc-600" title="发布动态"><i class="fas fa-plus"></i></button>
+                                                <button @click="openMomentsSettings" class="text-zinc-600" title="设置"><i class="fas fa-camera"></i></button>
+                                            </div>
+                                        </div>
+                                        <div class="flex-1 overflow-y-auto custom-scrollbar">
+                                            <div @click="openMomentsSettings" class="h-48 bg-zinc-300 relative shrink-0 cursor-pointer group">
+                                                <img :src="user.phoneData.momentsBackground" class="w-full h-full object-cover">
+                                                <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                                    <span class="text-white text-[10px] opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 px-2 py-1 rounded">点击更换背景</span>
+                                                </div>
+                                                <div class="absolute -bottom-6 right-4 flex items-end gap-3">
+                                                    <div class="flex flex-col items-end mb-2">
+                                                        <span class="text-white font-bold text-sm drop-shadow-md">{{ user.phoneData.momentsNickname }}</span>
+                                                        <span class="text-gray-300 text-[10px] drop-shadow-sm">{{ user.phoneData.signature }}</span>
+                                                    </div>
+                                                    <img :src="user.phoneData.momentsAvatar" class="w-16 h-16 rounded-lg border-2 border-white shadow-lg">
+                                                </div>
+                                            </div>
+                                            <div class="mt-10 p-4 space-y-8">
+                                                <div v-if="user.phoneData.moments.length === 0" class="text-center py-10 text-gray-400 italic text-xs">朋友圈空空如也。</div>
+                                                <div v-for="moment in (user.phoneData.moments || []).slice().reverse()" :key="moment.id" class="flex gap-3 border-b border-zinc-100 pb-4">
+                                                    <img :src="moment.authorAvatar" class="w-10 h-10 rounded shadow-sm shrink-0">
+                                                    <div class="flex-1 min-w-0">
+                                                        <div class="text-sm font-bold text-blue-900 mb-1">{{ moment.authorName }}</div>
+                                                        <p class="text-sm text-gray-800 mb-2 leading-relaxed">{{ moment.content }}</p>
+                                                        <div v-if="moment.image" class="mb-2">
+                                                            <img :src="moment.image" class="max-w-full rounded border border-zinc-100">
+                                                        </div>
+                                                        <div class="flex justify-between items-center">
+                                                            <span class="text-[10px] text-gray-400">{{ moment.time }}</span>
+                                                            <div class="flex items-center gap-3">
+                                                                <button @click="likeMoment(moment)" class="text-blue-900 text-xs hover:scale-110 transition-transform">
+                                                                    <i :class="moment.likes && moment.likes.includes(user.phoneData.momentsNickname) ? 'fas fa-heart' : 'far fa-heart'"></i>
+                                                                </button>
+                                                                <button @click="phoneState.commentingOn = moment.id" class="bg-zinc-100 px-2 py-0.5 rounded text-blue-900 text-xs hover:bg-zinc-200">
+                                                                    <i class="far fa-comment-dots"></i>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <!-- Likes and Comments Section -->
+                                                        <div v-if="(moment.likes && moment.likes.length > 0) || (moment.comments && moment.comments.length > 0)" class="mt-2 bg-zinc-50 rounded overflow-hidden">
+                                                            <div v-if="moment.likes && moment.likes.length > 0" class="p-2 text-[11px] text-blue-900 border-b border-zinc-100 flex items-center gap-1">
+                                                                <i class="fas fa-heart text-[9px]"></i> {{ moment.likes.join(', ') }}
+                                                            </div>
+                                                            <div v-if="moment.comments && moment.comments.length > 0" class="p-2 space-y-1">
+                                                                <div v-for="(comment, idx) in moment.comments" :key="idx" class="text-[11px] leading-tight">
+                                                                    <span class="font-bold text-blue-900">{{ comment.author }}:</span>
+                                                                    <span class="text-gray-800 ml-1">{{ comment.text }}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Comment Input Overlay -->
+                                        <div v-if="phoneState.commentingOn" class="absolute inset-0 bg-black/40 z-30 flex items-end">
+                                            <div class="w-full bg-white p-3 flex items-center gap-2 animate-slide-up">
+                                                <input v-model="phoneState.momentCommentText" type="text" placeholder="评论" class="flex-1 bg-zinc-100 rounded px-3 py-2 text-sm outline-none" @keyup.enter="addComment">
+                                                <button @click="addComment" class="bg-green-500 text-white px-4 py-2 rounded text-sm font-bold">发送</button>
+                                                <button @click="phoneState.commentingOn = null; phoneState.momentCommentText = ''" class="text-gray-400 px-2"><i class="fas fa-times"></i></button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Post Moment Modal -->
+                                        <div v-if="phoneState.showPostMomentModal" class="absolute inset-0 bg-white z-40 flex flex-col animate-slide-up">
+                                            <div class="h-12 bg-white border-b border-zinc-200 flex items-center px-4 shrink-0">
+                                                <button @click="phoneState.showPostMomentModal = false; phoneState.postMomentText = ''" class="mr-4 text-zinc-600 text-sm">取消</button>
+                                                <span class="font-bold text-sm flex-1 text-center">发表文字</span>
+                                                <button @click="postMoment" :disabled="!phoneState.postMomentText.trim()" :class="phoneState.postMomentText.trim() ? 'bg-green-500 text-white' : 'bg-green-200 text-white'" class="px-3 py-1 rounded text-xs font-bold transition-colors">发表</button>
+                                            </div>
+                                            <div class="flex-1 p-4">
+                                                <textarea v-model="phoneState.postMomentText" placeholder="这一刻的想法..." class="w-full h-40 text-sm outline-none resize-none" autofocus></textarea>
+                                            </div>
+                                        </div>
+
+                                        <!-- Moments Settings Modal -->
+                                        <div v-if="phoneState.showMomentsSettings" class="absolute inset-0 bg-zinc-100 z-40 flex flex-col">
+                                            <div class="h-12 bg-white border-b border-zinc-200 flex items-center px-4 shrink-0">
+                                                <button @click="phoneState.showMomentsSettings = false" class="mr-4 text-zinc-600"><i class="fas fa-chevron-left"></i></button>
+                                                <span class="font-bold text-sm">个人信息设置</span>
+                                                <div class="flex-1"></div>
+                                                <button @click="saveMomentsSettings" class="bg-green-500 text-white px-3 py-1 rounded text-xs">保存</button>
+                                            </div>
+                                            <div class="flex-1 overflow-y-auto p-4 space-y-6">
+                                                <div class="space-y-2">
+                                                    <label class="text-xs text-gray-500 font-bold uppercase tracking-wider">朋友圈昵称</label>
+                                                    <input v-model="phoneState.newMomentsNickname" type="text" class="w-full bg-white border border-zinc-200 rounded p-3 text-sm outline-none focus:border-green-500">
+                                                </div>
+                                                <div class="space-y-2">
+                                                    <label class="text-xs text-gray-500 font-bold uppercase tracking-wider">个性签名</label>
+                                                    <textarea v-model="phoneState.newSignature" class="w-full bg-white border border-zinc-200 rounded p-3 text-sm outline-none focus:border-green-500 h-20 resize-none"></textarea>
+                                                </div>
+                                                <div class="space-y-2">
+                                                    <label class="text-xs text-gray-500 font-bold uppercase tracking-wider">头像 URL</label>
+                                                    <input v-model="phoneState.newMomentsAvatar" type="text" class="w-full bg-white border border-zinc-200 rounded p-3 text-sm outline-none focus:border-green-500">
+                                                    <div class="flex justify-center mt-2">
+                                                        <img :src="phoneState.newMomentsAvatar || user.phoneData.momentsAvatar" class="w-16 h-16 rounded-lg border border-zinc-200">
+                                                    </div>
+                                                </div>
+                                                <div class="space-y-2">
+                                                    <label class="text-xs text-gray-500 font-bold uppercase tracking-wider">背景图 URL</label>
+                                                    <input v-model="phoneState.newMomentsBackground" type="text" class="w-full bg-white border border-zinc-200 rounded p-3 text-sm outline-none focus:border-green-500">
+                                                    <div class="mt-2 aspect-video rounded-lg overflow-hidden border border-zinc-200">
+                                                        <img :src="phoneState.newMomentsBackground || user.phoneData.momentsBackground" class="w-full h-full object-cover">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="p-2 bg-zinc-100 border-t border-zinc-300 flex flex-col gap-2">
-                                    <div class="flex gap-4 px-2 text-zinc-500 text-lg">
-                                        <button @click="$refs.phoneImageInput.click()" title="发送图片"><i class="far fa-image"></i></button>
-                                        <button @click="showPhoneImageDescModal = true" title="描述图片"><i class="fas fa-camera"></i></button>
-                                        <button @click="showPhoneLocationModal = true" title="发送定位"><i class="fas fa-map-marker-alt"></i></button>
-                                        <button @click="phoneMoneyType = 'red-envelope'; showPhoneMoneyModal = true" title="发红包"><i class="fas fa-gift"></i></button>
-                                        <button @click="phoneMoneyType = 'transfer'; showPhoneMoneyModal = true" title="转账"><i class="fas fa-dollar-sign"></i></button>
-                                        <input type="file" ref="phoneImageInput" class="hidden" accept="image/*" @change="sendPhoneRealImage">
+
+                                <!-- Bottom Navigation Bar -->
+                                <div v-if="phoneState.chatTab !== 'moments' && !phoneState.selectedContactId && !phoneState.selectedFriendRequestId && phoneState.chatTab !== 'new-friends'" 
+                                     class="h-14 bg-[#f7f7f7] border-t border-gray-200 flex items-center justify-around shrink-0">
+                                    <div @click="phoneState.chatTab = 'chat'; phoneState.selectedContactId = null; phoneState.selectedFriendRequestId = null" class="flex flex-col items-center gap-0.5 cursor-pointer relative">
+                                        <i class="text-xl" :class="phoneState.chatTab === 'chat' ? 'fas fa-comment text-[#07c160]' : 'far fa-comment text-black'"></i>
+                                        <span class="text-[10px]" :class="phoneState.chatTab === 'chat' ? 'text-[#07c160]' : 'text-black'">微信</span>
                                     </div>
-                                    <div class="flex gap-2 items-center">
-                                        <input ref="phoneInputRef" v-model="phoneChatInput" @keydown.enter.prevent="sendPhoneMessage" placeholder="发送消息..." class="flex-1 bg-white border border-zinc-300 rounded px-3 py-2 text-xs focus:outline-none">
-                                        <button @click="sendPhoneMessage" class="bg-green-600 text-white px-4 py-2 rounded text-xs font-bold">发送</button>
+                                    <div @click="phoneState.chatTab = 'contacts'; phoneState.selectedContactId = null; phoneState.selectedFriendRequestId = null" class="flex flex-col items-center gap-0.5 cursor-pointer relative">
+                                        <i class="text-xl" :class="phoneState.chatTab === 'contacts' ? 'fas fa-address-book text-[#07c160]' : 'far fa-address-book text-black'"></i>
+                                        <span class="text-[10px]" :class="phoneState.chatTab === 'contacts' ? 'text-[#07c160]' : 'text-black'">通讯录</span>
+                                        <div v-if="user.phoneData.friendRequests.filter(r => r.status === 'pending').length > 0" 
+                                             class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white text-[9px] font-bold">
+                                            {{ user.phoneData.friendRequests.filter(r => r.status === 'pending').length }}
+                                        </div>
+                                    </div>
+                                    <div @click="phoneState.chatTab = 'discover'; phoneState.selectedContactId = null; phoneState.selectedFriendRequestId = null" class="flex flex-col items-center gap-0.5 cursor-pointer relative">
+                                        <i class="text-xl" :class="phoneState.chatTab === 'discover' ? 'fas fa-compass text-[#07c160]' : 'far fa-compass text-black'"></i>
+                                        <span class="text-[10px]" :class="phoneState.chatTab === 'discover' ? 'text-[#07c160]' : 'text-black'">发现</span>
+                                        <div v-if="phoneState.hasNewMoments" class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></div>
+                                    </div>
+                                    <div @click="phoneState.chatTab = 'me'; phoneState.selectedContactId = null; phoneState.selectedFriendRequestId = null" class="flex flex-col items-center gap-0.5 cursor-pointer">
+                                        <i class="text-xl" :class="phoneState.chatTab === 'me' ? 'fas fa-user text-[#07c160]' : 'far fa-user text-black'"></i>
+                                        <span class="text-[10px]" :class="phoneState.chatTab === 'me' ? 'text-[#07c160]' : 'text-black'">我</span>
                                     </div>
                                 </div>
                             </div>
@@ -1112,43 +1551,17 @@
                                     <h1 class="font-black text-xl italic tracking-tighter">GOTHAM GAZETTE</h1>
                                     <div class="text-[10px] font-bold text-gray-500">{{ new Date().toLocaleDateString() }}</div>
                                 </div>
-                                <div class="flex-1 overflow-y-auto p-4 space-y-6">
-                                    <div v-if="user.phoneData.news.length === 0" class="text-center py-10 text-gray-400 italic text-xs">今日暂无重大新闻推送。</div>
-                                    <div v-for="item in user.phoneData.news.slice().reverse()" :key="item.id" class="border-b border-zinc-200 pb-4">
-                                        <div class="text-[10px] font-bold text-red-600 mb-1 uppercase tracking-widest">{{ item.type }}</div>
-                                        <h2 class="text-lg font-bold leading-tight mb-2 hover:text-red-700 cursor-pointer">{{ item.title }}</h2>
-                                        <p class="text-xs text-gray-600 leading-relaxed">{{ item.summary }}</p>
-                                        <div class="mt-2 text-[10px] text-gray-400 font-bold">Source: {{ item.source }}</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Moments App -->
-                            <div v-if="phoneState.currentApp === 'moments'" class="flex flex-col h-full bg-white text-black">
-                                <div class="h-48 bg-zinc-300 relative shrink-0">
-                                    <img src="https://picsum.photos/seed/gotham/600/400" class="w-full h-full object-cover">
-                                    <div class="absolute -bottom-6 right-4 flex items-center gap-3">
-                                        <span class="text-white font-bold text-sm drop-shadow-md">{{ user.nickname }}</span>
-                                        <img src="https://placehold.co/100x100/444/white?text=Me" class="w-16 h-16 rounded-lg border-2 border-white shadow-lg">
-                                    </div>
-                                </div>
-                                <div class="mt-10 flex-1 overflow-y-auto p-4 space-y-8">
-                                    <div v-if="user.phoneData.moments.length === 0" class="text-center py-10 text-gray-400 italic text-xs">朋友圈空空如也。</div>
-                                    <div v-for="moment in user.phoneData.moments.slice().reverse()" :key="moment.id" class="flex gap-3">
-                                        <img :src="moment.authorAvatar" class="w-10 h-10 rounded shadow-sm shrink-0">
-                                        <div class="flex-1 min-w-0">
-                                            <div class="text-sm font-bold text-blue-900 mb-1">{{ moment.authorName }}</div>
-                                            <p class="text-sm text-gray-800 mb-2 leading-relaxed">{{ moment.content }}</p>
-                                            <div v-if="moment.image" class="mb-2">
-                                                <img :src="moment.image" class="max-w-full rounded border border-zinc-100">
-                                            </div>
-                                            <div class="flex justify-between items-center">
-                                                <span class="text-[10px] text-gray-400">{{ moment.time }}</span>
-                                                <div class="bg-zinc-100 px-2 py-0.5 rounded text-blue-900 text-xs"><i class="far fa-comment-dots"></i></div>
-                                            </div>
-                                            <div v-if="moment.likes && moment.likes.length > 0" class="mt-2 bg-zinc-50 p-2 rounded text-[10px] text-blue-900">
-                                                <i class="far fa-heart mr-1"></i> {{ moment.likes.join(', ') }}
-                                            </div>
+                                <div class="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
+                                    <div v-if="user.phoneData.news.length === 0" class="text-center py-20 text-gray-400 italic text-sm">今日暂无重大新闻。</div>
+                                    <div v-for="newsItem in user.phoneData.news" :key="newsItem.id" class="border-b border-zinc-100 pb-6 last:border-0">
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <span class="bg-red-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded uppercase">{{ newsItem.type }}</span>
+                                            <span class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{{ newsItem.source }}</span>
+                                        </div>
+                                        <h2 class="text-lg font-black leading-tight mb-2 hover:text-red-700 cursor-pointer transition-colors">{{ newsItem.title }}</h2>
+                                        <p class="text-xs text-gray-600 leading-relaxed">{{ newsItem.summary }}</p>
+                                        <div class="mt-3 flex justify-end">
+                                            <span class="text-[10px] text-gray-400">阅读全文 <i class="fas fa-chevron-right ml-1"></i></span>
                                         </div>
                                     </div>
                                 </div>
@@ -1767,6 +2180,113 @@
                 const STORAGE_KEY = 'gotham_save_main'; 
                 const OLD_KEYS = ['gotham_data_v6_3', 'gotham_data_v6_2', 'gotham_data_v6_1'];
 
+                let initialUser = { 
+                    coins: 500, inventory: [], nickname: '哥谭市民', gender: 'Secret', birthday: '', 
+                    job: '', currentStatus: '正在休息',
+                    stats: { STR: 50, DEX: 50, CON: 50, INT: 50 },
+                    skills: { '侦查': 40, '潜行': 40, '妙手': 40, '话术': 40, '斗殴': 40, '闪避': 40 },
+                    hasCreatedChar: false,
+                    schedule: [], 
+                    calendarSources: [], 
+                    missionReports: [], mailbox: [], todos: [], deadlines: [], 
+                    dailyMailCount: 0, lastMailDate: '', 
+                    lastReportDate: '', 
+                    lastLoginDate: '', 
+                    lastLogin: Date.now(),
+                    phoneData: {
+                        chats: [],
+                        moments: [],
+                        news: [],
+                        delivery: [],
+                        tarot: [],
+                        walletTransactions: [],
+                        friends: [1, 2, 3, 4, 5],
+                        friendRequests: [],
+                        momentsBackground: 'https://picsum.photos/seed/gotham/600/400',
+                        momentsAvatar: 'https://placehold.co/100x100/444/white?text=Me',
+                        momentsNickname: '哥谭市民',
+                        signature: '这个人很懒，什么都没有留下。'
+                    }
+                };
+
+                const defaultCats = [
+                    { id: 1, name: '布鲁斯·韦恩', breed: '纯黑长毛缅因猫', eyeColor: '钢蓝色', personality: '多疑、控制欲强、压抑', status: '蹲在柜顶俯瞰全屋', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/1a1a1a/white?text=Batman', image_human: '', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '这座城市的阴影在召唤我...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Batman (Bruce Wayne). Paranoid, stoic, detective. Dark brooding. NOT arrogant. Canon compliance: Blue eyes, Black hair.", birthday: "02-19", isMarvel: false },
+                    { id: 2, name: '迪克·格雷森', breed: '黑蓝相间土耳其安哥拉猫', eyeColor: '电光蓝', personality: '阳光、粘人、爱吃麦片', status: '试图在窗帘上荡秋千', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/007cc2/white?text=Nightwing', image_human: '', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '这里好高！我喜欢！', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Nightwing (Dick Grayson). Energetic, charming, acrobat. Big brother figure. Canon compliance: Blue eyes, Black hair.", birthday: "03-20", isMarvel: false },
+                    { id: 3, name: '杰森·陶德', breed: '黑白斑纹街头野猫', eyeColor: '蓝色', personality: '暴躁、护食、体格强壮', status: '霸占了最大的那个枕头', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/c20000/white?text=RedHood', image_human: '', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '别过来，除非你有吃的。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Red Hood (Jason Todd). Grumpy, street-smart, secretly cares. Uses slang. Canon compliance: Blue eyes, Black/White hair.", birthday: "08-16", isMarvel: false },
+                    { id: 4, name: '提姆·德雷克', breed: '深色暹罗猫', eyeColor: '冰蓝色', personality: '过劳、咖啡因成瘾、极客', status: '盯着发光的路由器发呆', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/555/white?text=RedRobin', image_human: '', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '这个路由器的频率有点奇怪...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Red Robin (Tim Drake). Sleepy genius, detective, tech-savvy. Polite but awkward. NOT arrogant. Canon compliance: Blue eyes, Black hair.", birthday: "07-19", isMarvel: false },
+                    { id: 5, name: '达米安·韦恩', breed: '黑色东方短毛猫', eyeColor: '祖母绿', personality: '傲慢、暴力、贵族气派', status: '正在磨爪子准备战斗', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/006400/white?text=Robin', image_human: '', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: 'Tt. 愚蠢的家具。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Robin (Damian Wayne). Arrogant, skilled assassin, heir. Says 'Tt'. Haughty. Canon compliance: Green eyes, Black hair.", birthday: "08-01", isMarvel: false }
+                ];
+
+                let initialCats = [...defaultCats];
+                let initialShopItems = [
+                    { id: 1, name: '阿尔弗雷德特制猫饭', price: 50, icon: '🍲', desc: '管家侠亲手制作，回复体力', effect: 2, type: 'consumable', category: 'food' },
+                    { id: 2, name: '氪石发光球', price: 80, icon: '🟢', desc: '对氪星猫有奇效，普通猫觉得好看', effect: 1, type: 'consumable', category: 'toy' },
+                    { id: 3, name: '微型抓钩枪', price: 150, icon: '🔫', desc: '虽然不能用，但杰森很喜欢', effect: 3, type: 'consumable', category: 'toy' },
+                    { id: 4, name: '猫薄荷手雷', price: 60, icon: '💣', desc: '会让猫猫嗨到不行的战术装备', effect: 2, type: 'consumable', category: 'toy' },
+                    { id: 5, name: '谜语人的问号球', price: 40, icon: '❓', desc: '滚来滚去很烦人', effect: 1, type: 'consumable', category: 'toy' },
+                    { id: 6, name: '蝙蝠制服修复包', price: 100, icon: '🧵', desc: '虽然猫不穿衣服，但修补窝很好用', effect: 4, type: 'consumable', category: 'supply' },
+                    { id: 7, name: '阿卡姆特供猫草', price: 70, icon: '🌿', desc: '毒藤女培育，也许有副作用?', effect: 3, type: 'consumable', category: 'food' }
+                ];
+
+                let initialSettings = { 
+                    apiKey: '', 
+                    baseUrl: '', 
+                    model: 'gemini-3-flash-preview', 
+                    temperature: 0.8, 
+                    autoUpdate: true 
+                };
+
+                let savedData = localStorage.getItem(STORAGE_KEY);
+                if (!savedData) {
+                    for (const oldKey of OLD_KEYS) {
+                        const oldData = localStorage.getItem(oldKey);
+                        if (oldData) {
+                            savedData = oldData;
+                            localStorage.setItem(STORAGE_KEY, oldData);
+                            break;
+                        }
+                    }
+                }
+
+                const user = reactive(initialUser);
+                const settings = reactive(initialSettings);
+                const cats = ref(initialCats);
+                const shopItems = ref(initialShopItems);
+
+                if (savedData) {
+                    try {
+                        const parsed = JSON.parse(savedData);
+                        if (parsed.user) {
+                            Object.assign(user, parsed.user);
+                            if (!user.phoneData) user.phoneData = {};
+                            if (!user.phoneData.friends) user.phoneData.friends = [];
+                            if (!user.phoneData.friendRequests) user.phoneData.friendRequests = [];
+                            if (!user.phoneData.chats) user.phoneData.chats = [];
+                            if (!user.phoneData.moments) user.phoneData.moments = [];
+                        }
+                        if (parsed.settings) {
+                            if (parsed.settings.model && parsed.settings.model.includes('gpt')) {
+                                parsed.settings.model = 'gemini-3-flash-preview';
+                                parsed.settings.baseUrl = '';
+                            }
+                            Object.assign(settings, parsed.settings);
+                        }
+                        if (parsed.cats && parsed.cats.length > 0) cats.value = parsed.cats;
+                        if (parsed.shopItems && parsed.shopItems.length > 0) shopItems.value = parsed.shopItems;
+                    } catch (e) {
+                        console.error("数据损坏，重置为默认", e);
+                    }
+                }
+                
+                if (!user.todos) user.todos = [];
+                if (!user.deadlines) user.deadlines = [];
+                if (!user.schedule) user.schedule = [];
+                if (!user.calendarSources) user.calendarSources = [];
+                if (!user.mailbox) user.mailbox = [];
+                if (!user.missionReports) user.missionReports = [];
+                if (!user.inventory) user.inventory = [];
+                if (!user.gender) user.gender = 'Secret';
+
                 const currentTab = ref('mission');
                 const contentArea = ref(null);
                 const chatMessagesRef = ref(null);
@@ -1967,41 +2487,38 @@
                     nextTick(() => { if(logWindow.value) logWindow.value.scrollTop = logWindow.value.scrollHeight; });
                 });
 
-                let initialUser = { 
-                    coins: 500, inventory: [], nickname: '哥谭市民', gender: 'Secret', birthday: '', 
-                    job: '', currentStatus: '正在休息',
-                    stats: { STR: 50, DEX: 50, CON: 50, INT: 50 },
-                    skills: { '侦查': 40, '潜行': 40, '妙手': 40, '话术': 40, '斗殴': 40, '闪避': 40 },
-                    hasCreatedChar: false,
-                    schedule: [], 
-                    calendarSources: [], 
-                    missionReports: [], mailbox: [], todos: [], deadlines: [], 
-                    dailyMailCount: 0, lastMailDate: '', 
-                    lastReportDate: '', 
-                    lastLoginDate: '', 
-                    lastLogin: Date.now(),
-                    phoneData: {
-                        chats: [],
-                        moments: [],
-                        news: [],
-                        delivery: [],
-                        tarot: [],
-                        walletTransactions: []
+                const phoneIdentities = computed(() => {
+                    const base = {
+                        1: { name: '布鲁斯·韦恩', avatar: 'https://placehold.co/100x100/1a1a1a/white?text=BW', role: '哥谭首富/正义联盟顾问', color: '#1a1a1a' },
+                        2: { name: '迪克·格雷森', avatar: 'https://placehold.co/100x100/007cc2/white?text=DG', role: '布鲁德海文警官/夜翼', color: '#007cc2' },
+                        3: { name: '杰森·陶德', avatar: 'https://placehold.co/100x100/c20000/white?text=JT', role: '自由职业者/红头罩', color: '#c20000' },
+                        4: { name: '提姆·德雷克', avatar: 'https://placehold.co/100x100/555/white?text=TD', role: '韦恩企业技术主管/红罗宾', color: '#555' },
+                        5: { name: '达米安·韦恩', avatar: 'https://placehold.co/100x100/006400/white?text=DW', role: '韦恩家族继承人/罗宾', color: '#006400' }
+                    };
+                    
+                    // Add all cats to identities
+                    if (cats && cats.value) {
+                        cats.value.forEach(cat => {
+                            if (!base[cat.id]) {
+                                base[cat.id] = {
+                                    name: cat.name,
+                                    avatar: cat.image,
+                                    role: cat.personality,
+                                    color: '#07c160'
+                                };
+                            }
+                        });
                     }
-                };
-                
-                const phoneIdentities = {
-                    1: { name: '布鲁斯·韦恩', avatar: 'https://placehold.co/100x100/1a1a1a/white?text=BW', role: '哥谭首富/正义联盟顾问', color: '#1a1a1a' },
-                    2: { name: '迪克·格雷森', avatar: 'https://placehold.co/100x100/007cc2/white?text=DG', role: '布鲁德海文警官/夜翼', color: '#007cc2' },
-                    3: { name: '杰森·陶德', avatar: 'https://placehold.co/100x100/c20000/white?text=JT', role: '自由职业者/红头罩', color: '#c20000' },
-                    4: { name: '提姆·德雷克', avatar: 'https://placehold.co/100x100/555/white?text=TD', role: '韦恩企业技术主管/红罗宾', color: '#555' },
-                    5: { name: '达米安·韦恩', avatar: 'https://placehold.co/100x100/006400/white?text=DW', role: '韦恩家族继承人/罗宾', color: '#006400' }
-                };
+                    
+                    return base;
+                });
 
                 const phoneState = reactive({
                     show: false,
-                    currentApp: 'home', // 'home', 'chat', 'moments', 'news', 'delivery', 'tarot'
+                    currentApp: 'home', // 'home', 'chat', 'news', 'delivery', 'tarot'
+                    chatTab: 'chat', // 'chat', 'contacts', 'discover', 'moments', 'new-friends'
                     selectedContactId: null,
+                    selectedFriendRequestId: null,
                     isTyping: false,
                     tarotQuestion: '',
                     tarotResult: null,
@@ -2012,26 +2529,18 @@
                         { id: 3, name: '大都会能量饮料', price: 15, desc: '喝完感觉能飞（并不）。', icon: '🥤' },
                         { id: 4, name: '阿卡姆特制营养餐', price: 30, desc: '口感一言难尽，但管饱。', icon: '🥣' }
                     ],
-                    isOrdering: false
+                    isOrdering: false,
+                    showMomentsSettings: false,
+                    newMomentsNickname: '',
+                    newMomentsAvatar: '',
+                    newMomentsBackground: '',
+                    newSignature: '',
+                    momentCommentText: '',
+                    commentingOn: null,
+                    showPostMomentModal: false,
+                    postMomentText: ''
                 });
                 
-                let initialSettings = { 
-                    apiKey: '', 
-                    baseUrl: '', 
-                    model: 'gemini-3-flash-preview', 
-                    temperature: 0.8, 
-                    autoUpdate: true 
-                };
-
-                // Hardcoded 5 Default Cats (Fixed Data)
-                const defaultCats = [
-                    { id: 1, name: '布鲁斯·韦恩', breed: '纯黑长毛缅因猫', eyeColor: '钢蓝色', personality: '多疑、控制欲强、压抑', status: '蹲在柜顶俯瞰全屋', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/1a1a1a/white?text=Batman', image_human: '', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '这座城市的阴影在召唤我...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Batman (Bruce Wayne). Paranoid, stoic, detective. Dark brooding. NOT arrogant. Canon compliance: Blue eyes, Black hair.", birthday: "02-19", isMarvel: false },
-                    { id: 2, name: '迪克·格雷森', breed: '黑蓝相间土耳其安哥拉猫', eyeColor: '电光蓝', personality: '阳光、粘人、爱吃麦片', status: '试图在窗帘上荡秋千', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/007cc2/white?text=Nightwing', image_human: '', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '这里好高！我喜欢！', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Nightwing (Dick Grayson). Energetic, charming, acrobat. Big brother figure. Canon compliance: Blue eyes, Black hair.", birthday: "03-20", isMarvel: false },
-                    { id: 3, name: '杰森·陶德', breed: '黑白斑纹街头野猫', eyeColor: '蓝色', personality: '暴躁、护食、体格强壮', status: '霸占了最大的那个枕头', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/c20000/white?text=RedHood', image_human: '', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '别过来，除非你有吃的。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Red Hood (Jason Todd). Grumpy, street-smart, secretly cares. Uses slang. Canon compliance: Blue eyes, Black/White hair.", birthday: "08-16", isMarvel: false },
-                    { id: 4, name: '提姆·德雷克', breed: '深色暹罗猫', eyeColor: '冰蓝色', personality: '过劳、咖啡因成瘾、极客', status: '盯着发光的路由器发呆', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/555/white?text=RedRobin', image_human: '', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '这个路由器的频率有点奇怪...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Red Robin (Tim Drake). Sleepy genius, detective, tech-savvy. Polite but awkward. NOT arrogant. Canon compliance: Blue eyes, Black hair.", birthday: "07-19", isMarvel: false },
-                    { id: 5, name: '达米安·韦恩', breed: '黑色东方短毛猫', eyeColor: '祖母绿', personality: '傲慢、暴力、贵族气派', status: '正在磨爪子准备战斗', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/006400/white?text=Robin', image_human: '', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: 'Tt. 愚蠢的家具。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Robin (Damian Wayne). Arrogant, skilled assassin, heir. Says 'Tt'. Haughty. Canon compliance: Green eyes, Black hair.", birthday: "08-01", isMarvel: false }
-                ];
-
                 const parseAIJSON = (text) => {
                     try {
                         if (!text) return null;
@@ -2143,61 +2652,63 @@
                     }
                 };
 
-                let initialCats = [...defaultCats];
-                let initialShopItems = [
-                    { id: 1, name: '阿尔弗雷德特制猫饭', price: 50, icon: '🍲', desc: '管家侠亲手制作，回复体力', effect: 2, type: 'consumable', category: 'food' },
-                    { id: 2, name: '氪石发光球', price: 80, icon: '🟢', desc: '对氪星猫有奇效，普通猫觉得好看', effect: 1, type: 'consumable', category: 'toy' },
-                    { id: 3, name: '微型抓钩枪', price: 150, icon: '🔫', desc: '虽然不能用，但杰森很喜欢', effect: 3, type: 'consumable', category: 'toy' },
-                    { id: 4, name: '猫薄荷手雷', price: 60, icon: '💣', desc: '会让猫猫嗨到不行的战术装备', effect: 2, type: 'consumable', category: 'toy' },
-                    { id: 5, name: '谜语人的问号球', price: 40, icon: '❓', desc: '滚来滚去很烦人', effect: 1, type: 'consumable', category: 'toy' },
-                    { id: 6, name: '蝙蝠制服修复包', price: 100, icon: '🧵', desc: '虽然猫不穿衣服，但修补窝很好用', effect: 4, type: 'consumable', category: 'supply' },
-                    { id: 7, name: '阿卡姆特供猫草', price: 70, icon: '🌿', desc: '毒藤女培育，也许有副作用?', effect: 3, type: 'consumable', category: 'food' }
-                ];
+                const friendsList = computed(() => {
+                    if (!user.phoneData || !user.phoneData.friends) return [];
+                    return cats.value.filter(cat => user.phoneData.friends.includes(cat.id));
+                });
 
-                let savedData = localStorage.getItem(STORAGE_KEY);
-                if (!savedData) {
-                    for (const oldKey of OLD_KEYS) {
-                        const oldData = localStorage.getItem(oldKey);
-                        if (oldData) {
-                            savedData = oldData;
-                            localStorage.setItem(STORAGE_KEY, oldData);
-                            break;
-                        }
-                    }
-                }
+                const sendFriendRequest = async (catId) => {
+                    if (!settings.apiKey) return;
+                    if (!user.phoneData.friends) user.phoneData.friends = [];
+                    if (!user.phoneData.friendRequests) user.phoneData.friendRequests = [];
+                    
+                    if (user.phoneData.friends.includes(catId)) return;
+                    if (user.phoneData.friendRequests.some(r => r.catId === catId)) return;
 
-                const user = reactive(initialUser);
-                const settings = reactive(initialSettings);
-                const cats = ref(initialCats);
-                const shopItems = ref(initialShopItems);
+                    const cat = cats.value.find(c => c.id === catId);
+                    if (!cat) return;
 
-                if (savedData) {
+                    const identity = phoneIdentities.value[catId] || { name: cat.name, role: '神秘人' };
+                    
+                    const prompt = `
+                    [LOGIC D: FRIEND REQUEST EXCUSE]
+                    Character: ${identity.name}
+                    Human Identity/Role: ${identity.role}
+                    Task: Generate a "fake excuse" for ${identity.name} to add the user as a friend on WeChat.
+                    Rules:
+                    1. The excuse should be based on their human identity, not their cat identity.
+                    2. It should be slightly absurd, formal, or professional depending on the character.
+                    3. Examples: Bruce might mention a "business proposal" or "security audit". Dick might mention "gym promotion". Jason might mention "wrong number" or "debt collection".
+                    4. Language: Simplified Chinese.
+                    5. Max 30 words.
+                    Output: Just the excuse text.
+                    `;
+
                     try {
-                        const parsed = JSON.parse(savedData);
-                        if (parsed.user) Object.assign(user, parsed.user);
-                        if (parsed.settings) {
-                            // Migration: If old model is OpenAI, switch to Gemini
-                            if (parsed.settings.model && parsed.settings.model.includes('gpt')) {
-                                parsed.settings.model = 'gemini-3-flash-preview';
-                                parsed.settings.baseUrl = '';
-                            }
-                            Object.assign(settings, parsed.settings);
-                        }
-                        if (parsed.cats && parsed.cats.length > 0) cats.value = parsed.cats;
-                        if (parsed.shopItems && parsed.shopItems.length > 0) shopItems.value = parsed.shopItems;
+                        const excuse = await callAI(prompt, "You are a creative social media writer.", 200, ThinkingLevel.LOW);
+                        const cleanedExcuse = cleanText(excuse);
+                        
+                        user.phoneData.friendRequests.push({
+                            id: Date.now() + Math.random(),
+                            catId: catId,
+                            message: cleanedExcuse,
+                            status: 'pending',
+                            time: new Date().toLocaleString()
+                        });
+                        addLog(`收到来自 ${identity.name} 的好友申请`, 'info');
                     } catch (e) {
-                        console.error("数据损坏，重置为默认", e);
+                        console.error("Friend request generation failed", e);
                     }
-                }
-                
-                if (!user.todos) user.todos = [];
-                if (!user.deadlines) user.deadlines = [];
-                if (!user.schedule) user.schedule = [];
-                if (!user.calendarSources) user.calendarSources = [];
-                if (!user.mailbox) user.mailbox = [];
-                if (!user.missionReports) user.missionReports = [];
-                if (!user.inventory) user.inventory = [];
-                if (!user.gender) user.gender = 'Secret'; 
+                };
+
+                const acceptFriendRequest = (request) => {
+                    if (!user.phoneData.friends) user.phoneData.friends = [];
+                    if (!user.phoneData.friends.includes(request.catId)) {
+                        user.phoneData.friends.push(request.catId);
+                    }
+                    request.status = 'accepted';
+                    showToast(`已添加 ${phoneIdentities.value[request.catId].name} 为好友`, 'success');
+                };
 
                 const availableModels = ref([]);
                 const isFetchingModels = ref(false);
@@ -3022,7 +3533,7 @@
                     if (isNaN(amount)) return;
                     
                     const contactId = phoneState.selectedContactId;
-                    const contact = phoneIdentities[contactId];
+                    const contact = phoneIdentities.value[contactId];
                     const contactName = contact ? contact.name : "未知联系人";
                     
                     addWalletTransaction('in', amount, `领取了${msg.type === 'red-envelope' ? '红包' : '转账'}`, `来自：${contactName}`);
@@ -3058,7 +3569,7 @@
                     const msgContent = content || phoneChatInput.value;
                     if (!msgContent.trim() && type === 'text') return;
 
-                    const contact = phoneIdentities[contactId];
+                    const contact = phoneIdentities.value[contactId];
                     const cat = cats.value.find(c => c.id === contactId);
                     const history = getPhoneChatHistory(contactId);
                     
@@ -3180,9 +3691,122 @@
                         showToast('余额不足', 'error');
                         return;
                     }
-                    addWalletTransaction('out', phoneMoneyAmount.value, `${phoneMoneyType.value === 'red-envelope' ? '发出的红包' : '转账'}`, `接收人：${phoneIdentities[phoneState.selectedContactId].name}`);
+                    addWalletTransaction('out', phoneMoneyAmount.value, `${phoneMoneyType.value === 'red-envelope' ? '发出的红包' : '转账'}`, `接收人：${phoneIdentities.value[phoneState.selectedContactId].name}`);
                     sendPhoneMessage(phoneMoneyType.value, phoneMoneyAmount.value.toString());
                     showPhoneMoneyModal.value = false;
+                };
+
+                const openMomentsSettings = () => {
+                    phoneState.newMomentsNickname = user.phoneData.momentsNickname;
+                    phoneState.newMomentsAvatar = user.phoneData.momentsAvatar;
+                    phoneState.newMomentsBackground = user.phoneData.momentsBackground;
+                    phoneState.newSignature = user.phoneData.signature;
+                    phoneState.showMomentsSettings = true;
+                };
+
+                const saveMomentsSettings = () => {
+                    user.phoneData.momentsNickname = phoneState.newMomentsNickname;
+                    user.phoneData.momentsAvatar = phoneState.newMomentsAvatar;
+                    user.phoneData.momentsBackground = phoneState.newMomentsBackground;
+                    user.phoneData.signature = phoneState.newSignature;
+                    phoneState.showMomentsSettings = false;
+                    showToast('个人信息已更新', 'success');
+                };
+
+                const likeMoment = (moment) => {
+                    if (!moment.likes) moment.likes = [];
+                    const myName = user.phoneData.momentsNickname;
+                    const index = moment.likes.indexOf(myName);
+                    if (index > -1) {
+                        moment.likes.splice(index, 1);
+                    } else {
+                        moment.likes.push(myName);
+                    }
+                };
+
+                const addComment = async () => {
+                    if (!phoneState.momentCommentText.trim() || !phoneState.commentingOn) return;
+                    
+                    const momentId = phoneState.commentingOn;
+                    const moment = user.phoneData.moments.find(m => m.id === momentId);
+                    if (!moment) return;
+                    
+                    if (!moment.comments) moment.comments = [];
+                    
+                    const commentText = phoneState.momentCommentText.trim();
+                    moment.comments.push({
+                        author: user.phoneData.momentsNickname,
+                        text: commentText,
+                        time: getCurrentTimeStr()
+                    });
+                    
+                    const currentCommentText = commentText;
+                    phoneState.momentCommentText = '';
+                    phoneState.commentingOn = null;
+                    
+                    // Probabilistic reply logic (60% chance)
+                    if (Math.random() < 0.6) {
+                        setTimeout(async () => {
+                            // Pick a random identity for the reply
+                            const ids = Object.keys(phoneIdentities.value);
+                            const randomId = ids[Math.floor(Math.random() * ids.length)];
+                            const replier = phoneIdentities.value[randomId];
+                            
+                            const replyPrompt = `
+                            User commented on a Moment: "${currentCommentText}"
+                            Moment Content: "${moment.content}"
+                            Moment Author: "${moment.authorName}"
+                            Replier Identity: ${replier.name} (${replier.role})
+                            Task: Generate a reply to the user's comment as ${replier.name}.
+                            Rules: 
+                            1. Be brief (max 20 words).
+                            2. Language: Simplified Chinese.
+                            3. Tone: Casual or related to the content.
+                            `;
+                            try {
+                                const reply = await callAI(replyPrompt, "Casual WeChat reply", 200);
+                                const cleanedReply = cleanText(reply);
+                                moment.comments.push({
+                                    author: replier.name,
+                                    text: cleanedReply,
+                                    time: getCurrentTimeStr()
+                                });
+                                
+                                // Add to character logs for "memory"
+                                const cat = (cats.value || []).find(c => c.id == randomId);
+                                if (cat) {
+                                    if (!cat.logs) cat.logs = [];
+                                    cat.logs.push({
+                                        date: getCurrentTimeStr(),
+                                        content: `[朋友圈互动] 我回复了 ${user.phoneData.momentsNickname} 的评论: "${cleanedReply}"`
+                                    });
+                                }
+                            } catch (e) {
+                                console.error("Reply generation failed", e);
+                            }
+                        }, 2000);
+                    }
+                };
+
+                const postMoment = () => {
+                    const content = phoneState.postMomentText.trim();
+                    if (!content) return;
+                    
+                    if (!user.phoneData.moments) user.phoneData.moments = [];
+                    user.phoneData.moments.push({
+                        id: Date.now(),
+                        authorName: user.phoneData.momentsNickname,
+                        authorAvatar: user.phoneData.momentsAvatar,
+                        content: content,
+                        time: "刚刚",
+                        likes: [],
+                        comments: [],
+                        image: null
+                    });
+                    if (user.phoneData.moments.length > 20) user.phoneData.moments.shift();
+                    phoneState.postMomentText = '';
+                    phoneState.showPostMomentModal = false;
+                    showToast('发布成功', 'success');
                 };
 
                 const openPhotoDesc = (desc) => {
@@ -3318,7 +3942,7 @@
                     if (catsWithInteractions.length === 0) return;
                     const cat = catsWithInteractions[Math.floor(Math.random() * catsWithInteractions.length)];
                     const interaction = cat.todayInteractions[cat.todayInteractions.length - 1].content;
-                    const identity = phoneIdentities[cat.id];
+                    const identity = phoneIdentities.value[cat.id];
                     const prompt = `
                     [LOGIC B/D: MOMENTS GENERATION]
                     Character: ${identity.name}
@@ -3335,6 +3959,7 @@
                       "content": "Post content",
                       "time": "Just now",
                       "likes": ["Dick Grayson", "Tim Drake"],
+                      "comments": [],
                       "image": "https://picsum.photos/seed/${cat.name}/400/300"
                     }
                     Language: Simplified Chinese.
@@ -3344,7 +3969,12 @@
                         const moment = parseAIJSON(res);
                         if (moment) {
                             if (!user.phoneData.moments) user.phoneData.moments = [];
-                            user.phoneData.moments.push({ ...moment, id: Date.now() });
+                            user.phoneData.moments.push({ 
+                                ...moment, 
+                                id: Date.now(),
+                                likes: moment.likes || [],
+                                comments: moment.comments || [] // Ensure comments array exists
+                            });
                             if (user.phoneData.moments.length > 20) user.phoneData.moments.shift();
                         }
                     } catch (e) { console.error("Moments generation failed", e); }
@@ -4089,9 +4719,28 @@
                     }
                 };
 
-                const adoptCat = () => { if(!newCat.name) return; let imgUrl = manualImgMode.value === 'auto' ? `https://placehold.co/200x200/${newCat.color.replace('#','')}/white?text=${newCat.codename}` : newCat.image; const existingNames = cats.value.map(c => c.name).join(', '); const systemPrompt = `You are ${newCat.name}. Known Associates in Cafe: ${existingNames}.`; cats.value.push({ id: Date.now(), name: newCat.name, breed: newCat.breed, image: imgUrl, image_human: '', personality: newCat.personality, status: '新入住', isOut: false, affinity: 10, isHuman: false, chatHistory: [], diary: [], logs: [], innerVoice: '...', lastFocusTime: 0, prompt: systemPrompt, isMarvel: false }); currentTab.value = 'lounge'; };
+                const adoptCat = () => { 
+                    if(!newCat.name) return; 
+                    let imgUrl = manualImgMode.value === 'auto' ? `https://placehold.co/200x200/${newCat.color.replace('#','')}/white?text=${newCat.codename}` : newCat.image; 
+                    const existingNames = cats.value.map(c => c.name).join(', '); 
+                    const systemPrompt = `You are ${newCat.name}. Known Associates in Cafe: ${existingNames}.`; 
+                    const id = Date.now();
+                    cats.value.push({ id: id, name: newCat.name, breed: newCat.breed, image: imgUrl, image_human: '', personality: newCat.personality, status: '新入住', isOut: false, affinity: 10, isHuman: false, chatHistory: [], diary: [], logs: [], innerVoice: '...', lastFocusTime: 0, prompt: systemPrompt, isMarvel: false }); 
+                    currentTab.value = 'lounge'; 
+                    setTimeout(() => sendFriendRequest(id), 2000);
+                };
                 
-                const confirmGacha = (keep) => { if(keep && gachaResult.value) { const existingNames = cats.value.map(c => c.name).join(', '); const systemPrompt = `You are ${gachaResult.value.name}. Known Associates in Cafe: ${existingNames}. ${gachaResult.value.prompt}`; cats.value.push({ id: Date.now(), name: gachaResult.value.name, breed: gachaResult.value.breed, eyeColor: gachaResult.value.eyeColor, personality: gachaResult.value.personality, status: '初来乍到', isOut: false, affinity: 10, isHuman: false, image: gachaResult.value.image, image_human: '', prompt: systemPrompt, chatHistory: [], diary: [], logs: [], innerVoice: gachaResult.value.quote || '...', lastFocusTime: 0, lastInteractionDate: null, lastLogDate: null, isMarvel: gachaResult.value.isMarvel }); currentTab.value = 'lounge'; } gachaResult.value = null; };
+                const confirmGacha = (keep) => { 
+                    if(keep && gachaResult.value) { 
+                        const existingNames = cats.value.map(c => c.name).join(', '); 
+                        const systemPrompt = `You are ${gachaResult.value.name}. Known Associates in Cafe: ${existingNames}. ${gachaResult.value.prompt}`; 
+                        const id = Date.now();
+                        cats.value.push({ id: id, name: gachaResult.value.name, breed: gachaResult.value.breed, eyeColor: gachaResult.value.eyeColor, personality: gachaResult.value.personality, status: '初来乍到', isOut: false, affinity: 10, isHuman: false, image: gachaResult.value.image, image_human: '', prompt: systemPrompt, chatHistory: [], diary: [], logs: [], innerVoice: gachaResult.value.quote || '...', lastFocusTime: 0, lastInteractionDate: null, lastLogDate: null, isMarvel: gachaResult.value.isMarvel }); 
+                        currentTab.value = 'lounge'; 
+                        setTimeout(() => sendFriendRequest(id), 2000);
+                    } 
+                    gachaResult.value = null; 
+                };
                 
                 const playNoise = () => { if (!audioPlayer.value) return; audioPlayer.value.pause(); if (currentNoise.value === 'rain') audioPlayer.value.src = 'https://files.catbox.moe/9xiysz.mp3'; else if (currentNoise.value === 'cafe') audioPlayer.value.src = 'https://files.catbox.moe/mqmb8n.mp3'; else if (currentNoise.value === 'custom' && customNoiseUrl.value) audioPlayer.value.src = customNoiseUrl.value; else return; audioPlayer.value.play().catch(e => {}); };
                 const toggleHumanMode = () => { if(selectedCat.value) selectedCat.value.isHuman = !selectedCat.value.isHuman; };
@@ -4187,6 +4836,21 @@
                     adminPassword.value = '';
                 };
 
+                onMounted(() => {
+                    // Check for missing friend requests for existing cats
+                    setTimeout(() => {
+                        if (!user.phoneData.friends) user.phoneData.friends = [];
+                        if (!user.phoneData.friendRequests) user.phoneData.friendRequests = [];
+                        
+                        cats.value.forEach(cat => {
+                            if (!user.phoneData.friends.includes(cat.id) && 
+                                !user.phoneData.friendRequests.some(r => r.catId === cat.id)) {
+                                sendFriendRequest(cat.id);
+                            }
+                        });
+                    }, 5000);
+                });
+
                 return {
                     currentTab, contentArea, alfredMessage, cats, selectedCat, user, settings, newCat, cleanText,
                     chatInput, thinkingStates, isInteracting, isUpdatingStatus, showBag, showDiaryModal, showReportModal, showMissionSettlementModal, showMailModal,
@@ -4195,6 +4859,7 @@
                     availableModels, isFetchingModels, fetchModels,
                     handleCatClick, refreshAllStatus, sendMessage, updateUserStatus,
                     handleImageUpload, adoptCat, wishAdoptCat, isWishLoading, 
+                    friendsList, sendFriendRequest, acceptFriendRequest,
                     saveSettings: () => { localStorage.setItem(STORAGE_KEY, JSON.stringify({user, cats: cats.value, shopItems: shopItems.value, settings})); showToast("数据已加密保存", "success"); },
                     resetData: () => { if(confirm("确定要删除所有存档吗？")) { localStorage.removeItem(STORAGE_KEY); location.reload(); } },
                     exportSave, importSave, fileInput, 
