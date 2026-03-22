@@ -173,9 +173,9 @@
         .cat-card:active { transform: scale(0.98); }
         .cat-card.out-on-patrol { opacity: 0.6; filter: grayscale(0.9); border: 1px dashed #555; }
         .cat-card.out-on-patrol::after {
-            content: '🦇 夜巡中'; position: absolute; top: 50%; left: 50%;
+            content: '\f186  夜巡中'; font-family: 'Font Awesome 6 Free', sans-serif; position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: var(--bat-yellow);
-            padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: bold;
+            padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: 900;
             border: 1px solid var(--bat-yellow); white-space: nowrap; z-index: 10;
         }
         
@@ -524,7 +524,7 @@
                         <div class="mt-3 w-full bg-black rounded-full h-1.5 border border-gray-700 relative overflow-hidden">
                             <div class="bg-yellow-600 h-full rounded-full transition-all duration-500" :style="{ width: Math.min(cat.affinity, 100) + '%' }"></div>
                         </div>
-                        <div class="text-[10px] text-gray-500 mt-1">❤️ {{ Math.floor(cat.affinity) }}/100</div>
+                        <div class="text-[10px] text-gray-500 mt-1"><i class="fa-solid fa-heart text-red-500"></i> {{ Math.floor(cat.affinity) }}/100</div>
                     </div>
                     
                     <div @click="currentTab = 'create'" class="cat-card p-3 justify-center border-2 border-dashed border-zinc-700 min-h-[180px] hover:bg-zinc-800 cursor-pointer">
@@ -741,7 +741,7 @@
                     </div>
                     <div class="flex-1">
                         <h2 class="text-xl font-bold text-white flex items-center">{{ selectedCat.name }} <i v-if="selectedCat.isHuman" class="fas fa-user-astronaut ml-2 text-pink-500 text-sm"></i><span v-if="selectedCat.isOut" class="ml-2 bg-zinc-700 text-gray-400 text-[10px] px-2 py-0.5 rounded border border-gray-600">外出夜巡中</span></h2>
-                        <div class="flex gap-2 mt-1"><span class="text-[9px] bg-zinc-700 text-gray-300 px-1.5 rounded border border-zinc-600">{{ selectedCat.breed || '未知品种' }}</span><span class="text-[9px] bg-zinc-700 text-gray-300 px-1.5 rounded border border-zinc-600">👀 {{ selectedCat.eyeColor || '??' }}</span></div>
+                        <div class="flex gap-2 mt-1"><span class="text-[9px] bg-zinc-700 text-gray-300 px-1.5 rounded border border-zinc-600">{{ selectedCat.breed || '未知品种' }}</span><span class="text-[9px] bg-zinc-700 text-gray-300 px-1.5 rounded border border-zinc-600"><i class="fa-solid fa-eye text-blue-400"></i> {{ selectedCat.eyeColor || '??' }}</span></div>
                         <p class="text-[10px] text-yellow-600 mt-1 font-mono uppercase tracking-wide">Status: {{ cleanText(selectedCat.status) }}</p>
                         <p class="text-[10px] text-pink-500 mt-1 font-bold">Affinity: {{ Math.floor(selectedCat.affinity) }} / 100</p>
                         <div class="inner-voice-bubble" v-if="selectedCat.innerVoice">"{{ cleanText(selectedCat.innerVoice) }}"</div>
@@ -783,8 +783,8 @@
             </div>
 
             <!-- PHONE TAB -->
-            <div v-if="currentTab === 'phone'" class="flex flex-col items-center justify-center min-h-[calc(100vh-180px)]">
-                <div class="bg-zinc-900 w-full max-w-sm h-[650px] rounded-[3rem] border-[8px] border-zinc-800 shadow-2xl relative overflow-hidden flex flex-col">
+            <div v-if="currentTab === 'phone'" class="flex flex-col items-center justify-center min-h-[calc(100vh-120px)] pb-24">
+                <div class="bg-zinc-900 w-full max-w-sm h-[600px] rounded-[3rem] border-[8px] border-zinc-800 shadow-2xl relative overflow-hidden flex flex-col shrink-0">
                     <!-- Phone Notch -->
                     <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-zinc-800 rounded-b-2xl z-50"></div>
                     
@@ -828,10 +828,110 @@
                                     <div class="w-14 h-14 bg-orange-500 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 transition-transform"><i class="fas fa-shopping-basket"></i></div>
                                     <span class="text-[10px] text-gray-300">Shop</span>
                                 </div>
+                                <div @click="phoneState.currentApp = 'games'; phoneState.games.activeGame = null" class="flex flex-col items-center gap-2 cursor-pointer">
+                                    <div class="w-14 h-14 bg-purple-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 transition-transform"><i class="fas fa-gamepad"></i></div>
+                                    <span class="text-[10px] text-gray-300">Games</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Games App -->
+                            <div v-if="phoneState.currentApp === 'games'" class="flex flex-col h-full bg-zinc-900 absolute inset-0 z-20">
+                                <!-- Games Header -->
+                                <div class="h-12 bg-zinc-800 flex justify-between items-center px-4 shrink-0 border-b border-zinc-700">
+                                    <button @click="phoneState.currentApp = 'home'" class="w-8 text-gray-400 text-xl"><i class="fas fa-chevron-left"></i></button>
+                                    <h3 class="font-bold text-gray-200 text-sm">哥谭娱乐中心</h3>
+                                    <div class="w-8"></div>
+                                </div>
+                                <!-- Games List / Main Menu -->
+                                <div v-if="!phoneState.games.activeGame" class="flex-1 overflow-y-auto p-4 space-y-4">
+                                    <div @click="phoneState.games.activeGame = 'tetris'; initTetris()" class="bg-zinc-800 p-4 rounded-xl border border-purple-500 cursor-pointer hover:bg-zinc-700 flex items-center gap-4">
+                                        <div class="w-12 h-12 bg-purple-900 rounded-lg flex items-center justify-center text-xl text-purple-300"><i class="fas fa-cubes"></i></div>
+                                        <div class="flex-1">
+                                            <div class="font-bold text-gray-200">哥谭方块</div>
+                                            <div class="text-[10px] text-gray-500">经典下落消除，堆叠你的反派图鉴。</div>
+                                        </div>
+                                    </div>
+                                    <div @click="phoneState.games.activeGame = 'merge'; initMerge()" class="bg-zinc-800 p-4 rounded-xl border border-blue-500 cursor-pointer hover:bg-zinc-700 flex items-center gap-4">
+                                        <div class="w-12 h-12 bg-blue-900 rounded-lg flex items-center justify-center text-xl text-blue-300"><i class="fas fa-th-large"></i></div>
+                                        <div class="flex-1">
+                                            <div class="font-bold text-gray-200">喵喵合合乐</div>
+                                            <div class="text-[10px] text-gray-500">2048 滑动合成，最高进化出什么？</div>
+                                        </div>
+                                    </div>
+                                    <div @click="phoneState.games.activeGame = 'match'; initMatch()" class="bg-zinc-800 p-4 rounded-xl border border-green-500 cursor-pointer hover:bg-zinc-700 flex items-center gap-4">
+                                        <div class="w-12 h-12 bg-green-900 rounded-lg flex items-center justify-center text-xl text-green-300"><i class="fas fa-layer-group"></i></div>
+                                        <div class="flex-1">
+                                            <div class="font-bold text-gray-200">喵了个喵</div>
+                                            <div class="text-[10px] text-gray-500">极限 3 消堆叠，挑战阿卡姆智商。</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Game Screens -->
+                                <div v-else class="flex-1 flex flex-col relative bg-black overflow-hidden align-middle">
+                                    <!-- Dynamic Game Component Area -->
+                                    <div v-if="phoneState.games.activeGame === 'tetris'" class="flex-1 flex flex-col items-center justify-center p-2 relative touch-none">
+                                        <div class="text-white text-xs mb-2 flex justify-between w-full px-4"><span class="font-mono text-purple-400">Score: {{ tetrisState.score }}</span><button @click="endGame('Gotham Tetris', tetrisState.score)" class="text-red-500 hover:text-red-400 font-bold border border-red-800 px-2 rounded">QUIT</button></div>
+                                        <canvas id="tetris-canvas" width="200" height="400" class="bg-zinc-900 border-2 border-zinc-700 shadow-[0_0_15px_rgba(128,0,128,0.3)]"></canvas>
+                                        <div class="grid grid-cols-3 gap-2 mt-4 w-full px-8 select-none">
+                                            <button @mousedown="tetrisAction('left')" @touchstart.prevent="tetrisAction('left')" class="bg-zinc-800 py-4 rounded text-white shadow active:bg-zinc-600"><i class="fas fa-arrow-left"></i></button>
+                                            <button @mousedown="tetrisAction('rotate')" @touchstart.prevent="tetrisAction('rotate')" class="bg-zinc-800 py-4 rounded text-white shadow active:bg-zinc-600"><i class="fas fa-undo"></i></button>
+                                            <button @mousedown="tetrisAction('right')" @touchstart.prevent="tetrisAction('right')" class="bg-zinc-800 py-4 rounded text-white shadow active:bg-zinc-600"><i class="fas fa-arrow-right"></i></button>
+                                            <div class="col-start-2"><button @mousedown="tetrisAction('down')" @touchstart.prevent="tetrisAction('down')" class="bg-zinc-800 w-full py-4 rounded text-white shadow active:bg-zinc-600"><i class="fas fa-arrow-down"></i></button></div>
+                                        </div>
+                                    </div>
+                                    <div v-if="phoneState.games.activeGame === 'merge'" class="flex-1 flex flex-col items-center justify-center p-4 relative touch-none">
+                                        <div class="text-white text-xs mb-2 flex justify-between w-full px-2"><span class="font-mono text-blue-400">Score: {{ mergeState.score }}</span><button @click="endGame('Meow Merge', mergeState.score)" class="text-red-500 font-bold border border-red-800 px-2 rounded">QUIT</button></div>
+                                        <div class="w-full aspect-square bg-zinc-800 rounded-xl p-2 grid grid-cols-4 grid-rows-4 gap-2 relative shadow-[0_0_15px_rgba(0,0,255,0.2)]" @touchstart.prevent="handleMergeTouchStart" @touchend.prevent="handleMergeTouchEnd">
+                                            <div v-for="(cell, i) in 16" :key="i" class="bg-zinc-900 rounded shadow-inner"></div>
+                                            <!-- Tiles -->
+                                            <div v-for="t in mergeState.tiles" :key="t.id" :class="`absolute bg-yellow-500 m-2 rounded-lg flex items-center justify-center font-black text-2xl text-black shadow-md transition-all duration-150`" :style="`width: calc(25% - 1rem); height: calc(25% - 1rem); left: calc(${t.c * 25}%); top: calc(${t.r * 25}%); opacity: 0.9`">{{ t.val }}</div>
+                                        </div>
+                                        <div class="text-[10px] text-gray-500 mt-6 absolute bottom-10 animate-pulse">滑动屏幕操控合成</div>
+                                    </div>
+                                    <div v-if="phoneState.games.activeGame === 'match'" class="flex-1 flex flex-col p-2 relative select-none">
+                                        <div class="text-white text-xs mb-2 flex justify-between w-full px-2"><span class="font-mono text-green-400">Tiles Left: {{ matchState.tiles.length }}</span><button @click="endGame('Meow Match', matchState.score)" class="text-red-500 font-bold border border-red-800 px-2 rounded">QUIT</button></div>
+                                        <div class="flex-1 relative w-full mt-4">
+                                            <div v-for="t in matchState.tiles" :key="t.id" @click="matchClick(t)" class="absolute w-12 h-16 bg-zinc-200 border border-zinc-500 rounded-lg shadow-xl flex items-center justify-center text-3xl cursor-pointer hover:brightness-110 active:scale-95 transition-transform text-zinc-800" :class="{'brightness-[0.4] grayscale pointer-events-none': !t.clickable}" :style="`left: ${t.x}%; top: ${t.y}%; z-index: ${t.z}`">
+                                                <i :class="['fa-solid', t.icon]"></i>
+                                            </div>
+                                        </div>
+                                        <!-- Slot -->
+                                        <div class="h-20 mt-2 bg-zinc-800 border-2 border-zinc-600 rounded-xl flex items-center px-2 gap-1 overflow-visible z-10 mx-2 shadow-[0_0_20px_rgba(0,255,0,0.1)]">
+                                            <div v-for="t in matchState.slots" :key="t.id" class="w-10 h-14 bg-zinc-200 rounded border border-zinc-500 flex items-center justify-center text-2xl animate-pop-in text-zinc-800">
+                                                <i :class="['fa-solid', t.icon]"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Settlement Modal -->
+                                <div v-if="phoneState.games.isSettling || phoneState.games.settlementResult" class="absolute inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-6 backdrop-blur">
+                                    <div v-if="phoneState.games.isSettling" class="text-center animate-pulse flex flex-col items-center">
+                                        <i class="fas fa-dice fa-spin text-5xl text-purple-500 mb-6"></i>
+                                        <p class="text-sm text-gray-300 font-mono tracking-widest text-purple-300">正在结算高维专属奖励...</p>
+                                    </div>
+                                    <div v-else-if="phoneState.games.settlementResult" class="bg-zinc-900 border-2 border-purple-600 rounded-2xl p-6 w-full max-w-sm text-center shadow-[0_0_40px_rgba(128,0,128,0.4)] relative overflow-hidden">
+                                        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500"></div>
+                                        <h2 class="text-xl font-black text-white mb-2 tracking-widest">GAME OVER</h2>
+                                        <p class="text-xs text-center text-gray-300 italic mb-4 border-l-4 border-purple-500 bg-black/50 p-3 leading-relaxed rounded-r-lg">"{{ phoneState.games.settlementResult.comment }}"</p>
+                                        <div class="flex justify-center mb-6 text-yellow-500 font-bold text-2xl"><i class="fas fa-coins mr-2 mt-1"></i> +{{ phoneState.games.settlementResult.gold_reward }}</div>
+                                        <div class="space-y-3 mb-6 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+                                            <div v-for="(item, idx) in phoneState.games.settlementResult.items" :key="idx" class="bg-zinc-800 p-3 rounded-xl border border-zinc-700 text-left flex items-start gap-4">
+                                                <div class="text-3xl mt-1">🎁</div>
+                                                <div class="flex-1">
+                                                    <div class="text-sm font-bold text-purple-300 mb-1">{{ item.item_name }} <span class="text-zinc-500 text-[10px] ml-1">x{{ item.quantity }}</span></div>
+                                                    <div class="text-[10px] text-gray-400 line-clamp-2 leading-tight">{{ item.description }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button @click="phoneState.games.settlementResult = null; phoneState.games.activeGame = null" class="w-full bg-purple-600 text-white font-bold py-4 rounded-xl hover:bg-purple-500 active:scale-95 transition-transform tracking-widest">收取奖励</button>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- WeChat App (Unified) -->
-                            <div v-if="phoneState.currentApp === 'chat'" class="flex flex-col h-full bg-zinc-900">
+
+                            <div v-if="phoneState.currentApp === 'chat'" class="flex flex-col h-full bg-zinc-900 absolute inset-0 z-20">
                                 <!-- Main Content Area -->
                                 <div class="flex-1 overflow-hidden relative">
                                     <!-- Chats Tab -->
@@ -1098,21 +1198,21 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <!-- Me Tab -->
+                                        <!-- Me Tab -->
                                     <div v-if="phoneState.chatTab === 'me'" class="h-full flex flex-col bg-[#f7f7f7] text-black">
                                         <div class="h-12 bg-white flex justify-center items-center px-4 sticky top-0 z-10">
                                             <h3 class="font-bold text-black text-base">我</h3>
                                         </div>
                                         <div class="flex-1 overflow-y-auto">
-                                            <div class="bg-white p-6 flex items-center gap-4 mb-4">
+                                            <div @click="openMomentsSettings" class="bg-white p-6 flex items-center gap-4 mb-4 cursor-pointer active:bg-gray-50">
                                                 <img :src="user.phoneData.momentsAvatar" class="w-16 h-16 rounded-lg object-cover">
                                                 <div class="flex-1">
                                                     <h2 class="text-xl font-bold">{{ user.phoneData.momentsNickname }}</h2>
-                                                    <p class="text-sm text-gray-500">微信号: {{ user.name }}</p>
+                                                    <p class="text-sm text-gray-500">微信号: {{ user.nickname || user.name }}</p>
+                                                    <p v-if="user.phoneData.signature" class="text-xs text-gray-400 mt-0.5 truncate max-w-[160px]">{{ user.phoneData.signature }}</p>
                                                 </div>
-                                                <i class="fas fa-qrcode text-gray-400"></i>
+                                                <i class="fas fa-pen text-gray-300 text-sm mr-1"></i>
                                                 <i class="fas fa-chevron-right text-gray-300"></i>
                                             </div>
 
@@ -1277,64 +1377,65 @@
                                                 </div>
                                             </div>
                                         </div>
-
-                                        <!-- Comment Input Overlay -->
-                                        <div v-if="phoneState.commentingOn" class="absolute inset-0 bg-black/40 z-30 flex items-end">
-                                            <div class="w-full bg-white p-3 flex items-center gap-2 animate-slide-up">
-                                                <input v-model="phoneState.momentCommentText" type="text" placeholder="评论" class="flex-1 bg-zinc-100 rounded px-3 py-2 text-sm outline-none" @keyup.enter="addComment">
-                                                <button @click="addComment" class="bg-green-500 text-white px-4 py-2 rounded text-sm font-bold">发送</button>
-                                                <button @click="phoneState.commentingOn = null; phoneState.momentCommentText = ''" class="text-gray-400 px-2"><i class="fas fa-times"></i></button>
-                                            </div>
+                                    </div>
+                                    
+                                    <!-- WeChat Overlays (properly placed as children of Chat App) -->
+                                    <!-- Comment Input Overlay -->
+                                    <div v-if="phoneState.commentingOn" class="absolute inset-0 bg-black/40 z-[60] flex items-end">
+                                        <div class="w-full bg-white p-3 flex items-center gap-2 animate-slide-up">
+                                            <input v-model="phoneState.momentCommentText" type="text" placeholder="评论" class="flex-1 bg-zinc-100 rounded px-3 py-2 text-sm outline-none" @keyup.enter="addComment">
+                                            <button @click="addComment" class="bg-green-500 text-white px-4 py-2 rounded text-sm font-bold">发送</button>
+                                            <button @click="phoneState.commentingOn = null; phoneState.momentCommentText = ''" class="text-gray-400 px-2"><i class="fas fa-times"></i></button>
                                         </div>
+                                    </div>
 
-                                        <!-- Post Moment Modal -->
-                                        <div v-if="phoneState.showPostMomentModal" class="absolute inset-0 bg-white z-40 flex flex-col animate-slide-up">
-                                            <div class="h-12 bg-white border-b border-zinc-200 flex items-center px-4 shrink-0">
-                                                <button @click="phoneState.showPostMomentModal = false; phoneState.postMomentText = ''" class="mr-4 text-zinc-600 text-sm">取消</button>
-                                                <span class="font-bold text-sm flex-1 text-center">发表文字</span>
-                                                <button @click="postMoment" :disabled="!phoneState.postMomentText.trim()" :class="phoneState.postMomentText.trim() ? 'bg-green-500 text-white' : 'bg-green-200 text-white'" class="px-3 py-1 rounded text-xs font-bold transition-colors">发表</button>
-                                            </div>
-                                            <div class="flex-1 p-4">
-                                                <textarea v-model="phoneState.postMomentText" placeholder="这一刻的想法..." class="w-full h-40 text-sm outline-none resize-none" autofocus></textarea>
-                                            </div>
+                                    <!-- Post Moment Modal -->
+                                    <div v-if="phoneState.showPostMomentModal" class="absolute inset-0 bg-white z-[70] flex flex-col animate-slide-up">
+                                        <div class="h-12 bg-white border-b border-zinc-200 flex items-center px-4 shrink-0">
+                                            <button @click="phoneState.showPostMomentModal = false; phoneState.postMomentText = ''" class="mr-4 text-zinc-600 text-sm">取消</button>
+                                            <span class="font-bold text-sm flex-1 text-center">发表文字</span>
+                                            <button @click="postMoment" :disabled="!phoneState.postMomentText.trim()" :class="phoneState.postMomentText.trim() ? 'bg-green-500 text-white' : 'bg-green-200 text-white'" class="px-3 py-1 rounded text-xs font-bold transition-colors">发表</button>
                                         </div>
+                                        <div class="flex-1 p-4">
+                                            <textarea v-model="phoneState.postMomentText" placeholder="这一刻的想法..." class="w-full h-40 text-sm outline-none resize-none" autofocus></textarea>
+                                        </div>
+                                    </div>
 
-                                        <!-- Moments Settings Modal -->
-                                        <div v-if="phoneState.showMomentsSettings" class="absolute inset-0 bg-zinc-100 z-40 flex flex-col">
-                                            <div class="h-12 bg-white border-b border-zinc-200 flex items-center px-4 shrink-0">
-                                                <button @click="phoneState.showMomentsSettings = false" class="mr-4 text-zinc-600"><i class="fas fa-chevron-left"></i></button>
-                                                <span class="font-bold text-sm">个人信息设置</span>
-                                                <div class="flex-1"></div>
-                                                <button @click="saveMomentsSettings" class="bg-green-500 text-white px-3 py-1 rounded text-xs">保存</button>
+                                    <!-- Moments Settings Modal -->
+                                    <div v-if="phoneState.showMomentsSettings" class="absolute inset-0 bg-zinc-100 z-[80] flex flex-col animate-slide-up">
+                                        <div class="h-12 bg-white border-b border-zinc-200 flex items-center px-4 shrink-0">
+                                            <button @click="phoneState.showMomentsSettings = false" class="mr-4 text-zinc-600"><i class="fas fa-chevron-left"></i></button>
+                                            <span class="font-bold text-sm">个人信息设置</span>
+                                            <div class="flex-1"></div>
+                                            <button @click="saveMomentsSettings" class="bg-green-500 text-white px-3 py-1 rounded text-xs">保存</button>
+                                        </div>
+                                        <div class="flex-1 overflow-y-auto p-4 space-y-6 text-black">
+                                            <div class="space-y-2">
+                                                <label class="text-xs text-gray-500 font-bold uppercase tracking-wider">朋友圈昵称</label>
+                                                <input v-model="phoneState.newMomentsNickname" type="text" class="w-full bg-white border border-zinc-200 rounded p-3 text-sm outline-none focus:border-green-500">
                                             </div>
-                                            <div class="flex-1 overflow-y-auto p-4 space-y-6">
-                                                <div class="space-y-2">
-                                                    <label class="text-xs text-gray-500 font-bold uppercase tracking-wider">朋友圈昵称</label>
-                                                    <input v-model="phoneState.newMomentsNickname" type="text" class="w-full bg-white border border-zinc-200 rounded p-3 text-sm outline-none focus:border-green-500">
+                                            <div class="space-y-2">
+                                                <label class="text-xs text-gray-500 font-bold uppercase tracking-wider">个性签名</label>
+                                                <textarea v-model="phoneState.newSignature" class="w-full bg-white border border-zinc-200 rounded p-3 text-sm outline-none focus:border-green-500 h-20 resize-none"></textarea>
+                                            </div>
+                                            <div class="space-y-2">
+                                                <label class="text-xs text-gray-500 font-bold uppercase tracking-wider">头像 URL</label>
+                                                <input v-model="phoneState.newMomentsAvatar" type="text" class="w-full bg-white border border-zinc-200 rounded p-3 text-sm outline-none focus:border-green-500">
+                                                <div class="flex justify-center mt-2">
+                                                    <img :src="phoneState.newMomentsAvatar || user.phoneData.momentsAvatar" class="w-16 h-16 rounded-lg border border-zinc-200">
                                                 </div>
-                                                <div class="space-y-2">
-                                                    <label class="text-xs text-gray-500 font-bold uppercase tracking-wider">个性签名</label>
-                                                    <textarea v-model="phoneState.newSignature" class="w-full bg-white border border-zinc-200 rounded p-3 text-sm outline-none focus:border-green-500 h-20 resize-none"></textarea>
-                                                </div>
-                                                <div class="space-y-2">
-                                                    <label class="text-xs text-gray-500 font-bold uppercase tracking-wider">头像 URL</label>
-                                                    <input v-model="phoneState.newMomentsAvatar" type="text" class="w-full bg-white border border-zinc-200 rounded p-3 text-sm outline-none focus:border-green-500">
-                                                    <div class="flex justify-center mt-2">
-                                                        <img :src="phoneState.newMomentsAvatar || user.phoneData.momentsAvatar" class="w-16 h-16 rounded-lg border border-zinc-200">
-                                                    </div>
-                                                </div>
-                                                <div class="space-y-2">
-                                                    <label class="text-xs text-gray-500 font-bold uppercase tracking-wider">背景图 URL</label>
-                                                    <input v-model="phoneState.newMomentsBackground" type="text" class="w-full bg-white border border-zinc-200 rounded p-3 text-sm outline-none focus:border-green-500">
-                                                    <div class="mt-2 aspect-video rounded-lg overflow-hidden border border-zinc-200">
-                                                        <img :src="phoneState.newMomentsBackground || user.phoneData.momentsBackground" class="w-full h-full object-cover">
-                                                    </div>
+                                            </div>
+                                            <div class="space-y-2">
+                                                <label class="text-xs text-gray-500 font-bold uppercase tracking-wider">背景图 URL</label>
+                                                <input v-model="phoneState.newMomentsBackground" type="text" class="w-full bg-white border border-zinc-200 rounded p-3 text-sm outline-none focus:border-green-500">
+                                                <div class="mt-2 aspect-video rounded-lg overflow-hidden border border-zinc-200">
+                                                    <img :src="phoneState.newMomentsBackground || user.phoneData.momentsBackground" class="w-full h-full object-cover">
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-
+                                
                                 <!-- Bottom Navigation Bar -->
                                 <div v-if="phoneState.chatTab !== 'moments' && !phoneState.selectedContactId && !phoneState.selectedFriendRequestId && phoneState.chatTab !== 'new-friends'" 
                                      class="h-14 bg-[#f7f7f7] border-t border-gray-200 flex items-center justify-around shrink-0">
@@ -1363,7 +1464,7 @@
                             </div>
 
                             <!-- Delivery App -->
-                            <div v-if="phoneState.currentApp === 'delivery'" class="flex flex-col h-full bg-zinc-50 text-black">
+                            <div v-if="phoneState.currentApp === 'delivery'" class="flex flex-col h-full bg-zinc-50 text-black absolute inset-0 z-20">
                                 <div class="p-4 bg-yellow-500 flex justify-between items-center sticky top-0 z-10 shadow-md">
                                     <h1 class="font-black text-lg italic tracking-tighter text-black"><i class="fas fa-motorcycle mr-2"></i> BAT-DELIVERY</h1>
                                     <div class="text-[10px] font-bold text-black/60">哥谭极速达</div>
@@ -1373,7 +1474,7 @@
                                         <h2 class="text-sm font-bold mb-3 text-zinc-800">精选餐厅</h2>
                                         <div class="space-y-4">
                                             <div v-for="item in phoneState.deliveryMenu" :key="item.id" class="flex items-center gap-3 p-2 hover:bg-zinc-50 rounded-lg transition-colors border-b border-zinc-100 last:border-0">
-                                                <div class="text-3xl">{{ item.icon }}</div>
+                                                <div class="text-3xl text-zinc-400"><i v-if="item.icon && item.icon.startsWith('fa-')" :class="item.icon"></i><span v-else>{{ item.icon }}</span></div>
                                                 <div class="flex-1 min-w-0">
                                                     <div class="flex justify-between items-center">
                                                         <span class="text-sm font-bold">{{ item.name }}</span>
@@ -1406,7 +1507,7 @@
                             </div>
 
                             <!-- Tarot App -->
-                            <div v-if="phoneState.currentApp === 'tarot'" class="flex flex-col h-full bg-indigo-950 text-white">
+                            <div v-if="phoneState.currentApp === 'tarot'" class="flex flex-col h-full bg-indigo-950 text-white absolute inset-0 z-20">
                                 <div class="p-4 border-b border-indigo-800 flex justify-between items-center bg-indigo-950 sticky top-0 z-10">
                                     <h1 class="font-bold text-lg tracking-widest text-indigo-300"><i class="fas fa-moon mr-2"></i> 神秘学占卜</h1>
                                     <div class="text-[10px] font-bold text-indigo-500">ZATANNA & CO.</div>
@@ -1447,7 +1548,7 @@
                             </div>
 
                             <!-- Shop App -->
-                            <div v-if="phoneState.currentApp === 'shop'" class="flex flex-col h-full bg-zinc-900 text-white">
+                            <div v-if="phoneState.currentApp === 'shop'" class="flex flex-col h-full bg-zinc-900 text-white absolute inset-0 z-20">
                                 <div class="p-4 bg-orange-600 flex justify-between items-center sticky top-0 z-10 shadow-md">
                                     <h1 class="font-bold text-lg tracking-tighter text-white"><i class="fas fa-shopping-basket mr-2"></i> 补给站</h1>
                                     <div class="text-[10px] font-bold text-white/60">GOTHAM SUPPLY</div>
@@ -1462,7 +1563,7 @@
                                     <div v-if="currentShopCategory !== 'import'" class="space-y-3">
                                          <div v-for="item in filteredShopItems" :key="item.id" class="bg-zinc-800 p-3 rounded-xl flex justify-between items-center border border-zinc-700 shadow-sm">
                                             <div class="flex items-center gap-3">
-                                                <div class="text-2xl w-10 h-10 flex items-center justify-center bg-zinc-950 rounded-lg">{{ item.icon }}</div>
+                                                <div class="text-2xl w-10 h-10 flex items-center justify-center bg-zinc-950 rounded-lg text-yellow-500"><i v-if="item.icon && item.icon.startsWith('fa-')" :class="item.icon"></i><span v-else>{{ item.icon }}</span></div>
                                                 <div class="min-w-0">
                                                     <div class="font-bold text-xs text-gray-200">{{ item.name }}</div>
                                                     <div class="text-[9px] text-gray-500 mt-0.5 truncate max-w-[120px]">{{ item.desc }}</div>
@@ -1497,7 +1598,7 @@
                             </div>
 
                             <!-- Wallet App -->
-                            <div v-if="phoneState.currentApp === 'wallet'" class="flex flex-col h-full bg-zinc-950 text-white">
+                            <div v-if="phoneState.currentApp === 'wallet'" class="flex flex-col h-full bg-zinc-950 text-white absolute inset-0 z-20">
                                 <div class="p-4 bg-orange-600 flex justify-between items-center sticky top-0 z-10 shadow-md">
                                     <h1 class="font-black text-lg italic tracking-tighter text-white"><i class="fas fa-wallet mr-2"></i> BAT-WALLET</h1>
                                     <div class="text-[10px] font-bold text-white/60">哥谭电子钱包</div>
@@ -1535,18 +1636,14 @@
                                                         {{ tx.type === 'in' ? '+' : '-' }}{{ tx.amount }}
                                                     </span>
                                                 </div>
-                                                <div class="flex justify-between items-center">
-                                                    <span class="text-[10px] text-gray-500 truncate">{{ tx.detail }}</span>
-                                                    <span class="text-[10px] text-gray-400">{{ tx.time }}</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
                             <!-- News App -->
-                            <div v-if="phoneState.currentApp === 'news'" class="flex flex-col h-full bg-white text-black">
+                            <div v-if="phoneState.currentApp === 'news'" class="flex flex-col h-full bg-white text-black absolute inset-0 z-20">
                                 <div class="p-4 border-b-2 border-red-600 flex justify-between items-center bg-white sticky top-0 z-10">
                                     <h1 class="font-black text-xl italic tracking-tighter">GOTHAM GAZETTE</h1>
                                     <div class="text-[10px] font-bold text-gray-500">{{ new Date().toLocaleDateString() }}</div>
@@ -1648,7 +1745,7 @@
                             <img :src="gachaResult.image" class="w-20 h-20 rounded-full border-2 border-white mb-2 shadow-lg">
                             <h3 class="text-xl font-bold text-yellow-500 mb-1">{{ gachaResult.name }}</h3>
                              <span v-if="gachaResult.isMarvel" class="bg-red-600 text-[9px] px-1 rounded text-white mb-1">MARVEL UNIVERSE</span>
-                            <div class="flex gap-2 text-[9px] mb-2 justify-center"><span class="bg-zinc-700 px-1 rounded">{{ gachaResult.breed }}</span><span class="bg-zinc-700 px-1 rounded">👀 {{ gachaResult.eyeColor }}</span></div>
+                            <div class="flex gap-2 text-[9px] mb-2 justify-center"><span class="bg-zinc-700 px-1 rounded">{{ gachaResult.breed }}</span><span class="bg-zinc-700 px-1 rounded"><i class="fa-solid fa-eye text-blue-400"></i> {{ gachaResult.eyeColor }}</span></div>
                             <p class="text-xs text-gray-300 mb-2 italic">"{{ gachaResult.quote }}"</p>
                         </div>
                         <div v-else class="text-gray-600 text-sm">点击下方按钮寻找新伙伴</div>
@@ -1713,7 +1810,7 @@
                 <div v-if="currentBagItems.length === 0" class="text-center text-gray-600 py-10">该分类下没有物品</div>
                 <div class="grid grid-cols-3 gap-3">
                     <div v-for="item in currentBagItems" :key="item.uniqueId" @click="useItem(item)" class="bg-zinc-800 p-2 rounded flex flex-col items-center justify-center border border-zinc-700 aspect-square cursor-pointer hover:border-yellow-600 relative">
-                        <div class="text-2xl mb-1">{{ item.icon }}</div>
+                        <div class="text-2xl mb-1 text-yellow-500"><i v-if="item.icon && item.icon.startsWith('fa-')" :class="item.icon"></i><span v-else>{{ item.icon }}</span></div>
                         <div class="text-[10px] text-center text-gray-300 leading-tight">{{ item.name }}</div>
                         <div class="text-[8px] text-gray-500 mt-1 scale-90">{{ item.type === 'consumable' ? '点击使用' : '查看详情' }}</div>
                         <div v-if="item.type === 'letter'" class="absolute top-1 right-1 text-pink-500 text-[8px]"><i class="fas fa-heart"></i></div>
@@ -1804,7 +1901,7 @@
             <div class="flex-1 overflow-y-auto custom-scrollbar">
                 <div v-if="currentShopCategory !== 'import'" class="grid grid-cols-1 gap-4">
                      <div v-for="item in filteredShopItems" :key="item.id" class="bg-zinc-800 p-4 rounded-xl flex justify-between items-center border border-zinc-700 shadow-md">
-                        <div class="flex items-center"><div class="text-3xl mr-4 bg-black w-12 h-12 flex items-center justify-center rounded-full">{{ item.icon }}</div><div><div class="font-bold text-gray-200">{{ item.name }}</div><div class="text-xs text-gray-500 mt-1">{{ item.desc }}</div><div class="text-[10px] text-yellow-600 mt-1">{{ item.type === 'consumable' ? '❤️ 效果: ?' : '🏆 收藏品' }}</div></div></div>
+                        <div class="flex items-center"><div class="text-3xl mr-4 bg-black w-12 h-12 flex items-center justify-center rounded-full text-zinc-300"><i v-if="item.icon && item.icon.startsWith('fa-')" :class="item.icon"></i><span v-else>{{ item.icon }}</span></div><div><div class="font-bold text-gray-200">{{ item.name }}</div><div class="text-xs text-gray-500 mt-1">{{ item.desc }}</div><div class="text-[10px] text-yellow-600 mt-1"><span v-if="item.type === 'consumable'"><i class="fa-solid fa-heart text-red-500"></i> 效果: ?</span><span v-else><i class="fa-solid fa-trophy text-yellow-500"></i> 收藏品</span></div></div></div>
                         <button @click="buyItem(item)" class="bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-yellow-600">{{ item.price }} <span class="text-[10px]">G</span></button>
                     </div>
                     <div v-if="filteredShopItems.length === 0" class="text-center text-gray-600 mt-10">该货架暂时空置</div>
@@ -2200,7 +2297,7 @@
                         delivery: [],
                         tarot: [],
                         walletTransactions: [],
-                        friends: [1, 2, 3, 4, 5],
+                        friends: [],
                         friendRequests: [],
                         momentsBackground: 'https://picsum.photos/seed/gotham/600/400',
                         momentsAvatar: 'https://placehold.co/100x100/444/white?text=Me',
@@ -2219,13 +2316,13 @@
 
                 let initialCats = [...defaultCats];
                 let initialShopItems = [
-                    { id: 1, name: '阿尔弗雷德特制猫饭', price: 50, icon: '🍲', desc: '管家侠亲手制作，回复体力', effect: 2, type: 'consumable', category: 'food' },
-                    { id: 2, name: '氪石发光球', price: 80, icon: '🟢', desc: '对氪星猫有奇效，普通猫觉得好看', effect: 1, type: 'consumable', category: 'toy' },
-                    { id: 3, name: '微型抓钩枪', price: 150, icon: '🔫', desc: '虽然不能用，但杰森很喜欢', effect: 3, type: 'consumable', category: 'toy' },
-                    { id: 4, name: '猫薄荷手雷', price: 60, icon: '💣', desc: '会让猫猫嗨到不行的战术装备', effect: 2, type: 'consumable', category: 'toy' },
-                    { id: 5, name: '谜语人的问号球', price: 40, icon: '❓', desc: '滚来滚去很烦人', effect: 1, type: 'consumable', category: 'toy' },
-                    { id: 6, name: '蝙蝠制服修复包', price: 100, icon: '🧵', desc: '虽然猫不穿衣服，但修补窝很好用', effect: 4, type: 'consumable', category: 'supply' },
-                    { id: 7, name: '阿卡姆特供猫草', price: 70, icon: '🌿', desc: '毒藤女培育，也许有副作用?', effect: 3, type: 'consumable', category: 'food' }
+                    { id: 1, name: '阿尔弗雷德特制猫饭', price: 50, icon: 'fa-solid fa-bowl-food', desc: '管家侠亲手制作，回复体力', effect: 2, type: 'consumable', category: 'food' },
+                    { id: 2, name: '氪石发光球', price: 80, icon: 'fa-solid fa-gem', desc: '对氪星猫有奇效，普通猫觉得好看', effect: 1, type: 'consumable', category: 'toy' },
+                    { id: 3, name: '微型抓钩枪', price: 150, icon: 'fa-solid fa-gun', desc: '虽然不能用，但杰森很喜欢', effect: 3, type: 'consumable', category: 'toy' },
+                    { id: 4, name: '猫薄荷手雷', price: 60, icon: 'fa-solid fa-bomb', desc: '会让猫猫嗨到不行的战术装备', effect: 2, type: 'consumable', category: 'toy' },
+                    { id: 5, name: '谜语人的问号球', price: 40, icon: 'fa-solid fa-circle-question', desc: '滚来滚去很烦人', effect: 1, type: 'consumable', category: 'toy' },
+                    { id: 6, name: '蝙蝠制服修复包', price: 100, icon: 'fa-solid fa-toolbox', desc: '虽然猫不穿衣服，但修补窝很好用', effect: 4, type: 'consumable', category: 'supply' },
+                    { id: 7, name: '阿卡姆特供猫草', price: 70, icon: 'fa-solid fa-leaf', desc: '毒藤女培育，也许有副作用?', effect: 3, type: 'consumable', category: 'food' }
                 ];
 
                 let initialSettings = { 
@@ -2273,6 +2370,14 @@
                         }
                         if (parsed.cats && parsed.cats.length > 0) cats.value = parsed.cats;
                         if (parsed.shopItems && parsed.shopItems.length > 0) shopItems.value = parsed.shopItems;
+                        
+                        // Robust Migration: Clear friends if they contain default IDs 1-5 or other legacy values
+                        if (user.phoneData && user.phoneData.friends && user.phoneData.friends.length > 0) {
+                            const hasAnyDefaultId = user.phoneData.friends.some(f => (typeof f === 'number' && f <= 5) || (f && [1,2,3,4,5].includes(f.id)));
+                            if (hasAnyDefaultId) {
+                                user.phoneData.friends = [];
+                            }
+                        }
                     } catch (e) {
                         console.error("数据损坏，重置为默认", e);
                     }
@@ -2524,10 +2629,10 @@
                     tarotResult: null,
                     isTarotLoading: false,
                     deliveryMenu: [
-                        { id: 1, name: '地狱厨房盲盒披萨', price: 45, desc: '你永远不知道下一块是什么口味。', icon: '🍕' },
-                        { id: 2, name: '冰山餐厅特供猫饭', price: 88, desc: '企鹅人亲自监督的高级食材。', icon: '🍱' },
-                        { id: 3, name: '大都会能量饮料', price: 15, desc: '喝完感觉能飞（并不）。', icon: '🥤' },
-                        { id: 4, name: '阿卡姆特制营养餐', price: 30, desc: '口感一言难尽，但管饱。', icon: '🥣' }
+                        { id: 1, name: '地狱厨房盲盒披萨', price: 45, desc: '你永远不知道下一块是什么口味。', icon: 'fa-solid fa-pizza-slice' },
+                        { id: 2, name: '冰山餐厅特供猫饭', price: 88, desc: '企鹅人亲自监督的高级食材。', icon: 'fa-solid fa-bowl-rice' },
+                        { id: 3, name: '大都会能量饮料', price: 15, desc: '喝完感觉能飞（并不）。', icon: 'fa-solid fa-bottle-water' },
+                        { id: 4, name: '阿卡姆特制营养餐', price: 30, desc: '口感一言难尽，但管饱。', icon: 'fa-solid fa-mortar-pestle' }
                     ],
                     isOrdering: false,
                     showMomentsSettings: false,
@@ -2538,7 +2643,12 @@
                     momentCommentText: '',
                     commentingOn: null,
                     showPostMomentModal: false,
-                    postMomentText: ''
+                    postMomentText: '',
+                    games: {
+                        activeGame: null,
+                        isSettling: false,
+                        settlementResult: null
+                    }
                 });
                 
                 const parseAIJSON = (text) => {
@@ -2670,19 +2780,8 @@
 
                     const identity = phoneIdentities.value[catId] || { name: cat.name, role: '神秘人' };
                     
-                    const prompt = `
-                    [LOGIC D: FRIEND REQUEST EXCUSE]
-                    Character: ${identity.name}
-                    Human Identity/Role: ${identity.role}
-                    Task: Generate a "fake excuse" for ${identity.name} to add the user as a friend on WeChat.
-                    Rules:
-                    1. The excuse should be based on their human identity, not their cat identity.
-                    2. It should be slightly absurd, formal, or professional depending on the character.
-                    3. Examples: Bruce might mention a "business proposal" or "security audit". Dick might mention "gym promotion". Jason might mention "wrong number" or "debt collection".
-                    4. Language: Simplified Chinese.
-                    5. Max 30 words.
-                    Output: Just the excuse text.
-                    `;
+                    const userSocialProfile = `昵称「${user.phoneData.momentsNickname}」，性别：${user.gender}，个性签名：「${user.phoneData.signature || '无'}」`;
+                    const prompt = `\n【逻辑D：好友申请借口生成】\n你现在是处于人类身份的 ${identity.name}（人类身份/角色：${identity.role}）。\n这个叫 ${userSocialProfile} 的人刚刚在现实中收留了作为猫形态的你。为了方便监视/观察这个"愚蠢的人类"，你现在要通过手机通讯录向他发送一条好友申请。\n要求：\n1. 绝不能暴露你是对方家里的猫，也不需要暴露你的真实超英身份。\n2. 可以参考用户的个性签名或昵称来"精准套路"对方。\n3. 胡扯一个极其离谱但又能让普通人通过的加好友借口（例如："你好，这是韦恩集团外卖送餐回访部"、"我是楼下推销宽带的"、"好像是你朋友推给我的，拼多多砍一刀？"）。\n4. 借口必须符合 ${identity.name} 的性格（托尼趾高气昂找错人的，提姆非常礼貌但滴水不漏的，杰森直接粗鲁的）。\n5. 语言：简体中文。字数控制在 50 字以内。\n输出格式：纯文本好友申请借口，不要任何前缀或说明。\n                    `;
 
                     try {
                         const excuse = await callAI(prompt, "You are a creative social media writer.", 200, ThinkingLevel.LOW);
@@ -2968,7 +3067,7 @@
                         showSpecialEventModal.value = true;
                         showEasterEggBtn.value = false;
                         selectedCat.value.diary.push({ time: getCurrentTimeStr(), content: "与用户进行了特别的约会/互动 (Easter Egg)" });
-                        if(content.includes("信") || content.includes("Letter") || content.includes("Postcard")) { user.inventory.push({ id: Date.now(), name: `来自${selectedCat.value.name}的信`, type: 'letter', desc: content.substring(0, 50) + "...", fullContent: content, icon: '💌' }); }
+                        if(content.includes("信") || content.includes("Letter") || content.includes("Postcard")) { user.inventory.push({ id: Date.now(), name: `来自${selectedCat.value.name}的信`, type: 'letter', desc: content.substring(0, 50) + "...", fullContent: content, icon: 'fa-solid fa-envelope' }); }
                     } catch(e) { selectedCat.value.affinity += 10; }
                 };
 
@@ -3752,16 +3851,21 @@
                             const randomId = ids[Math.floor(Math.random() * ids.length)];
                             const replier = phoneIdentities.value[randomId];
                             
+                            const catOfReplier = (cats.value || []).find(c => c.id == randomId);
+                            const catCurrentStatus = catOfReplier ? catOfReplier.status : '在家里';
+                            const userSocialProfileC = `昵称「${user.phoneData.momentsNickname}」，性别：${user.gender}，个性签名：「${user.phoneData.signature || '无'}」`;
                             const replyPrompt = `
-                            User commented on a Moment: "${currentCommentText}"
-                            Moment Content: "${moment.content}"
-                            Moment Author: "${moment.authorName}"
-                            Replier Identity: ${replier.name} (${replier.role})
-                            Task: Generate a reply to the user's comment as ${replier.name}.
-                            Rules: 
-                            1. Be brief (max 20 words).
-                            2. Language: Simplified Chinese.
-                            3. Tone: Casual or related to the content.
+                            【逻辑C：朋友圈评论回复】
+                            你是处于人类身份的 ${replier.name}（角色：${replier.role}）。
+                            你发了一条朋友圈：「${moment.content}」。
+                            用户（${userSocialProfileC}）在下面评论了你：「${currentCommentText}」。
+                            当前你在现实中的真实状态：作为小猫，${catCurrentStatus}。（但你绝对不能暴露这件事）
+                            要求：
+                            1. 用人类的口吻在评论区回复用户，语气必须符合你的角色人设。
+                            2. 可以顺势吐槽对方的昵称或签名，或隐晦地回怼/附和。
+                            3. 绝对不能暴露自己是对方家里的猫。
+                            4. 语言：简体中文。字数控制在 30 字以内，简短精炼。
+                            输出格式：纯文本回复，不要任何前缀或说明。
                             `;
                             try {
                                 const reply = await callAI(replyPrompt, "Casual WeChat reply", 200);
@@ -3860,6 +3964,247 @@
                     if (user.phoneData.delivery.length > 10) user.phoneData.delivery.shift();
                     phoneState.isOrdering = false;
                     showToast(status === '送达' ? '外卖已送达！' : '外卖出事了...');
+                };
+
+                // --- MINI GAMES LOGIC ---
+                const submitGameScore = async (gameName, score) => {
+                    if (!settings.apiKey) return showToast("离线模式，无法结算专属奖励", "warning");
+                    phoneState.games.isSettling = true;
+                    // Logic D Prompt 18
+                    const prompt = `强行绑定角色视角：你是哥谭喵喵馆的系统后台奖励发放员。用户${user.nickname}刚刚在休息室游玩了内置小游戏【${gameName}】，其最终成绩与表现是：【${score}】。\n生成要求：\n1. 根据用户的表现，为其发放 1-3 件随机的猫咪奖励（可包含：高级猫粮、特制零食、稀有玩具、日常用品）以及一定数量的金币。表现越好，奖励越稀有、数量越多。\n2. 世界观深度绑定： 奖励物品的名称和描述必须带有强烈的 DC/漫威 超英特色或反派特色！（例如：“沾有小丑笑气的怪味猫条”、“韦恩庄园进口的高级猫薄荷”、“美国队长的盾牌微缩猫窝”）。\n3. 写一句 30 字以内的结算评语（可以带有哥谭/漫威宇宙的吐槽风格）。\n输出格式为严格的 JSON 结构：\n{ "comment": "结算评语", "gold_reward": 50, "items": [ {"item_name": "物品名称", "quantity": 1, "description": "一句有趣的物品描述"} ] }`;
+                    try {
+                        const res = await callAI(prompt, "System Rewards AI", 1500, ThinkingLevel.LOW);
+                        const result = parseAIJSON(res);
+                        if (result) {
+                            phoneState.games.settlementResult = result;
+                            user.coins += (result.gold_reward || 0);
+                            if (result.items) {
+                                result.items.forEach(i => {
+                                    for(let j=0; j<i.quantity; j++){
+                                        user.inventory.push({ 
+                                            id: Date.now()+j, 
+                                            type: 'consumable', 
+                                            name: i.item_name, 
+                                            desc: i.description, 
+                                            category: 'food', 
+                                            price: 0,
+                                            uniqueId: Date.now() + Math.random(),
+                                            icon: i.item_name.includes('猫') ? 'fa-solid fa-fish' : (i.item_name.includes('盾') ? 'fa-solid fa-shield-halved' : 'fa-solid fa-gift')
+                                        });
+                                    }
+                                });
+                            }
+                        } else { alert("解析失败。"); }
+                    } catch(e) { console.error(e); alert("网络中断，无法领取奖励。"); } 
+                    finally { phoneState.games.isSettling = false; }
+                };
+
+                const endGame = (name, score) => {
+                    if(phoneState.games.activeGame === 'tetris') stopTetris();
+                    submitGameScore(name, `${score}`);
+                };
+
+                // TETRIS
+                const tetrisState = reactive({ score: 0 });
+                let t_ctx, t_timer, t_board, t_piece;
+                const TETROMINOS = [ [], // 0
+                    [ [0,0,0,0], [1,1,1,1], [0,0,0,0], [0,0,0,0] ], // 1 I
+                    [ [2,0,0], [2,2,2], [0,0,0] ], // 2 J
+                    [ [0,0,3], [3,3,3], [0,0,0] ], // 3 L
+                    [ [4,4], [4,4] ], // 4 O
+                    [ [0,5,5], [5,5,0], [0,0,0] ], // 5 S
+                    [ [0,6,0], [6,6,6], [0,0,0] ], // 6 T
+                    [ [7,7,0], [0,7,7], [0,0,0] ]  // 7 Z
+                ];
+                const T_COLORS = ['#000','#3b82f6','#2563eb','#f59e0b','#eab308','#22c55e','#a855f7','#ef4444'];
+                let t_dropCounter = 0, t_dropInterval = 800, t_lastTime = 0;
+                
+                const initTetris = () => {
+                    nextTick(() => {
+                        const cvs = document.getElementById('tetris-canvas');
+                        if(!cvs) return;
+                        t_ctx = cvs.getContext('2d');
+                        t_board = Array.from({length: 20}, () => Array(10).fill(0));
+                        tetrisState.score = 0; t_dropInterval = 800;
+                        t_spawnPiece();
+                        if(t_timer) cancelAnimationFrame(t_timer);
+                        t_dropCounter = 0; t_lastTime = 0;
+                        t_update();
+                    });
+                };
+                
+                const t_spawnPiece = () => {
+                    const type = Math.floor(Math.random() * 7) + 1;
+                    t_piece = { mx: TETROMINOS[type], pos: {x: 3, y: 0} };
+                    if(t_collide(t_board, t_piece)) { endGame('Gotham Tetris (哥谭方块)', tetrisState.score); }
+                };
+                
+                const t_drawMatrix = (matrix, pt) => {
+                    matrix.forEach((r,y) => r.forEach((v,x) => {
+                        if(v !== 0) { 
+                            t_ctx.fillStyle = T_COLORS[v]; 
+                            t_ctx.fillRect((x+pt.x)*20 + 1, (y+pt.y)*20 + 1, 18, 18); 
+                        }
+                    }));
+                };
+                
+                const t_draw = () => {
+                    t_ctx.fillStyle = '#18181b'; // zinc-900 background
+                    t_ctx.fillRect(0,0,200,400);
+                    t_drawMatrix(t_board, {x:0, y:0});
+                    t_drawMatrix(t_piece.mx, t_piece.pos);
+                };
+                
+                const t_collide = (b, p) => {
+                    const m = p.mx, o = p.pos;
+                    for(let y=0; y<m.length; y++){
+                        for(let x=0; x<m[y].length; x++){
+                            if(m[y][x] !== 0 && (b[y+o.y] && b[y+o.y][x+o.x]) !== 0) return true;
+                        }
+                    } return false;
+                };
+                
+                const t_merge = (b, p) => { p.mx.forEach((r,y) => r.forEach((v,x) => { if(v!==0) b[y+p.pos.y][x+p.pos.x] = v; })); };
+                
+                const t_sweep = () => {
+                    let rc = 1;
+                    outer: for(let y=19; y>=0; y--){
+                        for(let x=0; x<10; x++){ if(t_board[y][x] === 0) continue outer; }
+                        const r = t_board.splice(y,1)[0].fill(0);
+                        t_board.unshift(r); y++; 
+                        tetrisState.score += rc*100; rc*=2;
+                        t_dropInterval = Math.max(200, t_dropInterval - 20); // speed up
+                    }
+                };
+                
+                const t_update = (time = 0) => {
+                    if(phoneState.games.activeGame !== 'tetris') return;
+                    const dt = time - (t_lastTime || time); t_lastTime = time;
+                    t_dropCounter += dt;
+                    if(t_dropCounter > t_dropInterval) { t_drop(); }
+                    t_draw();
+                    t_timer = requestAnimationFrame(t_update);
+                };
+                
+                const t_drop = () => {
+                    t_piece.pos.y++;
+                    if(t_collide(t_board, t_piece)) {
+                        t_piece.pos.y--; t_merge(t_board, t_piece); t_sweep(); t_spawnPiece();
+                    }
+                    t_dropCounter = 0;
+                };
+                
+                const tetrisAction = (act) => {
+                    if(phoneState.games.isSettling || phoneState.games.settlementResult) return;
+                    if(act === 'left'){ t_piece.pos.x--; if(t_collide(t_board, t_piece)) t_piece.pos.x++; }
+                    else if(act === 'right'){ t_piece.pos.x++; if(t_collide(t_board, t_piece)) t_piece.pos.x--; }
+                    else if(act === 'down'){ t_drop(); }
+                    else if(act === 'rotate'){
+                        const p = t_piece; const m = p.mx;
+                        const r = m[0].map((v, i) => m.map(row => row[i]).reverse());
+                        const oldMx = p.mx; p.mx = r;
+                        let offset = 1;
+                        while(t_collide(t_board, p)) {
+                            p.pos.x += offset; offset = -(offset + (offset>0?1:-1));
+                            if(Math.abs(offset) > m[0].length) { p.mx = oldMx; p.pos.x -= offset; break; }
+                        }
+                    }
+                };
+                const stopTetris = () => { if(t_timer) cancelAnimationFrame(t_timer); };
+
+                // MEOW MERGE (2048)
+                const mergeState = reactive({ score: 0, tiles: [] });
+                let tsX = 0, tsY = 0;
+                
+                const initMerge = () => { mergeState.score = 0; mergeState.tiles = []; t_spawnMerge(); t_spawnMerge(); };
+                
+                const t_spawnMerge = () => {
+                    let av = [];
+                    for(let r=0; r<4; r++) for(let c=0; c<4; c++) { if(!mergeState.tiles.some(t=>t.r===r && t.c===c)) av.push({r,c}); }
+                    if(av.length>0) { const p = av[Math.floor(Math.random()*av.length)]; mergeState.tiles.push({id: Date.now()+Math.random(), r: p.r, c: p.c, val: Math.random()>0.1?2:4}); }
+                };
+                
+                const handleMergeTouchStart = (e) => { tsX = e.touches[0].clientX; tsY = e.touches[0].clientY; };
+                
+                const handleMergeTouchEnd = (e) => {
+                    if(phoneState.games.isSettling || phoneState.games.settlementResult) return;
+                    const deX = e.changedTouches[0].clientX - tsX; const deY = e.changedTouches[0].clientY - tsY;
+                    if(Math.abs(deX) > Math.abs(deY)) { if(Math.abs(deX)>30) moveMerge(deX > 0 ? 'R' : 'L'); } 
+                    else { if(Math.abs(deY)>30) moveMerge(deY > 0 ? 'D' : 'U'); }
+                };
+                
+                const moveMerge = (dir) => { 
+                    let moved = false;
+                    const getLine = (i) => {
+                        let l = mergeState.tiles.filter(t => (dir==='L'||dir==='R')?t.r===i:t.c===i)
+                                .sort((a,b) => (dir==='L'||dir==='U') ? (dir==='L'?a.c-b.c:a.r-b.r) : (dir==='R'?b.c-a.c:b.r-a.r));
+                        let nl=[], skip=false;
+                        for(let j=0; j<l.length; j++){
+                            if(skip){skip=false;continue;}
+                            if(j<l.length-1 && l[j].val === l[j+1].val) { nl.push({...l[j], val: l[j].val*2}); mergeState.score+=l[j].val*2; skip=true; moved=true; } else { nl.push(l[j]); }
+                        }
+                        return nl;
+                    };
+                    let ntl = [];
+                    for(let i=0; i<4; i++){
+                        const l = getLine(i);
+                        l.forEach((t, j) => {
+                            let oc = t.c, or = t.r;
+                            if(dir==='L') t.c = j; if(dir==='R') t.c = 3-j; if(dir==='U') t.r = j; if(dir==='D') t.r = 3-j;
+                            if(t.c !== oc || t.r !== or) moved=true;
+                            ntl.push(t);
+                        });
+                    }
+                    mergeState.tiles = ntl;
+                    if(moved) setTimeout(t_spawnMerge, 100);
+                    else if(mergeState.tiles.length === 16) { endGame('Meow Merge (喵喵合合乐)', mergeState.score); }
+                };
+
+                // MEOW MATCH (Tile Match)
+                const matchState = reactive({ score: 0, tiles: [], slots: [] });
+                const ICONS = ['fa-moon','fa-face-laugh-squint','fa-snowflake','fa-cat','fa-square','fa-brain','fa-hat-wizard','fa-gem'];
+                
+                const initMatch = () => {
+                    matchState.score = 0; matchState.slots = []; matchState.tiles = [];
+                    let deck = [];
+                    for(let i=0; i<42; i++) deck.push(ICONS[i % ICONS.length]); // 42 tiles, pairs of 3
+                    deck.sort(()=>Math.random()-0.5);
+                    for(let z=0; z<3; z++){
+                        for(let r=0; r<2; r++) for(let c=0; c<7; c++){
+                            matchState.tiles.push({id: z+'-'+r+'-'+c, icon: deck.pop(), x: 12 + c*11 + (z%2)*4, y: 15 + r*25 + (z%2)*6, z: z, clickable: z===2}); 
+                        }
+                    }
+                };
+                
+                const _updateClickable = () => {
+                    matchState.tiles.forEach(t => {
+                        let covered = matchState.tiles.some(o => o.z > t.z && Math.abs(o.x - t.x)<10 && Math.abs(o.y - t.y)<16);
+                        t.clickable = !covered;
+                    });
+                };
+                
+                const matchClick = (t) => {
+                    if(!t.clickable || matchState.slots.length >= 7) return;
+                    if(phoneState.games.isSettling || phoneState.games.settlementResult) return;
+                    
+                    matchState.tiles = matchState.tiles.filter(x => x.id !== t.id);
+                    matchState.slots.push({id: Date.now()+Math.random(), icon: t.icon});
+                    _updateClickable();
+                    
+                    setTimeout(() => {
+                        let counts = {};
+                        matchState.slots.forEach(s => counts[s.icon] = (counts[s.icon]||0)+1);
+                        let cleared = false;
+                        for(let icon in counts) {
+                            if(counts[icon] >= 3) {
+                                let c=0; matchState.slots = matchState.slots.filter(s => { if(s.icon===icon && c<3){ c++; return false; } return true; });
+                                matchState.score += 30;
+                                cleared = true;
+                            }
+                        }
+                        if(matchState.slots.length >= 7 && !cleared) { endGame('Meow Match (喵了个喵)', matchState.score + '分 (过关失败)'); }
+                        else if(matchState.tiles.length === 0) { endGame('Meow Match (喵了个喵)', matchState.score + '分 (完美通关!)'); }
+                    }, 250);
                 };
 
                 const drawTarot = async () => {
@@ -4769,7 +5114,7 @@
                         } else { affinityBonus = 2; }
                         selectedCat.value.affinity = Math.max(0, selectedCat.value.affinity + affinityBonus);
                         await checkAffinityThreshold(selectedCat.value);
-                        const msg = `(使用物品: ${item.name}) ${affinityBonus > 0 ? '❤️ 喜欢' : '💔 不喜欢'}`; await sendMessage(msg, true); 
+                        const msg = `(使用物品: ${item.name}) ${affinityBonus > 0 ? '[特效] 喜爱' : '[抗拒] 厌恶'}`; await sendMessage(msg, true); 
                     } 
                     showBag.value = false; 
                 };
@@ -4887,12 +5232,14 @@
                     showAdminLogin, showAdminPanel, adminPassword, isAdmin, openAdmin, checkAdminPassword,
                     phoneState, phoneIdentities, phoneChatInput, phoneChatRef,
                     openPhoneChat, getPhoneChatHistory, getPhoneLastMessage, getPhoneLastTime, sendPhoneMessage,
+                    openMomentsSettings, saveMomentsSettings, likeMoment, addComment, postMoment,
                     generatePhoneNews, generatePhoneMoments,
                     addWalletTransaction,
                     showPhoneImageDescModal, phoneImageDesc, sendPhoneRealImage, sendPhoneDescImage, sendPhoneLocation, orderDelivery, drawTarot,
                     showPhoneLocationModal, phoneLocationInput, showPhoneMoneyModal, phoneMoneyAmount, phoneMoneyType, showPhotoDescModal, currentPhotoDesc,
                     sendPhoneMoney, openPhotoDesc,
-                    collectRedPacket, phoneInputRef
+                    collectRedPacket, phoneInputRef,
+                    initTetris, tetrisAction, endGame, tetrisState, mergeState, handleMergeTouchStart, handleMergeTouchEnd, matchState, initMerge, initMatch, matchClick
                 };
             }
         }).mount('#app');
