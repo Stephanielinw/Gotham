@@ -345,6 +345,17 @@
 </head>
 <body>
     <div id="app" class="app-container" v-cloak>
+        <!-- App Loading Screen -->
+        <div v-show="isAppLoading" class="absolute inset-0 z-[99999] bg-black flex flex-col items-center justify-center p-6 text-hacker-green font-mono">
+            <i class="fas fa-satellite-dish text-6xl text-yellow-600 mb-8 animate-pulse"></i>
+            <div class="text-xl mb-4 text-center text-yellow-600 font-bold tracking-widest">BATCOMPUTER SYSTEM v3.5.6</div>
+            <div class="text-xs opacity-70 mb-8 text-center text-green-500">{{ loadingMessage }}</div>
+            <div class="w-64 h-2 border border-green-800 rounded bg-black overflow-hidden relative mb-4">
+                <div class="h-full bg-green-500 shadow-[0_0_10px_#33ff00] transition-all duration-300 ease-out" :style="{ width: loadingProgress + '%' }"></div>
+            </div>
+            <div class="text-[10px] text-green-700 animate-pulse">SYSTEM LOGIC PROCESSING...</div>
+        </div>
+
         <!-- Toast Notification -->
         <transition name="modal">
             <div v-if="notification.visible" class="toast-notification">
@@ -2274,6 +2285,9 @@
 
         createApp({
             setup() {
+                const isAppLoading = ref(true);
+                const loadingProgress = ref(0);
+                const loadingMessage = ref('INITIALIZING NEURAL LINK...');
                 const STORAGE_KEY = 'gotham_save_main'; 
                 const OLD_KEYS = ['gotham_data_v6_3', 'gotham_data_v6_2', 'gotham_data_v6_1'];
 
@@ -4036,7 +4050,7 @@
                 const t_spawnPiece = () => {
                     const type = Math.floor(Math.random() * 7) + 1;
                     t_piece = { mx: TETROMINOS[type], pos: {x: 3, y: 0} };
-                    if(t_collide(t_board, t_piece)) { endGame('Gotham Tetris (哥谭方块)', tetrisState.score); }
+                    if(t_collide(t_board, t_piece)) { setTimeout(() => endGame('Gotham Tetris (哥谭方块)', tetrisState.score), 800); }
                 };
                 
                 const t_drawMatrix = (matrix, pt) => {
@@ -4157,7 +4171,7 @@
                     }
                     mergeState.tiles = ntl;
                     if(moved) setTimeout(t_spawnMerge, 100);
-                    else if(mergeState.tiles.length === 16) { endGame('Meow Merge (喵喵合合乐)', mergeState.score); }
+                    else if(mergeState.tiles.length === 16) { setTimeout(() => endGame('Meow Merge (喵喵合合乐)', mergeState.score), 1000); }
                 };
 
                 // MEOW MATCH (Tile Match)
@@ -4327,6 +4341,9 @@
 
                 const checkDailyInitialization = async () => {
                     const now = new Date();
+                    loadingProgress.value = 10;
+                    loadingMessage.value = 'Checking system status and modules...';
+                    
                     const todayStr = now.toDateString(); 
                     const lastSyncTime = parseInt(localStorage.getItem('last_sync_time') || '0');
                     const lastLoginDate = localStorage.getItem('last_login_date') || ''; 
@@ -4341,16 +4358,28 @@
 
                     if (isNewDay) {
                         addLog("检测到跨越零点：启动每日结算（逻辑A）");
+                        loadingProgress.value = 30;
                         if (settings.apiKey && lastDiaryDate !== todayStr) {
                             localStorage.setItem('last_diary_date', todayStr); // Lock diary generation
-                            await generateAlfredReport(); 
-                            await generateAllCatDiaries(); 
-                            await generatePhoneNews();
-                            await generatePhoneMoments();
+                            loadingMessage.value = 'Running API content generation and Daily Settlement (Logic A)...';
+                            try {
+                                await Promise.all([
+                                    generateAlfredReport(),
+                                    generateAllCatDiaries(),
+                                    generatePhoneNews(),
+                                    generatePhoneMoments()
+                                ]);
+                                loadingProgress.value = 60;
+                            } catch (e) { console.error("Initialization APIs error:", e); }
+                            
+                            loadingMessage.value = 'Refreshing character statuses...';
                             await refreshAllStatus(true, "今日首次启动，执行每日结算。");
+                            loadingProgress.value = 80;
                         } else if (!settings.apiKey) {
+                            loadingMessage.value = 'Bypassing Logic A (No API Key)...';
                             // Fallback for no API key: just clear done tasks
                             user.todos = user.todos.filter(t => !t.done);
+                            loadingProgress.value = 60;
                         }
                         user.dailyMailCount = 0;
                         // Reset daily interactions
@@ -4359,13 +4388,30 @@
                         });
                         localStorage.setItem('last_login_date', todayStr);
                         user.lastLogin = Date.now();
+                        loadingProgress.value = 90;
                     } 
                     else if (isOverOneHour) {
                         addLog("距离上次更新已超过1小时：触发状态同步。");
+                        loadingProgress.value = 40;
                         if (settings.apiKey) {
+                             loadingMessage.value = 'Syncing remote character statuses (>1 hour logic)...';
                              await refreshAllStatus(true);
                         }
+                        loadingProgress.value = 70;
+                        loadingMessage.value = 'Checking Bat-Mailbox...';
                         await checkMailboxLogic();
+                        loadingProgress.value = 90;
+                    } else {
+                        loadingProgress.value = 90;
+                        loadingMessage.value = 'System checks nominal.';
+                    }
+                    
+                    if (isAppLoading.value) {
+                        loadingProgress.value = 100;
+                        loadingMessage.value = 'Ready. Constructing interface...';
+                        setTimeout(() => {
+                            isAppLoading.value = false;
+                        }, 800);
                     }
                 };
 
@@ -5151,6 +5197,22 @@
                 }, { deep: true });
 
                 onMounted(() => {
+                    window.addEventListener('keydown', (e) => {
+                        if (phoneState.currentApp !== 'games' || !phoneState.games.activeGame) return;
+                        if (phoneState.games.isSettling || phoneState.games.settlementResult) return;
+                        if (phoneState.games.activeGame === 'tetris') {
+                            if (['ArrowLeft', 'a', 'A'].includes(e.key)) tetrisAction('left');
+                            if (['ArrowRight', 'd', 'D'].includes(e.key)) tetrisAction('right');
+                            if (['ArrowDown', 's', 'S'].includes(e.key)) tetrisAction('down');
+                            if (['ArrowUp', 'w', 'W', ' '].includes(e.key)) tetrisAction('rotate');
+                        } else if (phoneState.games.activeGame === 'merge') {
+                            if (['ArrowLeft', 'a', 'A'].includes(e.key)) moveMerge('L');
+                            if (['ArrowRight', 'd', 'D'].includes(e.key)) moveMerge('R');
+                            if (['ArrowDown', 's', 'S'].includes(e.key)) moveMerge('D');
+                            if (['ArrowUp', 'w', 'W'].includes(e.key)) moveMerge('U');
+                        }
+                    });
+
                     tempUserStatus.value = user.currentStatus;
                     checkSpecialEvent();
                     checkDailyInitialization(); 
@@ -5239,7 +5301,8 @@
                     showPhoneLocationModal, phoneLocationInput, showPhoneMoneyModal, phoneMoneyAmount, phoneMoneyType, showPhotoDescModal, currentPhotoDesc,
                     sendPhoneMoney, openPhotoDesc,
                     collectRedPacket, phoneInputRef,
-                    initTetris, tetrisAction, endGame, tetrisState, mergeState, handleMergeTouchStart, handleMergeTouchEnd, matchState, initMerge, initMatch, matchClick
+                    initTetris, tetrisAction, endGame, tetrisState, mergeState, handleMergeTouchStart, handleMergeTouchEnd, matchState, initMerge, initMatch, matchClick,
+                    isAppLoading, loadingProgress, loadingMessage
                 };
             }
         }).mount('#app');
