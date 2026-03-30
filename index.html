@@ -4860,7 +4860,7 @@
                                 activeCatContext = `\n[CRITICAL CONTEXT]: ${activeCatNames.join(', ')} just returned from exploring. Other cats should react to their return.`;
                             } else {
                                 const bystanderNames = catsToUpdate.filter(c => !activeCatIds.includes(c.id)).map(c => c.name).join(', ');
-                                activeCatContext = `\n[CRITICAL CONTEXT & STRICT RULE]: User is actively interacting ONLY with ${activeCatNames.join(', ')} (Status: "${focusCatLastAction}").\nALL OTHER CATS (${bystanderNames}) MUST act as background bystanders, simply observing, doing their own independent activities, or showing environmental resonance.\nABSOLUTELY DO NOT generate status where these other cats interact with the user or assume they are the target of the user's interaction.`;
+                                activeCatContext = `\n[CRITICAL CONTEXT & STRICT RULE]: User is actively interacting ONLY with ${activeCatNames.join(', ')} (Their status: "${focusCatLastAction}").\nALL OTHER CATS (${bystanderNames}) MUST update their status by reacting to, observing, or ignoring this specific interaction between the User and ${activeCatNames.join(', ')}.\nABSOLUTELY DO NOT generate status where bystanders interact with the user or assume they are the target of the user's interaction. You must emphasize that the User is interacting exclusively with ${activeCatNames.join(', ')}!`;
                             }
                         }
 
@@ -4874,8 +4874,9 @@
                         - **RELATIONSHIPS:** All cats KNOW each other's secret identities and shifting abilities. Maintain canon family dynamics (bickering, brotherhood, etc.).
                         
                         [INDEPENDENT BEHAVIOR RULE]:
-                        - If the User Context does NOT indicate a specific user action (e.g., "User Status: Unknown"), the cat's status MUST focus on their own independent activity (sleeping, grooming, playing with other cats, staring at shadows) rather than assuming the user is interacting with them.
-                        - DO NOT "control" the user's scene. Describe the CAT'S life.
+                        - If the User is NOT actively interacting with a specific cat, ALL cats MUST focus solely on their own independent activities (e.g., sleeping, grooming, playing by themselves, tracking bugs, or playing with OTHER at-home cats).
+                        - ABSOLUTELY DO NOT invent or hallucinate interactions with the User (e.g., DO NOT generate statuses implying the user is teasing, bathing, or feeding the cat) unless the User Context explicitly states the user is doing so! Do not "steal the scene" by forcing user interactions!
+                        - Describe the CAT'S independent life.
                         
                         [FORM LOGIC]:
                         - If Affinity < 50: [isHuman] MUST be false.
