@@ -4042,8 +4042,8 @@
                         tetrisState.score = 0; t_dropInterval = 800;
                         t_spawnPiece();
                         if(t_timer) cancelAnimationFrame(t_timer);
-                        t_dropCounter = 0; t_lastTime = 0;
-                        t_update();
+                        t_dropCounter = 0; t_lastTime = performance.now();
+                        t_timer = requestAnimationFrame(t_update);
                     });
                 };
                 
@@ -4093,6 +4093,7 @@
                 
                 const t_update = (time = 0) => {
                     if(phoneState.games.activeGame !== 'tetris') return;
+                    time = time || performance.now();
                     const dt = time - (t_lastTime || time); t_lastTime = time;
                     t_dropCounter += dt;
                     if(t_dropCounter > t_dropInterval) { t_drop(); }
@@ -4112,15 +4113,26 @@
                     if(phoneState.games.isSettling || phoneState.games.settlementResult) return;
                     if(act === 'left'){ t_piece.pos.x--; if(t_collide(t_board, t_piece)) t_piece.pos.x++; }
                     else if(act === 'right'){ t_piece.pos.x++; if(t_collide(t_board, t_piece)) t_piece.pos.x--; }
-                    else if(act === 'down'){ t_drop(); }
+                    else if(act === 'down'){ tetrisState.score++; t_drop(); }
+                    else if(act === 'hard_drop') {
+                        let rowsDropped = 0;
+                        while(!t_collide(t_board, t_piece)) { t_piece.pos.y++; rowsDropped++; }
+                        t_piece.pos.y--; tetrisState.score += rowsDropped * 2;
+                        t_merge(t_board, t_piece); t_sweep(); t_spawnPiece();
+                        t_dropCounter = 0;
+                    }
                     else if(act === 'rotate'){
                         const p = t_piece; const m = p.mx;
                         const r = m[0].map((v, i) => m.map(row => row[i]).reverse());
-                        const oldMx = p.mx; p.mx = r;
+                        const oldMx = p.mx; const oldX = p.pos.x;
+                        p.mx = r;
                         let offset = 1;
                         while(t_collide(t_board, p)) {
-                            p.pos.x += offset; offset = -(offset + (offset>0?1:-1));
-                            if(Math.abs(offset) > m[0].length) { p.mx = oldMx; p.pos.x -= offset; break; }
+                            p.pos.x = oldX + offset; 
+                            offset = -(offset + (offset > 0 ? 1 : -1));
+                            if(Math.abs(offset) > m[0].length + 1) { 
+                                p.mx = oldMx; p.pos.x = oldX; break; 
+                            }
                         }
                     }
                 };
@@ -4769,7 +4781,8 @@
                          try {
                              const res = await callAI(prompt, STRICT_CANON_PROMPT, 800);
                              const action = extractSection(res, 'ACTION') || cleanText(res);
-                             if(isFocusing.value) { const timeStr = getCurrentTimeStr(); currentFocusLog.value.unshift(`${timeStr} [${targetCat.name}] ${action}`); focusMessage.value = "骚扰成功！"; playLogSound(); setTimeout(() => focusMessage.value = '', 2000); } else { alert(`${targetCat.name}: ${action}`); }
+                             targetCat.status = action;
+                             if(isFocusing.value) { const timeStr = getCurrentTimeStr(); currentFocusLog.value.unshift(`${timeStr} [${targetCat.name}] ${action}`); focusMessage.value = "骚扰成功！"; playLogSound(); setTimeout(() => focusMessage.value = '', 2000); } else { alert(`${targetCat.name}: ${action}`); refreshAllStatus(true, `User just harassed ${targetCat.name}. Reaction: ${action}`, [targetCat.id], action); }
                          } catch(e) {}
                      } else { if(isFocusing.value) currentFocusLog.value.unshift(`${getCurrentTimeStr()} [${targetCat.name}] 嫌弃地躲开了。`); }
                 };
@@ -4843,8 +4856,11 @@
                         if (activeCatNames.length > 0) {
                             if (isFocusEnd) {
                                 activeCatContext = `\n[CRITICAL CONTEXT]: The user just finished a focus session with ${activeCatNames.join(', ')}. The other cats should act as bystanders/background.`;
+                            } else if (isExploreEnd) {
+                                activeCatContext = `\n[CRITICAL CONTEXT]: ${activeCatNames.join(', ')} just returned from exploring. Other cats should react to their return.`;
                             } else {
-                                activeCatContext = `\n[CRITICAL CONTEXT]: The user is currently interacting with ${activeCatNames.join(', ')}. Their current status is: "${focusCatLastAction}". Other cats should observe this, react to it, or do their own things in the same room. DO NOT assume the user is interacting with the other cats.`;
+                                const bystanderNames = catsToUpdate.filter(c => !activeCatIds.includes(c.id)).map(c => c.name).join(', ');
+                                activeCatContext = `\n[CRITICAL CONTEXT & STRICT RULE]: User is actively interacting ONLY with ${activeCatNames.join(', ')} (Status: "${focusCatLastAction}").\nALL OTHER CATS (${bystanderNames}) MUST act as background bystanders, simply observing, doing their own independent activities, or showing environmental resonance.\nABSOLUTELY DO NOT generate status where these other cats interact with the user or assume they are the target of the user's interaction.`;
                             }
                         }
 
@@ -5204,7 +5220,8 @@
                             if (['ArrowLeft', 'a', 'A'].includes(e.key)) tetrisAction('left');
                             if (['ArrowRight', 'd', 'D'].includes(e.key)) tetrisAction('right');
                             if (['ArrowDown', 's', 'S'].includes(e.key)) tetrisAction('down');
-                            if (['ArrowUp', 'w', 'W', ' '].includes(e.key)) tetrisAction('rotate');
+                            if (['ArrowUp', 'w', 'W'].includes(e.key)) tetrisAction('rotate');
+                            if ([' '].includes(e.key)) tetrisAction('hard_drop');
                         } else if (phoneState.games.activeGame === 'merge') {
                             if (['ArrowLeft', 'a', 'A'].includes(e.key)) moveMerge('L');
                             if (['ArrowRight', 'd', 'D'].includes(e.key)) moveMerge('R');
