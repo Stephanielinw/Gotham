@@ -935,6 +935,11 @@
                         <p class="text-xs text-gray-500 text-center w-full leading-snug mt-1 min-h-[2.5rem] px-1">
                             {{ cleanText(cat.status) }}
                         </p>
+                        <!-- Caught-in-the-Act Glitch Button -->
+                        <button v-if="cat.glitchActive" @click.stop="catchInTheAct(cat)"
+                            class="bg-yellow-300 border-2 border-yellow-500 text-black text-[9px] w-full py-1 rounded shadow-[0_0_15px_rgba(255,255,0,0.5)] animate-pulse font-mono mt-1 font-bold">
+                            ⚠️ 抓到了！迅速点击!
+                        </button>
                         <button v-if="cat.isOut" @click.stop="hackCamera(cat)"
                             class="bg-red-900 border border-red-500 text-red-100 text-[10px] w-full mt-1 py-1 rounded shadow hover:bg-red-800 transition">
                             <i class="fas fa-video"></i> 劫持夜巡监控
@@ -3859,6 +3864,84 @@
                     }
                 };
 
+                // ===== GROUP CHAT + CAUGHT IN THE ACT =====
+                const groupChatState = reactive({
+                    messages: [],
+                    currentInput: '',
+                    isSending: false,
+                    showTranslation: false,
+                });
+
+                const sendGroupMessage = async () => {
+                    if (!settings.apiKey) return alert("需要API连接");
+                    if (!groupChatState.currentInput.trim()) return;
+                    const userMsg = groupChatState.currentInput.trim();
+                    groupChatState.currentInput = '';
+                    groupChatState.messages.push({ type: 'user', content: userMsg, time: getCurrentTimeStr() });
+                    groupChatState.isSending = true;
+                    const catNames = cats.value.map(c => c.name).join(', ');
+                    const prompt = `[GOTHAM GROUP CHAT]
+User message: "${userMsg}"
+Cats in house: ${catNames}.
+Task: Generate 2-3 short replies from these cats. For EACH cat responding, provide TWO layers:
+1. CAT_MEOW: The actual cat noise/action they perform (just sounds and physical actions).
+2. HERO_THOUGHT: What they are ACTUALLY thinking/saying in their encrypted hero channel (~20 words, canon personality).
+Format STRICTLY as JSON array:
+[{ "cat": "name", "meow": "...", "thought": "..." }]
+Language: Simplified Chinese.`;
+                    try {
+                        const res = await callAI(prompt, STRICT_CANON_PROMPT, 1200, ThinkingLevel.LOW);
+                        const replies = parseAIJSON(res);
+                        if (Array.isArray(replies)) {
+                            replies.forEach(r => {
+                                groupChatState.messages.push({ type: 'cat', cat: r.cat, meow: r.meow, thought: r.thought, time: getCurrentTimeStr() });
+                            });
+                        }
+                    } catch (e) { showToast("群聊信号异常", "error"); }
+                    finally { groupChatState.isSending = false; }
+                };
+
+                const HERO_GLITCH_STATUSES = [
+                    '正在用微型电脑黑入GCPD主机。。。',
+                    '正在磨刺刀准备战斗。。。',
+                    '正在运拉贵秘封印的装备柜。。。',
+                    '正在执行畏置场杀任务。。。',
+                    '正在查阅哥谭上空装备擤放点。。。',
+                    '正在分析反派中心的加密通话。。。',
+                    '正在给蝙蝠车控制台安装数据监进。。。',
+                    '正在计划正义联盟内部轮换旹案。。。',
+                ];
+
+                const catchInTheAct = async (cat) => {
+                    if (!settings.apiKey) return;
+                    cat.glitchActive = false;
+                    const glitchStatus = cat._glitchStatus || '正在做一些很普通的事情。。。';
+                    showToast(`抓包了 ${cat.name}! 将尝试辯解...`, "loading");
+                    const prompt = `[CAUGHT IN THE ACT] Character: ${cat.name}. They were secretly doing: "${glitchStatus}". The user just caught them mid-action.
+Task: Write their panicked, hilariously OOC excuse (~50 words). They MUST deny EVERYTHING and blame it on normal cat behavior. Canon personality must shine through (e.g., Damian's arrogance, Bruce's stoicism, Jason's anger).
+Language: Simplified Chinese.`;
+                    try {
+                        const res = await callAI(prompt, STRICT_CANON_PROMPT, 800, ThinkingLevel.LOW);
+                        cat.todayInteractions = cat.todayInteractions || [];
+                        cat.todayInteractions.push({ time: getCurrentTimeStr(), content: `[抓包现场] ${cleanText(res)}` });
+                        alert(`「${cat.name}」： "${cleanText(res)}"`);
+                    } catch (e) { showToast("连接异常", "error"); }
+                };
+
+                const startGlitchTimer = () => {
+                    setInterval(() => {
+                        const activeCats = cats.value.filter(c => !c.isOut);
+                        if (activeCats.length === 0) return;
+                        // ~15% chance per 8s tick = random glitch events
+                        if (Math.random() < 0.15) {
+                            const cat = activeCats[Math.floor(Math.random() * activeCats.length)];
+                            cat._glitchStatus = HERO_GLITCH_STATUSES[Math.floor(Math.random() * HERO_GLITCH_STATUSES.length)];
+                            cat.glitchActive = true;
+                            setTimeout(() => { cat.glitchActive = false; }, 4000); // 4-second window
+                        }
+                    }, 8000);
+                };
+
                 const parseAIJSON = (text) => {
                     try {
                         if (!text) return null;
@@ -4392,45 +4475,52 @@
 
                 const processDiceResult = async (roll, result) => {
                     exploreState.isProcessing = true;
-                    const prompt = `[TRPG CHECK RESULT]
+                    const companionSkillHints = {
+                        '布鲁斯·韦恩': '布鲁斯依靠强大的偵探本能，对潜在连系、所有事物的分析能力首屈一指。',
+                        '迪克·格雷森': '迪克的杂芀名山和社交睿慧让他在人际和据点发现上极强。',
+                        '杰森·陶德': '杰森靠街头生存本能，对危险的直觉和战斗机会的判断极为准确。',
+                        '提姆·德雷克': '提姆是技术天才，对数字、模式和电子系统的分析超乎常人。',
+                        '达米安·韦恩': '达米安具备谷中兵训练的身手和战略思维，出山怎么进入战斗和脱劫都准确得可怕。',
+                    };
+                    const companionHint = companionSkillHints[exploreState.companion.name] || '小猫的本能应该有所帮助。';
+
+                    const prompt = `[WORLD – DICE OUTCOME]
                     Location: ${exploreState.location.name}.
-                    Companion: ${exploreState.companion.name}.
+                    Companion Cat: ${exploreState.companion.name} (${companionHint})
                     Check Type: ${exploreState.currentCheck}.
-                    User Roll: ${roll} (Target: ${getSkillValue(exploreState.currentCheck)}).
+                    User Roll: ${roll} / Target: ${getSkillValue(exploreState.currentCheck)}.
                     Result: ${result}.
-                    
-                    [THE MODULE - YOU MUST FOLLOW THIS STRICTLY]:
-                    ${exploreState.module}
-                    
-                    Task: Describe the outcome based on this result and the Module. 
-                    - If "大成功" (1-5): The cat companion subtly "helped" in a way that looks like luck, possibly revealing a key clue from the Module.
-                    - If "大失败" (96-100): The user is about to face a LETHAL or HUMILIATING crisis. The cat MUST secretly intervene according to its "Hidden Script" in the Module to save the user.
-                    - If "成功" or "困难成功": The action succeeds smoothly, providing the relevant Clue from the Module.
-                    - If "失败": The action fails, leading to a new narrative obstacle from the Module.
-                    
-                    CRITICAL RULES:
-                    1. NO OOC: ${exploreState.companion.name} MUST remain a normal cat. Only meows/actions. NO human speech.
-                    2. NO GM TALK: Do not mention "KP", "Roll", or "Check". 
-                    3. ADVENTURE FLOW: If the story has reached a natural conclusion (Success/Fail/Retreat ending in Module), include [END_ADVENTURE].
-                    
-                    Continue the narrative (100-150 words). 
-                    Language: Simplified Chinese.`;
+
+                    [SCENARIO MODULE]: ${exploreState.module}
+
+                    [OUTCOME RULES BASED ON RESULT]:
+                    - 「大成功」(1-5): The companion's deep intuition aligned with the roll. Describe how the cat SUBTLY created the condition for success without anyone suspecting a thing. Reveal a key clue from the module. Make it look like pure luck or animal instinct.
+                    - 「困难成功」: Barely works, but costs something — time, energy, or a minor risk that has now escalated.
+                    - 「成功」: Clean success. Progress the scene and provide the relevant clue or outcome.
+                    - 「失败」: The action fails in a realistic, believable way. Create a new complication from the Module.
+                    - 「大失败」(96-100): A serious crisis looms. The companion cat MUST covertly intervene to prevent disaster — but it looks entirely like a clumsy cat accident or animal reflex. Describe the cat's ingeniously-disguised rescue.
+
+                    [ANTI-META RULES]:
+                    1. NEVER say 「KP」, 「GM」, 「模组」, 「检定」, 「成功」 or 「失败」 directly in narration.
+                    2. Address the user as 「你」 ALWAYS. Cat actions in 3rd person.
+                    3. End on a SENSORY HOOK to pull the user into the next action.
+
+                    Respond in ~120 words. Language: Simplified Chinese.`;
 
                     try {
-                        const res = await callAI(prompt, "You are an invisible narrator for an immersive text adventure. Never break character.", 1200);
+                        const res = await callAI(prompt, "你是党哪世界本身。用沉浸、感官具体的语言描述世界里发生的一切。绝不说出【主持人】、【KP】、【模组】等任何元叙事内容。", 1200);
                         let content = cleanText(res);
 
-                        // Check if AI is asking for another dice roll
-                        const checkMatch = content.match(/请掷 1d100 过一个【(.*)】检定/);
+                        const checkMatch = content.match(/【(.{2,10})】检定/);
                         if (checkMatch) {
                             exploreState.currentCheck = checkMatch[1];
                             exploreState.waitingForDice = true;
                         }
 
-                        const shouldEnd = content.includes("[END_ADVENTURE]");
-                        content = content.replace("[END_ADVENTURE]", "").trim();
+                        const shouldEnd = content.includes('[END_ADVENTURE]');
+                        content = content.replace('[END_ADVENTURE]', '').trim();
 
-                        exploreState.history.push({ role: 'kp', content });
+                        exploreState.history.push({ role: 'world', content });
                         if (shouldEnd && !exploreState.waitingForDice) {
                             setTimeout(() => finishExploration(), 2000);
                         }
@@ -4537,9 +4627,8 @@
                     Language: Simplified Chinese.`;
 
                     try {
-                        const res = await callAI(prompt, "You are a professional TRPG scenario designer.", 1200);
+                        const res = await callAI(prompt, STRICT_CANON_PROMPT, 1500);
                         exploreState.module = cleanText(res);
-                        // Now call startExploration which will handle the transition to active state
                         await startExploration();
                     } catch (e) {
                         showToast("模组生成失败，请重试。");
@@ -4558,25 +4647,25 @@
                     exploreState.history = [];
                     exploreState.isProcessing = true;
 
-                    const prompt = `[TRPG START]
-                    Universe: ${exploreState.location.universe.toUpperCase()}. 
-                    Location: ${exploreState.location.name}. 
-                    Companion Cat: ${exploreState.companion.name}.
-                    User Goal: ${exploreState.goal}.
-                    
-                    [THE MODULE - YOU MUST FOLLOW THIS STRICTLY]:
-                    ${exploreState.module}
-                    
-                    STRICT NARRATIVE RULES:
-                    1. ${exploreState.companion.name} is a CAT. They must ONLY meow, purr, or perform cat-like actions. NO human speech. NO transformation.
-                    2. AI acts as an invisible narrator (KP). Do not break the fourth wall.
-                    3. Start with a vivid opening scene (150 words) that introduces the location and the initial challenge as defined in the Module.
-                    
-                    Language: Simplified Chinese.`;
+                    const prompt = `[WORLD BEGINS]
+                    Scene: ${exploreState.location.name}.
+                    Your Cat Companion: ${exploreState.companion.name} (小猫, currently in cat form. Describe them in 3rd person. They NEVER speak human words, only physical actions like twitching ears, sniffing, or glancing sideways).
+                    Your Goal: ${exploreState.goal}.
+
+                    [SCENARIO MODULE]: ${exploreState.module}
+
+                    [NARRATIVE VOICE RULES]:
+                    1. ADDRESS THE USER IN 2ND PERSON ("你") ALWAYS. Never use "player" or "protagonist".
+                    2. Use vivid sensory language: what does the air SMELL like? What SOUNDS are nearby? What textures do you FEEL?
+                    3. ${exploreState.companion.name} is present as a companion cat. No heroic actions yet — just curious feline behavior that subtly suggests intelligence.
+                    4. NEVER mention "KP", "GM", "主持人", "贴子", "模组", or any TRPG meta-terms.
+                    5. End your opening on a SENSORY HOOK: a sound, a smell, a flicker of movement — something that makes the user WANT to act next.
+
+                    Write the opening scene (~150 words). Language: Simplified Chinese.`;
 
                     try {
-                        const res = await callAI(prompt, "You are an invisible narrator for an immersive text adventure. You MUST strictly follow the provided module.", 1200);
-                        exploreState.history.push({ role: 'kp', content: cleanText(res) });
+                        const res = await callAI(prompt, "你是党哪世界本身。用沉浸、感官具体的语言描述世界里发生的一切。绝不说出【主持人】、【KP】、【模组】等任何元叙事内容。", 1500);
+                        exploreState.history.push({ role: 'world', content: cleanText(res) });
                         exploreState.active = true; // Switch to chat view now
                         exploreState.showGoalModal = false; // Close the modal
                         nextTick(() => { if (exploreChatRef.value) exploreChatRef.value.scrollTop = exploreChatRef.value.scrollHeight; });
@@ -4618,34 +4707,56 @@
                         rescuer.diary.push({ time: getCurrentTimeStr(), content: `在${exploreState.location.name}暗中观察并救下了陷入困境的${user.nickname}。` });
                     }
 
-                    const prompt = `[TRPG PROGRESSION]
-                    Current Location: ${exploreState.location.name}.
-                    Companion: ${exploreState.companion.name}.
+                    const round = exploreState.rounds;
+                    let pacingGuide = '';
+                    if (round <= 3) {
+                        pacingGuide = `[EARLY GAME – 沈浸与发现阶段]
+Focus on atmosphere and discovery. Let the user explore freely. Introduce at most ONE subtle clue or curious detail from the Module. ${exploreState.companion.name} should display alert, curious cat behaviors (sniffing the air, tracking something with their eyes) that hint at hidden knowledge without breaking cover.`;
+                    } else if (round <= 7) {
+                        pacingGuide = `[MID GAME – 升温与障碍阶段]
+The situation should grow more complex or tense. Introduce a meaningful obstacle or NPC from the Module. ${exploreState.companion.name}'s feline instincts should seem increasingly “too good” for a regular cat — bristling in exactly the right place, blocking an ominous door with their body. Do NOT let them speak.`;
+                    } else {
+                        pacingGuide = `[DEEP EXPLORATION – 社事自然展开]
+The story has been running for many rounds — do NOT force a resolution. Keep the world vivid and alive. Introduce new textures: a deeper NPC motivation, a new area, a sensory detail that wasn't there before. ${exploreState.companion.name} may now display a slightly more pronounced "suspiciously capable" behavior, but never breaks cover. Let the story breathe. An ending will come when the MODULE or the user naturally reaches one.`;
+                    }
+
+                    const prompt = `[WORLD CONTINUES – ROUND ${round}]
+                    Location: ${exploreState.location.name}.
+                    Companion: ${exploreState.companion.name} (cat form only).
                     User Goal: ${exploreState.goal}.
-                    User Action: ${userAction}.
-                    User Stats: ${JSON.stringify(user.stats)}.
+                    User's Action: ${userAction}.
+                    User Stats: STR ${user.stats.STR} DEX ${user.stats.DEX} CON ${user.stats.CON} INT ${user.stats.INT}.
                     User Skills: ${JSON.stringify(user.skills)}.
-                    History: ${exploreState.history.slice(-6).map(h => h.role + ": " + h.content).join("\n")}.
-                    
-                    [THE MODULE - YOU MUST FOLLOW THIS STRICTLY]:
+
+                    [RECENT HISTORY – LAST 6 TURNS]:
+                    ${exploreState.history.slice(-6).map(h => (h.role === 'user' ? '你:' : '世界:') + ' ' + h.content).join('\n')}
+
+                    [MODULE CORE]:
                     ${exploreState.module}
-                    
-                    [ANTI-CHUNIBYO CHECK]:
-                    The user is a NORMAL GOTHAM CITIZEN. If the action is superhuman, treat it as a FUMBLE.
-                    
-                    Task: Progress the narrative based on the Module. 
-                    - If the action is risky, ask for a 1d100 check.
-                    - **ENDING CRITERIA**: Include [END_ADVENTURE] ONLY if:
-                        1. The user has explored something significant or achieved their goal.
-                        2. The user encountered a danger they ABSOLUTELY cannot solve.
-                        3. The user explicitly expressed a desire to leave/end.
-                    - DO NOT end the adventure just because a few rounds passed. Let it breathe if there is more to explore.
-                    - Keep the cat in CAT FORM.
-                    
-                    Language: Simplified Chinese.`;
+
+                    [PACING DIRECTIVE]:
+                    ${pacingGuide}
+
+                    [ANTI-META RULES]:
+                    1. NEVER say "KP", "GM", "模组", "roll", or "检定" in narration. If a dice check is needed, phrase it organically: e.g. "你的居垃嫦 (${exploreState.companion.name}) 突然耳朵一动——前方似乎潜藏着什么。" THEN issue the check with the pattern: 【技能检创立刻】尝试过一个「楼名」检定。
+                    2. Address the user as "你" ALWAYS.
+                    3. ${exploreState.companion.name} NEVER speaks human words. All feline actions in 3rd person.
+                    ${rescueContext}
+
+                    [ENDING RULE – STRICT]:
+                    ONLY include [END_ADVENTURE] if:
+                    1. The user has achieved the specific goal stated in the Module (e.g., completed the errand, found the item).
+                    2. A module-defined catastrophic failure has occurred that cannot be recovered from.
+                    3. The user explicitly writes that they want to leave, go home, retreat, or take the cat away.
+                    NEVER include [END_ADVENTURE] just because many rounds have passed or the pacing guide mentions a late stage. A long session is a GOOD session.
+
+                    [MANDATORY CLIFFHANGER ENDING]:
+                    Every response MUST end on a SENSORY HOOK — a sound, a movement, a smell — that creates anticipation and makes the user WANT to type their next action.
+
+                    Respond in ~120–160 words. Language: Simplified Chinese.`;
 
                     try {
-                        const res = await callAI(prompt, "You are an invisible narrator for an immersive text adventure. Never break character.", 1200);
+                        const res = await callAI(prompt, "你是党哪世界本身。用沉浸、感官具体的语言描述世界里发生的一切。绝不说出【主持人】、【KP】、【模组】等任何元叙事内容。", 1500);
                         let content = cleanText(res);
 
                         // Check if AI is asking for a dice roll
@@ -6449,6 +6560,7 @@
                     checkDailyInitialization();
                     if (todayEvent.value && !alfredMessage.value.includes(todayEvent.value)) { alfredMessage.value = todayEvent.value + " " + alfredMessage.value; }
                     setInterval(updateCountdown, 1000); setInterval(() => { autoUpdateLogic(); }, 20 * 60 * 1000); setInterval(() => { currentTime.value = new Date(); }, 30000);
+                    startGlitchTimer();
                     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { checkDailyInitialization(); currentTime.value = new Date(); } });
                     setTimeout(() => { if (calendarContainer.value) { const scrollY = currentTimePixels.value - 200; calendarContainer.value.scrollTop = scrollY > 0 ? scrollY : 0; } }, 100);
                     addLog("SYSTEM INITIALIZED. WELCOME TO BATCOMPUTER v3.5.6", "info");
@@ -6529,6 +6641,7 @@
                     generatePhoneNews, generatePhoneMoments,
                     addWalletTransaction,
                     showPhoneLocationModal, phoneLocationInput, showPhoneMoneyModal, phoneMoneyAmount, phoneMoneyType, showPhotoDescModal, currentPhotoDesc, scanSignal, hackCamera,
+                    groupChatState, sendGroupMessage, catchInTheAct,
                     sendPhoneMoney, openPhotoDesc,
                     collectRedPacket, phoneInputRef,
                     initTetris, tetrisAction, endGame, tetrisState, mergeState, handleMergeTouchStart, handleMergeTouchEnd, matchState, initMerge, initMatch, matchClick,
@@ -6538,5 +6651,4 @@
         }).mount('#app');
     </script>
 </body>
-
 </html>
