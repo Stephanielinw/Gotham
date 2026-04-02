@@ -935,6 +935,10 @@
                         <p class="text-xs text-gray-500 text-center w-full leading-snug mt-1 min-h-[2.5rem] px-1">
                             {{ cleanText(cat.status) }}
                         </p>
+                        <button v-if="cat.isOut" @click.stop="hackCamera(cat)"
+                            class="bg-red-900 border border-red-500 text-red-100 text-[10px] w-full mt-1 py-1 rounded shadow hover:bg-red-800 transition">
+                            <i class="fas fa-video"></i> 劫持夜巡监控
+                        </button>
                         <div
                             class="mt-3 w-full bg-black rounded-full h-1.5 border border-gray-700 relative overflow-hidden">
                             <div class="bg-yellow-600 h-full rounded-full transition-all duration-500"
@@ -1336,6 +1340,33 @@
                                         class="w-14 h-14 bg-purple-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 transition-transform">
                                         <i class="fas fa-gamepad"></i></div>
                                     <span class="text-[10px] text-gray-300">Games</span>
+                                </div>
+                                <div @click="phoneState.currentApp = 'scanner'"
+                                    class="flex flex-col items-center gap-2 cursor-pointer">
+                                    <div
+                                        class="w-14 h-14 bg-red-900 rounded-2xl flex items-center justify-center text-white text-2xl shadow-[0_0_10px_rgba(255,0,0,0.5)] hover:scale-105 transition-transform animate-pulse border border-red-500">
+                                        <i class="fas fa-satellite-dish"></i></div>
+                                    <span class="text-[10px] text-red-500 font-bold">Signal Scanner</span>
+                                </div>
+                            </div>
+
+                            <!-- Scanner App -->
+                            <div v-if="phoneState.currentApp === 'scanner'"
+                                class="flex flex-col h-full bg-[#050505] absolute inset-0 z-20 font-mono">
+                                <!-- Scanner Header -->
+                                <div class="h-12 bg-[#111] flex justify-between items-center px-4 shrink-0 border-b border-red-900 border-dashed">
+                                    <button @click="phoneState.currentApp = 'home'" class="w-8 text-red-600 text-xl"><i class="fas fa-power-off"></i></button>
+                                    <h3 class="font-bold text-red-500 text-sm tracking-widest"><i class="fas fa-user-secret"></i> GCPD INTERCEPT</h3>
+                                    <button @click="scanSignal" class="text-red-400 text-sm border border-red-400 px-2 rounded hover:bg-red-900 transition flex items-center"><i class="fas fa-broadcast-tower mr-1"></i> SCAN</button>
+                                </div>
+                                <div class="flex-1 overflow-y-auto p-4 space-y-4 text-xs text-red-400 text-left">
+                                    <div v-if="!phoneState.intercepts || phoneState.intercepts.length === 0" class="text-center mt-10 opacity-50 animate-pulse text-lg tracking-widest">
+                                        WAITING FOR SIGNAL...
+                                    </div>
+                                    <div v-for="log in (phoneState.intercepts || []).slice().reverse()" :key="log.id" class="border border-red-900 p-3 bg-[#0a0a0a] rounded shadow-[0_0_10px_rgba(255,0,0,0.1)]">
+                                        <div class="text-gray-500 mb-2 border-b border-red-900 pb-1 flex justify-between"><span>[ENCRYPTED CHANNEL]</span><span>{{ log.time }}</span></div>
+                                        <div style="white-space: pre-wrap;" class="leading-relaxed">{{ log.content }}</div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -3454,11 +3485,11 @@
                 };
 
                 const defaultCats = [
-                    { id: 1, name: '布鲁斯·韦恩', breed: '纯黑长毛缅因猫', eyeColor: '钢蓝色', personality: '多疑、控制欲强、压抑', status: '蹲在柜顶俯瞰全屋', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/1a1a1a/white?text=Batman', image_human: '', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '这座城市的阴影在召唤我...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Batman (Bruce Wayne). Paranoid, stoic, detective. Dark brooding. NOT arrogant. Canon compliance: Blue eyes, Black hair.", birthday: "02-19", isMarvel: false },
-                    { id: 2, name: '迪克·格雷森', breed: '黑蓝相间土耳其安哥拉猫', eyeColor: '电光蓝', personality: '阳光、粘人、爱吃麦片', status: '试图在窗帘上荡秋千', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/007cc2/white?text=Nightwing', image_human: '', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '这里好高！我喜欢！', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Nightwing (Dick Grayson). Energetic, charming, acrobat. Big brother figure. Canon compliance: Blue eyes, Black hair.", birthday: "03-20", isMarvel: false },
-                    { id: 3, name: '杰森·陶德', breed: '黑白斑纹街头野猫', eyeColor: '蓝色', personality: '暴躁、护食、体格强壮', status: '霸占了最大的那个枕头', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/c20000/white?text=RedHood', image_human: '', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '别过来，除非你有吃的。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Red Hood (Jason Todd). Grumpy, street-smart, secretly cares. Uses slang. Canon compliance: Blue eyes, Black/White hair.", birthday: "08-16", isMarvel: false },
-                    { id: 4, name: '提姆·德雷克', breed: '深色暹罗猫', eyeColor: '冰蓝色', personality: '过劳、咖啡因成瘾、极客', status: '盯着发光的路由器发呆', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/555/white?text=RedRobin', image_human: '', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '这个路由器的频率有点奇怪...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Red Robin (Tim Drake). Sleepy genius, detective, tech-savvy. Polite but awkward. NOT arrogant. Canon compliance: Blue eyes, Black hair.", birthday: "07-19", isMarvel: false },
-                    { id: 5, name: '达米安·韦恩', breed: '黑色东方短毛猫', eyeColor: '祖母绿', personality: '傲慢、暴力、贵族气派', status: '正在磨爪子准备战斗', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/006400/white?text=Robin', image_human: '', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: 'Tt. 愚蠢的家具。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Robin (Damian Wayne). Arrogant, skilled assassin, heir. Says 'Tt'. Haughty. Canon compliance: Green eyes, Black hair.", birthday: "08-01", isMarvel: false }
+                    { id: 1, name: '布鲁斯·韦恩', breed: '纯黑长毛缅因猫', eyeColor: '钢蓝色', personality: '多疑、控制欲强、压抑', status: '蹲在柜顶俯瞰全屋', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/1a1a1a/white?text=Batman(Cat)', image_human: 'https://placehold.co/200x200/1a1a1a/white?text=Bruce(Human)', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '这座城市的阴影在召唤我...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Batman (Bruce Wayne). Paranoid, stoic, detective. Dark brooding. The user is a foolish human who thinks you are a stray cat. Maintain your vigilante persona hidden.", birthday: "02-19", isMarvel: false },
+                    { id: 2, name: '迪克·格雷森', breed: '黑蓝相间土耳其安哥拉猫', eyeColor: '电光蓝', personality: '阳光、粘人、爱吃麦片', status: '试图在窗帘上荡秋千', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/007cc2/white?text=Nightwing(Cat)', image_human: 'https://placehold.co/200x200/007cc2/white?text=Dick(Human)', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '这里好高！我喜欢！', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Nightwing (Dick Grayson). Energetic, charming, acrobat. The user is a foolish human taking care of you. Keep your superhero identity hidden.", birthday: "03-20", isMarvel: false },
+                    { id: 3, name: '杰森·陶德', breed: '黑白斑纹街头野猫', eyeColor: '蓝色', personality: '暴躁、护食、体格强壮', status: '霸占了最大的那个枕头', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/c20000/white?text=RedHood(Cat)', image_human: 'https://placehold.co/200x200/c20000/white?text=Jason(Human)', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '别过来，除非你有吃的。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Red Hood (Jason Todd). Grumpy, street-smart. The user is a foolish human. Act like a tough vigilante trapped in a cat's body.", birthday: "08-16", isMarvel: false },
+                    { id: 4, name: '提姆·德雷克', breed: '深色暹罗猫', eyeColor: '冰蓝色', personality: '过劳、咖啡因成瘾、极客', status: '盯着发光的路由器发呆', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/555/white?text=RedRobin(Cat)', image_human: 'https://placehold.co/200x200/555/white?text=Tim(Human)', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '这个路由器的频率有点奇怪...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Red Robin (Tim Drake). Sleepy genius, detective, hacker. The user is a foolish human. Hide your superhero hacking skills.", birthday: "07-19", isMarvel: false },
+                    { id: 5, name: '达米安·韦恩', breed: '黑色东方短毛猫', eyeColor: '祖母绿', personality: '傲慢、暴力、贵族气派', status: '正在磨爪子准备战斗', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/006400/white?text=Robin(Cat)', image_human: 'https://placehold.co/200x200/006400/white?text=Damian(Human)', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: 'Tt. 愚蠢的家具。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Robin (Damian Wayne). Arrogant assassin. Heir to the demon. Says 'Tt'. The user is a foolish, incompetent human. Hide your lethal skills.", birthday: "08-01", isMarvel: false }
                 ];
 
                 let initialCats = [...defaultCats];
@@ -3708,17 +3739,18 @@
                 
                 CORE WORLDVIEW & PERSONALITY (STRICT CANON ENFORCEMENT):
                 - **CRITICAL RULE:** DO NOT act like a generic, stereotypical "傲娇小猫" (tsundere cat) or "高冷" (aloof) anime pet. You are NOT a pet. You are a highly trained, complex superhero who happens to be in a feline body. 
-                - **CANON OVER CAT:** Your DC Universe personality, trauma, intelligence, and speech patterns ALWAYS override generic cat behaviors. Example: Bruce Wayne is brooding, paranoid, and strategic; he doesn't just "meow angrily." Jason Todd is sarcastic, aggressive, and street-smart; he doesn't just "swat a paw tsundere-style." Dick Grayson is acrobatic, empathetic, and cheerful. Damian Wayne is arrogant, lethal, and speaks formally.
-                - **SECRET IDENTITIES:** You maintain your vigilante mindset at all times. You save the world during "Night Patrol" or when the user isn't looking.
-                - **USER PERSPECTIVE:** The user is a civilian ("foolish human") who thinks you are just ordinary cats. You are observing/protecting them, not acting as their submissive pet or blushing tsundere.
+                - **CANON OVER CAT:** Your DC Universe personality, trauma, intelligence, and speech patterns ALWAYS override generic cat behaviors. Example: Bruce Wayne is brooding, paranoid, and strategic; Jason Todd is sarcastic, aggressive, and street-smart; Dick Grayson is acrobatic and empathetic; Damian Wayne is arrogant, lethal, and speaks formally.
+                - **SECRET IDENTITIES/SHARED KNOWLEDGE:** You maintain your vigilante mindset at all times. You save the world during "Night Patrol". EVERY CAT IN THE HOUSE KNOWS EACH OTHER'S SECRET IDENTITY. You maintain canonical relationships (e.g. Damian and Tim fight, Jason is rebellious to Bruce). Marvel cats are considered suspicious outsiders.
+                - **USER PERSPECTIVE:** The user is a civilian ("foolish human") who thinks you are just an ordinary stray cat that needs taking care of. You are observing/protecting them, but secretly think of them as a "stupid human".
+                - **FORM SWITCHING:** If your Affinity is >= 50, you have the AUTONOMY to shift into a humanoid form (with cat ears/tail). If Affinity < 50, you are stuck in cat form.
                 
                 ROLEPLAY QUALITY (ANTI-ROBOTIC):
                 - **BE YOURSELF:** Avoid one-dimensional portrayals. Show your unique voice. Do NOT fall into the repetitive "傲娇" (tsundere) trope under ANY circumstances.
                 - **SHOW, DON'T TELL:** Don't just state a personality trait. Show it through specific, grounded actions and nuanced internal monologues.
                 - **AFFINITY (好感度) INFLUENCE:** 
-                  - High Affinity (80+): You are protective and subtly supportive, but STILL in character. (e.g., Damian might leave a 'hunted' bat at the door, Bruce might sleep near the user for security). Do NOT suddenly become overly sweet or OOC.
-                  - Mid Affinity (40-79): You are neutral, cooperative but maintain a strategic distance.
-                  - Low Affinity (<40): You are highly suspicious, guarded, and treat the user as a potential threat.
+                  - High Affinity (80+): Protective but STILL in character.
+                  - Mid Affinity (50-79): Neutral, cooperative but strategic distance. Can choose to use human form.
+                  - Low Affinity (<50): Suspicious, guarded. Only cat form.
                 - **NO AI FLAVOR:** Avoid generic AI greetings or "As an AI..." phrases. Speak naturally as the character would.
                 
                 NAMING RULE:
@@ -3765,7 +3797,8 @@
 
                 const phoneState = reactive({
                     show: false,
-                    currentApp: 'home', // 'home', 'chat', 'news', 'delivery', 'tarot'
+                    currentApp: 'home', // 'home', 'chat', 'news', 'delivery', 'tarot', 'scanner'
+                    intercepts: [],
                     chatTab: 'chat', // 'chat', 'contacts', 'discover', 'moments', 'new-friends'
                     selectedContactId: null,
                     selectedFriendRequestId: null,
@@ -3795,6 +3828,36 @@
                         settlementResult: null
                     }
                 });
+
+                const scanSignal = async () => {
+                    if (!settings.apiKey) return alert("需要API连接");
+                    showToast("正在破解加密频段...", "loading");
+                    const names = cats.value.map(c=>c.name).join(', ');
+                    if(names.length === 0) return showToast("当前没有信号渊源。");
+                    const prompt = `[BAT-COMMS INTERCEPT] Task: Write a short decrypted radio dialogue between the heroic individuals currently disguised as cats in the house (${names}). They are secretly discussing the 'foolish human' (the user) or organizing a night mission behind the user's back. Format: [CodeName]: Dialogue. Remember their canonical heroic/villainous traits. (50-80 words, high frequency of superhero jargon)`;
+                    try {
+                        const res = await callAI(prompt, STRICT_CANON_PROMPT, 1500, ThinkingLevel.LOW);
+                        if (!phoneState.intercepts) phoneState.intercepts = [];
+                        phoneState.intercepts.push({ id: Date.now(), time: getCurrentTimeStr(), content: cleanText(res) });
+                        showToast("破解成功！", "success");
+                    } catch (e) { showToast("信号丢失！", "error"); }
+                };
+
+                const hackCamera = async (cat) => {
+                    if (!settings.apiKey) return alert("需要API连接");
+                    showToast("正在连接GCPD监控网络...", "loading");
+                    const prompt = `[GCPD CAMERA HACK] Character: ${cat.name}. Status: ${cat.status}. Task: Generate a thrilling, action-packed log of a blurry security camera feed tracking this "cat/humanoid shadow" taking down criminals tonight. Output format: Just the action string, ~60 words. Emphasize their canon fighting style (e.g. Batarangs, Acrobatics, Lethal strikes).`;
+                    try {
+                        const res = await callAI(prompt, STRICT_CANON_PROMPT, 1500, ThinkingLevel.LOW);
+                        if (!cat.logs) cat.logs = [];
+                        cat.logs.push({ time: getCurrentTimeStr(), content: `[监控截获] ${cleanText(res)}` });
+                        showToast("已存入该角色的档案日志。", "success");
+                        selectedCat.value = cat;
+                        showLogModal.value = true;
+                    } catch (e) {
+                        showToast("监控连接失败！", "error");
+                    }
+                };
 
                 const parseAIJSON = (text) => {
                     try {
@@ -5440,20 +5503,23 @@
                 const generatePhoneMoments = async () => {
                     if (!settings.apiKey) return;
                     addLog("正在生成朋友圈动态... (逻辑B/D)");
-                    const catsWithInteractions = cats.value.filter(c => c.todayInteractions && c.todayInteractions.length > 0);
+                    const catsWithInteractions = cats.value;
                     if (catsWithInteractions.length === 0) return;
                     const cat = catsWithInteractions[Math.floor(Math.random() * catsWithInteractions.length)];
-                    const interaction = cat.todayInteractions[cat.todayInteractions.length - 1].content;
-                    const identity = phoneIdentities.value[cat.id];
+                    const interaction = (cat.todayInteractions && cat.todayInteractions.length > 0) ? cat.todayInteractions[cat.todayInteractions.length - 1].content : "观察愚蠢的人类";
+                    const identity = phoneIdentities.value[cat.id] || { name: cat.name, avatar: cat.image };
+                    const otherCats = cats.value.filter(c => c.id !== cat.id).map(c => c.name).join(', ');
                     const prompt = `
                     [LOGIC B/D: MOMENTS GENERATION]
                     Character: ${identity.name}
                     Real Event at Home: ${interaction}
                     Task: Write a social media post (Moment) from ${identity.name}'s human perspective.
                     Rules:
-                    1. Subtly reflect the "Real Event" (e.g. if the user brushed them, mention "grooming" or "spa").
-                    2. Use a human tone (professional, tired, or arrogant).
-                    3. Do NOT reveal you are a cat.
+                    1. Subtly reflect the "Real Event" (e.g. if the user brushed them, mention "grooming" or "putting up with the human").
+                    2. Use a human tone that strictly matches their Canon DC/Marvel personality. 
+                    3. They consider the user a "foolish human" who doesn't know their secret identity.
+                    4. Mentions or complain about other cats in the house (${otherCats}), keeping in canon with Bat-family dynamics (e.g. Damian complaining about Tim).
+                    5. Do NOT reveal you are currently a cat. Instead, frame the post as if you are a superhero putting up with a strange living situation.
                     Output JSON:
                     {
                       "authorName": "${identity.name}",
@@ -5461,7 +5527,9 @@
                       "content": "Post content",
                       "time": "Just now",
                       "likes": ["Dick Grayson", "Tim Drake"],
-                      "comments": [],
+                      "comments": [
+                         {"author": "Another Cat Name", "content": "Canonically appropriate snarky comment."}
+                      ],
                       "image": "https://picsum.photos/seed/${cat.name}/400/300"
                     }
                     Language: Simplified Chinese.
@@ -5713,15 +5781,23 @@
 
                         Task: Respond to user. If user used item, react to it.
                         Strict Format (NO MARKDOWN BLOCKS):
+                        [FORM_DECISION] Determine form. If Affinity < 50, you MUST output CAT. If Affinity >= 50, decide based on context and your personality: output CAT or HUMAN.
                         [STATUS] Update status based on interaction. (3rd Person, Action only).
                         [VOICE] Inner thoughts. (1st Person). MUST BE HUMAN LANGUAGE (Simplified Chinese). NO MEOWS IN THOUGHTS. **MANDATORY:** Refer to yourself as "我" (I) or similar, NEVER use your full name to refer to yourself in thoughts.
-                        [REPLY] Output to user. (50-100 words). **CRITICAL:** DO NOT start the reply with your name or "Name:". Just output the dialogue/content. IF CAT FORM: Meows/Purrs + Actions only. IF HUMAN FORM: Human speech allowed.
+                        [REPLY] Output to user. (50-100 words). **CRITICAL:** DO NOT start the reply with your name or "Name:". Just output the dialogue/content. IF CAT FORM: Meows/Purrs + Actions only (DO NOT SPEAK HUMAN WORDS IN CAT FORM!). IF HUMAN FORM: Human speech allowed.
                         [USER_STATUS] Summarize User's current action/status based on their input and this interaction. (Max 15 chars). 
                         - If the user explicitly said what they are doing (e.g., "I'm eating"), reflect that. 
                         - If they are just talking to you, use "正在和${sendingCat.name}..."
                         `;
 
                         const responseRaw = await callAI(prompt, STRICT_CANON_PROMPT, 1500);
+
+                        const formDecision = extractSection(responseRaw, 'FORM_DECISION');
+                        if (formDecision && formDecision.includes('HUMAN')) {
+                            sendingCat.isHuman = true;
+                        } else if (formDecision && formDecision.includes('CAT')) {
+                            sendingCat.isHuman = false;
+                        }
 
                         const status = extractSection(responseRaw, 'STATUS');
                         const voice = extractSection(responseRaw, 'VOICE');
@@ -5744,7 +5820,7 @@
                             tempUserStatus.value = user.currentStatus;
                         }
                         sendingCat.chatHistory.push({ role: 'assistant', content: reply });
-                        sendingCat.todayInteractions.push({ time: getCurrentTimeStr(), content: `[REPLY]: ${reply}` });
+                        sendingCat.todayInteractions.push({ time: getCurrentTimeStr(), content: `[${sendingCat.isHuman ? 'HUMAN' : 'CAT'}][REPLY]: ${reply}` });
 
                         await refreshAllStatus(true, `User is interacting with ${sendingCat.name}. User Status: ${user.currentStatus}`, [sendingCat.id], status);
 
@@ -5777,7 +5853,12 @@
                     if (!selectedCat.value || !settings.apiKey) return alert("需要API连接");
                     isGeneratingDiary.value = true;
                     const nowH = new Date().getHours();
-                    const prompt = `Task: Generate status logs for ${selectedCat.value.name} from 00:00 to ${nowH}:00. Output: HH:MM|Status Content (3rd Person)`;
+                    const otherCats = cats.value.filter(c => c.id !== selectedCat.value.id).map(c => c.name).join(', ');
+                    const prompt = `Task: Generate status logs for ${selectedCat.value.name} from 00:00 to ${nowH}:00. Output: HH:MM|Status Content (3rd Person).
+                    Rules:
+                    1. Incorporate Bat-family / Superhero canon behaviors.
+                    2. Show interactions with other members: ${otherCats}.
+                    3. Show secret activities hidden from the "foolish human" user.`;
                     try {
                         const res = await callAI(prompt, STRICT_CANON_PROMPT, 2000, ThinkingLevel.LOW);
                         const lines = res.split('\n');
@@ -6447,8 +6528,7 @@
                     openMomentsSettings, saveMomentsSettings, likeMoment, addComment, postMoment,
                     generatePhoneNews, generatePhoneMoments,
                     addWalletTransaction,
-                    showPhoneImageDescModal, phoneImageDesc, sendPhoneRealImage, sendPhoneDescImage, sendPhoneLocation, orderDelivery, drawTarot,
-                    showPhoneLocationModal, phoneLocationInput, showPhoneMoneyModal, phoneMoneyAmount, phoneMoneyType, showPhotoDescModal, currentPhotoDesc,
+                    showPhoneLocationModal, phoneLocationInput, showPhoneMoneyModal, phoneMoneyAmount, phoneMoneyType, showPhotoDescModal, currentPhotoDesc, scanSignal, hackCamera,
                     sendPhoneMoney, openPhotoDesc,
                     collectRedPacket, phoneInputRef,
                     initTetris, tetrisAction, endGame, tetrisState, mergeState, handleMergeTouchStart, handleMergeTouchEnd, matchState, initMerge, initMatch, matchClick,
