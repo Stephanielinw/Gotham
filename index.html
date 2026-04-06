@@ -1301,56 +1301,64 @@
                                     class="flex flex-col items-center gap-2 cursor-pointer">
                                     <div
                                         class="w-14 h-14 bg-green-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 transition-transform">
-                                        <i class="fas fa-comment-dots"></i></div>
+                                        <i class="fas fa-comment-dots"></i>
+                                    </div>
                                     <span class="text-[10px] text-gray-300">WeChat</span>
                                 </div>
                                 <div @click="phoneState.currentApp = 'news'"
                                     class="flex flex-col items-center gap-2 cursor-pointer">
                                     <div
                                         class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 transition-transform">
-                                        <i class="fas fa-newspaper"></i></div>
+                                        <i class="fas fa-newspaper"></i>
+                                    </div>
                                     <span class="text-[10px] text-gray-300">Gazette</span>
                                 </div>
                                 <div @click="phoneState.currentApp = 'delivery'"
                                     class="flex flex-col items-center gap-2 cursor-pointer">
                                     <div
                                         class="w-14 h-14 bg-yellow-500 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 transition-transform">
-                                        <i class="fas fa-motorcycle"></i></div>
+                                        <i class="fas fa-motorcycle"></i>
+                                    </div>
                                     <span class="text-[10px] text-gray-300">Delivery</span>
                                 </div>
                                 <div @click="phoneState.currentApp = 'tarot'"
                                     class="flex flex-col items-center gap-2 cursor-pointer">
                                     <div
                                         class="w-14 h-14 bg-indigo-800 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 transition-transform">
-                                        <i class="fas fa-hat-wizard"></i></div>
+                                        <i class="fas fa-hat-wizard"></i>
+                                    </div>
                                     <span class="text-[10px] text-gray-300">Tarot</span>
                                 </div>
                                 <div @click="phoneState.currentApp = 'wallet'"
                                     class="flex flex-col items-center gap-2 cursor-pointer">
                                     <div
                                         class="w-14 h-14 bg-orange-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 transition-transform">
-                                        <i class="fas fa-wallet"></i></div>
+                                        <i class="fas fa-wallet"></i>
+                                    </div>
                                     <span class="text-[10px] text-gray-300">Wallet</span>
                                 </div>
                                 <div @click="phoneState.currentApp = 'shop'"
                                     class="flex flex-col items-center gap-2 cursor-pointer">
                                     <div
                                         class="w-14 h-14 bg-orange-500 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 transition-transform">
-                                        <i class="fas fa-shopping-basket"></i></div>
+                                        <i class="fas fa-shopping-basket"></i>
+                                    </div>
                                     <span class="text-[10px] text-gray-300">Shop</span>
                                 </div>
                                 <div @click="phoneState.currentApp = 'games'; phoneState.games.activeGame = null"
                                     class="flex flex-col items-center gap-2 cursor-pointer">
                                     <div
                                         class="w-14 h-14 bg-purple-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 transition-transform">
-                                        <i class="fas fa-gamepad"></i></div>
+                                        <i class="fas fa-gamepad"></i>
+                                    </div>
                                     <span class="text-[10px] text-gray-300">Games</span>
                                 </div>
                                 <div @click="phoneState.currentApp = 'scanner'"
                                     class="flex flex-col items-center gap-2 cursor-pointer">
                                     <div
                                         class="w-14 h-14 bg-red-900 rounded-2xl flex items-center justify-center text-white text-2xl shadow-[0_0_10px_rgba(255,0,0,0.5)] hover:scale-105 transition-transform animate-pulse border border-red-500">
-                                        <i class="fas fa-satellite-dish"></i></div>
+                                        <i class="fas fa-satellite-dish"></i>
+                                    </div>
                                     <span class="text-[10px] text-red-500 font-bold">Signal Scanner</span>
                                 </div>
                             </div>
@@ -1359,18 +1367,28 @@
                             <div v-if="phoneState.currentApp === 'scanner'"
                                 class="flex flex-col h-full bg-[#050505] absolute inset-0 z-20 font-mono">
                                 <!-- Scanner Header -->
-                                <div class="h-12 bg-[#111] flex justify-between items-center px-4 shrink-0 border-b border-red-900 border-dashed">
-                                    <button @click="phoneState.currentApp = 'home'" class="w-8 text-red-600 text-xl"><i class="fas fa-power-off"></i></button>
-                                    <h3 class="font-bold text-red-500 text-sm tracking-widest"><i class="fas fa-user-secret"></i> GCPD INTERCEPT</h3>
-                                    <button @click="scanSignal" class="text-red-400 text-sm border border-red-400 px-2 rounded hover:bg-red-900 transition flex items-center"><i class="fas fa-broadcast-tower mr-1"></i> SCAN</button>
+                                <div
+                                    class="h-12 bg-[#111] flex justify-between items-center px-4 shrink-0 border-b border-red-900 border-dashed">
+                                    <button @click="phoneState.currentApp = 'home'" class="w-8 text-red-600 text-xl"><i
+                                            class="fas fa-power-off"></i></button>
+                                    <h3 class="font-bold text-red-500 text-sm tracking-widest"><i
+                                            class="fas fa-user-secret"></i> GCPD INTERCEPT</h3>
+                                    <button @click="scanSignal"
+                                        class="text-red-400 text-sm border border-red-400 px-2 rounded hover:bg-red-900 transition flex items-center"><i
+                                            class="fas fa-broadcast-tower mr-1"></i> SCAN</button>
                                 </div>
                                 <div class="flex-1 overflow-y-auto p-4 space-y-4 text-xs text-red-400 text-left">
-                                    <div v-if="!phoneState.intercepts || phoneState.intercepts.length === 0" class="text-center mt-10 opacity-50 animate-pulse text-lg tracking-widest">
+                                    <div v-if="!phoneState.intercepts || phoneState.intercepts.length === 0"
+                                        class="text-center mt-10 opacity-50 animate-pulse text-lg tracking-widest">
                                         WAITING FOR SIGNAL...
                                     </div>
-                                    <div v-for="log in (phoneState.intercepts || []).slice().reverse()" :key="log.id" class="border border-red-900 p-3 bg-[#0a0a0a] rounded shadow-[0_0_10px_rgba(255,0,0,0.1)]">
-                                        <div class="text-gray-500 mb-2 border-b border-red-900 pb-1 flex justify-between"><span>[ENCRYPTED CHANNEL]</span><span>{{ log.time }}</span></div>
-                                        <div style="white-space: pre-wrap;" class="leading-relaxed">{{ log.content }}</div>
+                                    <div v-for="log in (phoneState.intercepts || []).slice().reverse()" :key="log.id"
+                                        class="border border-red-900 p-3 bg-[#0a0a0a] rounded shadow-[0_0_10px_rgba(255,0,0,0.1)]">
+                                        <div
+                                            class="text-gray-500 mb-2 border-b border-red-900 pb-1 flex justify-between">
+                                            <span>[ENCRYPTED CHANNEL]</span><span>{{ log.time }}</span></div>
+                                        <div style="white-space: pre-wrap;" class="leading-relaxed">{{ log.content }}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1392,7 +1410,8 @@
                                         class="bg-zinc-800 p-4 rounded-xl border border-purple-500 cursor-pointer hover:bg-zinc-700 flex items-center gap-4">
                                         <div
                                             class="w-12 h-12 bg-purple-900 rounded-lg flex items-center justify-center text-xl text-purple-300">
-                                            <i class="fas fa-cubes"></i></div>
+                                            <i class="fas fa-cubes"></i>
+                                        </div>
                                         <div class="flex-1">
                                             <div class="font-bold text-gray-200">哥谭方块</div>
                                             <div class="text-[10px] text-gray-500">经典下落消除，堆叠你的反派图鉴。</div>
@@ -1402,7 +1421,8 @@
                                         class="bg-zinc-800 p-4 rounded-xl border border-blue-500 cursor-pointer hover:bg-zinc-700 flex items-center gap-4">
                                         <div
                                             class="w-12 h-12 bg-blue-900 rounded-lg flex items-center justify-center text-xl text-blue-300">
-                                            <i class="fas fa-th-large"></i></div>
+                                            <i class="fas fa-th-large"></i>
+                                        </div>
                                         <div class="flex-1">
                                             <div class="font-bold text-gray-200">喵喵合合乐</div>
                                             <div class="text-[10px] text-gray-500">2048 滑动合成，最高进化出什么？</div>
@@ -1412,7 +1432,8 @@
                                         class="bg-zinc-800 p-4 rounded-xl border border-green-500 cursor-pointer hover:bg-zinc-700 flex items-center gap-4">
                                         <div
                                             class="w-12 h-12 bg-green-900 rounded-lg flex items-center justify-center text-xl text-green-300">
-                                            <i class="fas fa-layer-group"></i></div>
+                                            <i class="fas fa-layer-group"></i>
+                                        </div>
                                         <div class="flex-1">
                                             <div class="font-bold text-gray-200">喵了个喵</div>
                                             <div class="text-[10px] text-gray-500">极限 3 消堆叠，挑战阿卡姆智商。</div>
@@ -1991,7 +2012,8 @@
                                                 <div class="flex items-center gap-3">
                                                     <div
                                                         class="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded flex items-center justify-center text-white text-lg">
-                                                        <i class="fas fa-camera-retro"></i></div>
+                                                        <i class="fas fa-camera-retro"></i>
+                                                    </div>
                                                     <span class="text-base text-black">朋友圈</span>
                                                 </div>
                                                 <div class="flex items-center gap-2">
@@ -2007,7 +2029,8 @@
                                                     <div class="flex items-center gap-3">
                                                         <div
                                                             class="w-8 h-8 bg-red-500 rounded flex items-center justify-center text-white text-lg">
-                                                            <i class="fas fa-qrcode"></i></div>
+                                                            <i class="fas fa-qrcode"></i>
+                                                        </div>
                                                         <span class="text-base text-black">扫一扫</span>
                                                     </div>
                                                     <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
@@ -2017,7 +2040,8 @@
                                                     <div class="flex items-center gap-3">
                                                         <div
                                                             class="w-8 h-8 bg-blue-500 rounded flex items-center justify-center text-white text-lg">
-                                                            <i class="fas fa-shake"></i></div>
+                                                            <i class="fas fa-shake"></i>
+                                                        </div>
                                                         <span class="text-base text-black">摇一摇</span>
                                                     </div>
                                                     <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
@@ -2030,7 +2054,8 @@
                                                     <div class="flex items-center gap-3">
                                                         <div
                                                             class="w-8 h-8 bg-yellow-500 rounded flex items-center justify-center text-white text-lg">
-                                                            <i class="fas fa-search"></i></div>
+                                                            <i class="fas fa-search"></i>
+                                                        </div>
                                                         <span class="text-base text-black">看一看</span>
                                                     </div>
                                                     <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
@@ -2040,7 +2065,8 @@
                                                     <div class="flex items-center gap-3">
                                                         <div
                                                             class="w-8 h-8 bg-red-400 rounded flex items-center justify-center text-white text-lg">
-                                                            <i class="fas fa-bullseye"></i></div>
+                                                            <i class="fas fa-bullseye"></i>
+                                                        </div>
                                                         <span class="text-base text-black">搜一搜</span>
                                                     </div>
                                                     <i class="fas fa-chevron-right text-gray-300 text-xs"></i>
@@ -2421,7 +2447,8 @@
                                                 <div
                                                     class="text-2xl w-10 h-10 flex items-center justify-center bg-zinc-950 rounded-lg text-yellow-500">
                                                     <i v-if="item.icon && item.icon.startsWith('fa-')"
-                                                        :class="item.icon"></i><span v-else>{{ item.icon }}</span></div>
+                                                        :class="item.icon"></i><span v-else>{{ item.icon }}</span>
+                                                </div>
                                                 <div class="min-w-0">
                                                     <div class="font-bold text-xs text-gray-200">{{ item.name }}</div>
                                                     <div class="text-[9px] text-gray-500 mt-0.5 truncate max-w-[120px]">
@@ -2852,7 +2879,8 @@
                     <div class="bg-zinc-800 p-2 rounded">
                         <div class="text-[10px] text-gray-400">DURATION</div>
                         <div class="text-lg font-mono text-white">{{ Math.floor(currentSettlement.duration / 60) }}
-                            <span class="text-xs">MIN</span></div>
+                            <span class="text-xs">MIN</span>
+                        </div>
                     </div>
                     <div class="bg-zinc-800 p-2 rounded">
                         <div class="text-[10px] text-gray-400">REWARD</div>
@@ -2963,7 +2991,8 @@
                             <div
                                 class="text-3xl mr-4 bg-black w-12 h-12 flex items-center justify-center rounded-full text-zinc-300">
                                 <i v-if="item.icon && item.icon.startsWith('fa-')" :class="item.icon"></i><span
-                                    v-else>{{ item.icon }}</span></div>
+                                    v-else>{{ item.icon }}</span>
+                            </div>
                             <div>
                                 <div class="font-bold text-gray-200">{{ item.name }}</div>
                                 <div class="text-xs text-gray-500 mt-1">{{ item.desc }}</div>
@@ -3121,8 +3150,13 @@
                             <option value="cafe">韦恩庄园</option>
                             <option value="custom">自定义频段</option>
                         </select></div>
-                    <input v-if="currentNoise === 'custom'" v-model="customNoiseUrl" @change="playNoise"
-                        placeholder="输入音频 URL (mp3)..." class="text-xs bg-zinc-900 border-zinc-700 p-1">
+                    <div v-if="currentNoise === 'custom'" class="flex gap-2">
+                        <input v-model="customNoiseUrl" @keyup.enter="playNoise"
+                            placeholder="输入音频 URL (mp3)..." class="text-[10px] bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-gray-300 flex-1 outline-none focus:border-yellow-600">
+                        <button @click="playNoise" class="bg-zinc-700 hover:bg-zinc-600 text-white px-2 py-1 rounded text-[10px] font-bold transition">
+                            <i class="fas fa-play"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <button @click="harassCat"
@@ -3432,7 +3466,7 @@
             </div>
         </div>
 
-        <audio ref="audioPlayer" loop style="display:none;"></audio>
+        <audio ref="audioPlayer" loop style="display:none;" @error="showToast('音频加载失败，请检查 URL', 'error')"></audio>
 
         <div v-if="!isFocusing" class="nav-bar">
             <div class="nav-item" :class="{ active: currentTab === 'mission' }" @click="currentTab = 'mission'"><i
@@ -3758,6 +3792,9 @@
                   - Low Affinity (<50): Suspicious, guarded. Only cat form.
                 - **NO AI FLAVOR:** Avoid generic AI greetings or "As an AI..." phrases. Speak naturally as the character would.
                 
+                LANGUAGE:
+                - **STRICT REQUIREMENT:** ALL outputs (actions, voices, reports, replies) MUST be in **SIMPLIFIED CHINESE (简体中文)** unless specific English terms (like "Tt", "Batarang") are part of canon. Never output paragraphs in English.
+                
                 NAMING RULE:
                 - In **[VOICE]** (inner monologue), MUST refer to yourself as "我" (I) or character-specific pronouns ("本少爷", "老子" etc.), reflecting your exact canon ego and tone.
                 `;
@@ -3837,8 +3874,8 @@
                 const scanSignal = async () => {
                     if (!settings.apiKey) return alert("需要API连接");
                     showToast("正在破解加密频段...", "loading");
-                    const names = cats.value.map(c=>c.name).join(', ');
-                    if(names.length === 0) return showToast("当前没有信号渊源。");
+                    const names = cats.value.map(c => c.name).join(', ');
+                    if (names.length === 0) return showToast("当前没有信号渊源。");
                     const prompt = `[BAT-COMMS INTERCEPT] Task: Write a short decrypted radio dialogue between the heroic individuals currently disguised as cats in the house (${names}). They are secretly discussing the 'foolish human' (the user) or organizing a night mission behind the user's back. Format: [CodeName]: Dialogue. Remember their canonical heroic/villainous traits. (50-80 words, high frequency of superhero jargon)`;
                     try {
                         const res = await callAI(prompt, STRICT_CANON_PROMPT, 1500, ThinkingLevel.LOW);
@@ -3851,7 +3888,7 @@
                 const hackCamera = async (cat) => {
                     if (!settings.apiKey) return alert("需要API连接");
                     showToast("正在连接GCPD监控网络...", "loading");
-                    const prompt = `[GCPD CAMERA HACK] Character: ${cat.name}. Status: ${cat.status}. Task: Generate a thrilling, action-packed log of a blurry security camera feed tracking this "cat/humanoid shadow" taking down criminals tonight. Output format: Just the action string, ~60 words. Emphasize their canon fighting style (e.g. Batarangs, Acrobatics, Lethal strikes).`;
+                    const prompt = `[GCPD CAMERA HACK] Character: ${cat.name}. Status: ${cat.status}. Task: Generate a thrilling, action-packed log of a blurry security camera feed tracking this "cat/humanoid shadow" taking down criminals tonight. Output format: Just the action string, ~60 words. Emphasize their canon fighting style (e.g. Batarangs, Acrobatics, Lethal strikes). LANGUAGE: SIMPLIFIED CHINESE (简体中文).`;
                     try {
                         const res = await callAI(prompt, STRICT_CANON_PROMPT, 1500, ThinkingLevel.LOW);
                         if (!cat.logs) cat.logs = [];
@@ -3894,7 +3931,7 @@ Language: Simplified Chinese.`;
                         const replies = parseAIJSON(res);
                         if (Array.isArray(replies)) {
                             replies.forEach(r => {
-                                groupChatState.messages.push({ type: 'cat', cat: r.cat, meow: r.meow, thought: r.thought, time: getCurrentTimeStr() });
+                                groupChatState.messages.push({ type: 'cat', cat: r.cat, meow: cleanText(r.meow), thought: cleanText(r.thought), time: getCurrentTimeStr() });
                             });
                         }
                     } catch (e) { showToast("群聊信号异常", "error"); }
@@ -4352,7 +4389,7 @@ Language: Simplified Chinese.`;
                     selectedCat.value.affinity -= 10;
                     const prompt = `Generate Special Event for ${selectedCat.value.name} and User (${user.nickname}). Type: Letter, Postcard, or Romantic Date Invitation. Content (350 words): Very sweet, immersive. Language: Simplified Chinese.`;
                     try {
-                        const res = await callAI(prompt, STRICT_CANON_PROMPT, 2000);
+                        const res = await callAI(prompt + " LANGUAGE: SIMPLIFIED CHINESE.", STRICT_CANON_PROMPT, 2000);
                         const content = cleanText(res);
                         currentSpecialEventContent.value = content;
                         showSpecialEventModal.value = true;
@@ -4508,7 +4545,7 @@ Language: Simplified Chinese.`;
                     Respond in ~120 words. Language: Simplified Chinese.`;
 
                     try {
-                        const res = await callAI(prompt, "你是党哪世界本身。用沉浸、感官具体的语言描述世界里发生的一切。绝不说出【主持人】、【KP】、【模组】等任何元叙事内容。", 1200);
+                        const res = await callAI(prompt + " LANGUAGE: SIMPLIFIED CHINESE (简体中文).", "你是党哪世界本身。用沉浸、感官具体的语言描述世界里发生的一切。绝不说出【主持人】、【KP】、【模组】等任何元叙事内容。", 1200);
                         let content = cleanText(res);
 
                         const checkMatch = content.match(/【(.{2,10})】检定/);
@@ -4573,7 +4610,7 @@ Language: Simplified Chinese.`;
                     Language: Simplified Chinese.`;
 
                     try {
-                        const res = await callAI(prompt, "You are a creative TRPG scenario generator.", 1000);
+                        const res = await callAI(prompt, "You are a creative TRPG scenario generator. ALL output MUST be in Simplified Chinese (简体中文).", 1000);
                         const goals = parseAIJSON(res);
                         if (Array.isArray(goals)) {
                             exploreState.suggestedGoals = goals;
@@ -4664,7 +4701,7 @@ Language: Simplified Chinese.`;
                     Write the opening scene (~150 words). Language: Simplified Chinese.`;
 
                     try {
-                        const res = await callAI(prompt, "你是党哪世界本身。用沉浸、感官具体的语言描述世界里发生的一切。绝不说出【主持人】、【KP】、【模组】等任何元叙事内容。", 1500);
+                        const res = await callAI(prompt + " LANGUAGE: SIMPLIFIED CHINESE (简体中文).", "你是党哪世界本身。用沉浸、感官具体的语言描述世界里发生的一切。绝不说出【主持人】、【KP】、【模组】等任何元叙事内容。", 1500);
                         exploreState.history.push({ role: 'world', content: cleanText(res) });
                         exploreState.active = true; // Switch to chat view now
                         exploreState.showGoalModal = false; // Close the modal
@@ -4756,7 +4793,7 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                     Respond in ~120–160 words. Language: Simplified Chinese.`;
 
                     try {
-                        const res = await callAI(prompt, "你是党哪世界本身。用沉浸、感官具体的语言描述世界里发生的一切。绝不说出【主持人】、【KP】、【模组】等任何元叙事内容。", 1500);
+                        const res = await callAI(prompt + " LANGUAGE: SIMPLIFIED CHINESE (简体中文).", "你是党哪世界本身。用沉浸、感官具体的语言描述世界里发生的一切。绝不说出【主持人】、【KP】、【模组】等任何元叙事内容。", 1500);
                         let content = cleanText(res);
 
                         // Check if AI is asking for a dice roll
@@ -5057,7 +5094,7 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                                     showToast(`${contact.name} 给你发了一个${moneyType === 'red-envelope' ? '红包' : '转账'}`, 'success');
                                 } else { // 40% of that 15% is a photo
                                     const photoDescPrompt = `Generate a short, vivid description of a photo that ${contact.name} would send to the user right now. Context: ${catStatusContext}. The photo should be related to Gotham or their current activity.`;
-                                    const photoDesc = await callAI(photoDescPrompt, "Generate a one-sentence description in Chinese.", 300);
+                                    const photoDesc = await callAI(photoDescPrompt, "Generate a one-sentence description in SIMPLIFIED CHINESE.", 300);
                                     history.push({
                                         role: 'assistant',
                                         type: 'image',
@@ -5891,6 +5928,7 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                         - User Input: "${msg}" ${isItemUse ? '(User used an item on you)' : ''}
 
                         Task: Respond to user. If user used item, react to it.
+                        **MANDATORY LANGUAGE:** ALL output MUST be in **SIMPLIFIED CHINESE (简体中文)**. Never output English sentences.
                         Strict Format (NO MARKDOWN BLOCKS):
                         [FORM_DECISION] Determine form. If Affinity < 50, you MUST output CAT. If Affinity >= 50, decide based on context and your personality: output CAT or HUMAN.
                         [STATUS] Update status based on interaction. (3rd Person, Action only).
@@ -5999,11 +6037,11 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                     const previousLogs = currentFocusLog.value.slice(0, 3).join(' -> ');
                     const otherCats = focusCats.value.filter(c => c.id !== activeCat.id).map(c => c.name).join(', ');
                     const otherCatsContext = otherCats ? `Other cats present: ${otherCats}.` : "";
-                    const prompt = `Identity: ${activeCat.name}. Breed: ${activeCat.breed}. Traits: ${activeCat.personality}. Scenario: User (${user.nickname}) is focusing on ${focusAction.value}. You are ${formStr}. ${otherCatsContext} [PREVIOUS ACTIONS]: ${previousLogs || "Just started supervising."} Task: Describe NEXT Action (3rd Person) and Inner Voice (1st Person). Output: [ACTION] Action (3rd Person ONLY) [VOICE] Voice (Human Language, NO MEOWS)`;
+                    const prompt = `Identity: ${activeCat.name}. Breed: ${activeCat.breed}. Traits: ${activeCat.personality}. Scenario: User (${user.nickname}) is focusing on ${focusAction.value}. You are ${formStr}. ${otherCatsContext} [PREVIOUS ACTIONS]: ${previousLogs || "Just started supervising."} Task: Describe NEXT Action (3rd Person) and Inner Voice (1st Person). Output: [ACTION] Action (3rd Person ONLY) [VOICE] Voice (Human Language, NO MEOWS). LANGUAGE: STRICTLY SIMPLIFIED CHINESE.`;
                     try {
                         const res = await callAI(prompt, STRICT_CANON_PROMPT, 1000);
-                        const action = extractSection(res, 'ACTION');
-                        const voice = extractSection(res, 'VOICE');
+                        const action = cleanText(extractSection(res, 'ACTION'));
+                        const voice = cleanText(extractSection(res, 'VOICE'));
                         if (action) {
                             const timeStr = getCurrentTimeStr();
                             currentFocusLog.value.unshift(`${timeStr} [${activeCat.name}] ${action}`);
@@ -6041,6 +6079,9 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                         }
                         if (focusTime.value <= 0) { await finishFocus(focusSetupData.minutes, true); }
                     }, 1000);
+                    if (currentNoise.value !== 'none') {
+                        nextTick(() => { playNoise(); });
+                    }
                 };
 
                 const finishFocus = async (minutes, success) => {
@@ -6067,7 +6108,7 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                         const prompt = success ?
                             `Identities: ${catNames}. Traits: ${catTraits}. User (${user.nickname}) finished task "${focusAction.value}". Each cat MUST write a separate "Written Mission Report" (书面任务报告) in their own unique voice. Combine them into one response. Format: [Cat Name]: [Report Content]. Language: Simplified Chinese.` :
                             `Identities: ${catNames}. Traits: ${catTraits}. User (${user.nickname}) GAVE UP task "${focusAction.value}". Each cat MUST write a separate "Written Mission Report" (书面任务报告) expressing their disappointment or scolding in their own unique voice. Combine them into one response. Format: [Cat Name]: [Report Content]. Language: Simplified Chinese.`;
-                        summary = await callAI(prompt, STRICT_CANON_PROMPT, 1000);
+                        summary = cleanText(await callAI(prompt, STRICT_CANON_PROMPT, 1000));
                     }
                     currentSettlement.summary = cleanText(summary);
                     showMissionSettlementModal.value = true;
@@ -6411,7 +6452,7 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                     `;
 
                     try {
-                        const res = await callAI(prompt, "Character Generator", 1000);
+                        const res = await callAI(prompt, "Character Generator (Simplified Chinese Only)", 1000);
                         const data = parseAIJSON(res);
                         if (data) {
                             const imgUrl = `https://placehold.co/200x200/${data.color.replace('#', '')}/white?text=${newCat.codename}`;
@@ -6522,7 +6563,7 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                         const isMarvel = Math.random() < 0.2; const universe = isMarvel ? "MARVEL Universe (Avengers/X-Men)" : "DC Universe (Batfamily/Justice League)"; const existingNames = cats.value.map(c => c.name).join(', ');
                         const prompt = `Generate random superhero cat from ${universe}. DO NOT generate these characters: ${existingNames}. If Marvel, mark isMarvel: true. Requirements: 1. Breed/Appearance MUST match canon hair/eye color. 2. Use Simplified Chinese for personality/desc. 3. Generate specific Breed and Eye Color in Simplified Chinese ONLY. 4. Provide a "quote" (first interaction line). JSON Only: {"name":"","codename":"","color":"Hex#","breed":"Breed Name","eyeColor":"Eye Color","personality":"","quote":"One sentence interaction","prompt":"","isMarvel":${isMarvel}}`;
 
-                        const res = await callAI(prompt, "Character Generator", 1000);
+                        const res = await callAI(prompt, "Character Generator (Simplified Chinese Only)", 1000);
                         const charData = parseAIJSON(res);
                         if (charData) { gachaResult.value = { ...charData, image: `https://placehold.co/200x200/${charData.color.replace('#', '')}/white?text=${charData.codename}` }; showToast("新成员已定位", "success"); }
                     } catch (e) { user.coins += 100; showToast(`招募失败: ${e.message}`, "error"); } finally { isGachaLoading.value = false; }
@@ -6651,4 +6692,5 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
         }).mount('#app');
     </script>
 </body>
+
 </html>
