@@ -5698,6 +5698,28 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                     } catch (e) { console.error("Moments generation failed", e); }
                 };
 
+                const getDateContext = () => {
+                    const now = new Date();
+                    const month = now.getMonth() + 1;
+                    const date = now.getDate();
+                    const dateStr = `${month.toString().padStart(2, '0')}-${date.toString().padStart(2, '0')}`;
+                    let context = `Today is ${month}月${date}日. `;
+                    
+                    const holidays = {
+                        "01-01": "元旦 (New Year's Day)",
+                        "02-14": "情人节 (Valentine's Day)",
+                        "10-31": "万圣节 (Halloween)",
+                        "12-25": "圣诞节 (Christmas)"
+                    };
+                    if (holidays[dateStr]) context += `节日: ${holidays[dateStr]}. `;
+
+                    const birthdayCats = cats.value.filter(c => c.birthday === dateStr);
+                    if (birthdayCats.length > 0) {
+                        context += `IMPORTANT: 今天是 ${birthdayCats.map(c => c.name).join(' 和 ')} 的生日! `;
+                    }
+                    return context;
+                };
+
                 const checkDailyInitialization = async () => {
                     const now = new Date();
                     loadingProgress.value = 10;
@@ -5782,14 +5804,19 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
 
                     // Topic Extraction for Alfred
                     const ddlContext = nearestDDL.value ? `近期DDL: ${nearestDDL.value.title} (${ddlCountdownStr.value})` : "无紧急DDL";
+                    const recentMails = user.mailbox.filter(m => !m.isClaimed).slice(0, 3).map(m => `来自 ${m.sender}: ${m.title}`).join('; ');
+                    const mailContext = recentMails ? `未读信件: ${recentMails}` : "无新信件";
+                    const backgroundContext = getDateContext();
 
                     const prompt = `Role: Alfred Pennyworth. Task: Write a daily summary briefing for Master/Miss ${user.nickname}. 
                     Context: 
+                    - Date/Background: ${backgroundContext}
                     - Yesterday's Completed Tasks: ${doneStr || 'None'}. 
                     - Remaining Pending Tasks: ${pendingStr || 'None'}. 
                     - ${ddlContext}.
-                    Requirement: 100 words summary. Polite, efficient, British butler persona. 
-                    Language: Simplified Chinese.`;
+                    - ${mailContext}.
+                    Requirement: ~100 words summary. Polite, efficient, British butler persona. Mention the dates/holidays if any.
+                    Language: Simplified Chinese (简体中文).`;
 
                     try {
                         const summary = await callAI(prompt, "You are Alfred Pennyworth, the loyal butler of the Wayne family.", 1000, ThinkingLevel.LOW);
@@ -5813,24 +5840,32 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
 
                     for (const cat of cats.value) {
                         const inMission = yesterdayReports.some(r => r.executor.includes(cat.name));
-                        // Check for rescue events in diary
+                        // Check for rescue events in diary and travelogues
                         const rescueEvents = cat.diary.filter(d => d.content.includes("救下") || d.content.includes("救援"));
-                        const hasInteraction = (cat.chatHistory && cat.chatHistory.length > 0) || inMission || (cat.diary && cat.diary.length > 1);
+                        const travelogueRescues = (cat.travelogues || []).filter(t => t.content.includes("救援") || t.content.includes("救下") || t.content.includes("遇袭"));
+                        
+                        const hasInteraction = (cat.chatHistory && cat.chatHistory.length > 0) || inMission || (cat.diary && cat.diary.length > 1) || (cat.travelogues && cat.travelogues.length > 0);
 
                         if (hasInteraction) {
                             const logsText = cat.diary.map(d => `[${d.time}] ${d.content}`).join('; ');
                             const chatText = cat.chatHistory.map(c => `${c.role}: ${c.content}`).join('; ');
+                            const travelogueText = (cat.travelogues || []).map(t => `[${t.location}] ${t.content}`).join('; ');
                             const missionText = inMission ? `参与任务: ${yesterdayReports.filter(r => r.executor.includes(cat.name)).map(r => r.missionName).join(', ')}.` : '';
-                            const rescueText = rescueEvents.length > 0 ? `[CRITICAL]: 你昨天在暗中救下了陷入危机的用户！请在日记中以超英视角疯狂吐槽这次救援。` : '';
+                            
+                            let rescueText = '';
+                            if (rescueEvents.length > 0 || travelogueRescues.length > 0) {
+                                rescueText = `[CRITICAL]: 你昨天在暗中救下了陷入危机的用户（事件记录参考: ${travelogueRescues.map(t=>t.content).join('; ')}）。请在今天的日记中以超英视角疯狂吐槽/记录这次救下“愚蠢人类”的惊险事件！`;
+                            }
 
                             const prompt = `Character: ${cat.name}. Persona: ${cat.personality}. 
                              Task: Write a diary entry (200-300 words) reflecting on yesterday.
                              Yesterday's Activity Log: ${logsText}
                              Yesterday's Conversation with User: ${chatText}
+                             Yesterday's Travelogues/Patrols: ${travelogueText}
                              ${missionText}
                              ${rescueText}
                              Requirement: In-character, subjective, use full name. Can express human-like thoughts. NO OOC.
-                             Language: Simplified Chinese.`;
+                             Language: Simplified Chinese (简体中文).`;
 
                             try {
                                 const res = await callAI(prompt, STRICT_CANON_PROMPT, 4000, ThinkingLevel.LOW);
@@ -5841,9 +5876,11 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                             } catch (e) { console.error(`Diary generation failed for ${cat.name}:`, e); }
                         }
 
-                        // Clear yesterday's records regardless of diary generation
+                        // AGGRESSIVE SCRUB: Clear yesterday's records thoroughly
                         cat.chatHistory = [];
                         cat.diary = [];
+                        cat.travelogues = [];
+                        cat.todayInteractions = [];
                     }
                 };
 
@@ -6692,5 +6729,4 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
         }).mount('#app');
     </script>
 </body>
-
 </html>
