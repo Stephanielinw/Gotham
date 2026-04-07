@@ -1386,7 +1386,8 @@
                                         class="border border-red-900 p-3 bg-[#0a0a0a] rounded shadow-[0_0_10px_rgba(255,0,0,0.1)]">
                                         <div
                                             class="text-gray-500 mb-2 border-b border-red-900 pb-1 flex justify-between">
-                                            <span>[ENCRYPTED CHANNEL]</span><span>{{ log.time }}</span></div>
+                                            <span>[ENCRYPTED CHANNEL]</span><span>{{ log.time }}</span>
+                                        </div>
                                         <div style="white-space: pre-wrap;" class="leading-relaxed">{{ log.content }}
                                         </div>
                                     </div>
@@ -3151,9 +3152,10 @@
                             <option value="custom">自定义频段</option>
                         </select></div>
                     <div v-if="currentNoise === 'custom'" class="flex gap-2">
-                        <input v-model="customNoiseUrl" @keyup.enter="playNoise"
-                            placeholder="输入音频 URL (mp3)..." class="text-[10px] bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-gray-300 flex-1 outline-none focus:border-yellow-600">
-                        <button @click="playNoise" class="bg-zinc-700 hover:bg-zinc-600 text-white px-2 py-1 rounded text-[10px] font-bold transition">
+                        <input v-model="customNoiseUrl" @keyup.enter="playNoise" placeholder="输入音频 URL (mp3)..."
+                            class="text-[10px] bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-gray-300 flex-1 outline-none focus:border-yellow-600">
+                        <button @click="playNoise"
+                            class="bg-zinc-700 hover:bg-zinc-600 text-white px-2 py-1 rounded text-[10px] font-bold transition">
                             <i class="fas fa-play"></i>
                         </button>
                     </div>
@@ -4626,14 +4628,12 @@ Language: Simplified Chinese.`;
 
                 const selectGoal = (goal) => {
                     exploreState.goal = goal;
-                    exploreState.showGoalModal = false;
                     generateModule();
                 };
 
                 const submitCustomGoal = () => {
                     if (exploreState.customGoal.trim()) {
                         exploreState.goal = exploreState.customGoal.trim();
-                        exploreState.showGoalModal = false;
                         generateModule();
                     }
                 };
@@ -5704,7 +5704,7 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                     const date = now.getDate();
                     const dateStr = `${month.toString().padStart(2, '0')}-${date.toString().padStart(2, '0')}`;
                     let context = `Today is ${month}月${date}日. `;
-                    
+
                     const holidays = {
                         "01-01": "元旦 (New Year's Day)",
                         "02-14": "情人节 (Valentine's Day)",
@@ -5843,7 +5843,7 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                         // Check for rescue events in diary and travelogues
                         const rescueEvents = cat.diary.filter(d => d.content.includes("救下") || d.content.includes("救援"));
                         const travelogueRescues = (cat.travelogues || []).filter(t => t.content.includes("救援") || t.content.includes("救下") || t.content.includes("遇袭"));
-                        
+
                         const hasInteraction = (cat.chatHistory && cat.chatHistory.length > 0) || inMission || (cat.diary && cat.diary.length > 1) || (cat.travelogues && cat.travelogues.length > 0);
 
                         if (hasInteraction) {
@@ -5851,10 +5851,10 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                             const chatText = cat.chatHistory.map(c => `${c.role}: ${c.content}`).join('; ');
                             const travelogueText = (cat.travelogues || []).map(t => `[${t.location}] ${t.content}`).join('; ');
                             const missionText = inMission ? `参与任务: ${yesterdayReports.filter(r => r.executor.includes(cat.name)).map(r => r.missionName).join(', ')}.` : '';
-                            
+
                             let rescueText = '';
                             if (rescueEvents.length > 0 || travelogueRescues.length > 0) {
-                                rescueText = `[CRITICAL]: 你昨天在暗中救下了陷入危机的用户（事件记录参考: ${travelogueRescues.map(t=>t.content).join('; ')}）。请在今天的日记中以超英视角疯狂吐槽/记录这次救下“愚蠢人类”的惊险事件！`;
+                                rescueText = `[CRITICAL]: 你昨天在暗中救下了陷入危机的用户（事件记录参考: ${travelogueRescues.map(t => t.content).join('; ')}）。请在今天的日记中以超英视角疯狂吐槽/记录这次救下“愚蠢人类”的惊险事件！`;
                             }
 
                             const prompt = `Character: ${cat.name}. Persona: ${cat.personality}. 
@@ -6251,7 +6251,14 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                                 specificContext = `[CRITICAL]: This cat just returned from an adventure. Action MUST show "just returned" traits (dusty, tired, etc.). Inner voice MUST recall adventure events: "${focusCatLastAction}". [ISHUMAN] MUST be false for this update.`;
                             }
 
-                            characterBlock += `\n--- CHARACTER ---\nID: ${c.id}\nName: ${c.name} (${c.breed})\nTraits: ${c.personality}\nPrevious Status: ${c.status} ${timeContext}\nIs Currently Out: ${c.isOut}\n${memoryBlock}\n${specificContext}\n`;
+                            const lastInteraction = c.lastInteractionTimestamp || 0;
+                            const diffMsInteraction = Date.now() - lastInteraction;
+                            let gapContext = "";
+                            if (diffMsInteraction > 60 * 60 * 1000 && !isFocusEnd && !isExploreEnd) {
+                                gapContext = `\n[CRITICAL TIME GAP]: The user has been away for over an hour. THE PREVIOUS INTERACTION IS STRICTLY OVER. DO NOT mention previous interactions holding your paw or looking at you. You MUST be entertaining yourself, sleeping, or harassing other cats independently.`;
+                            }
+
+                            characterBlock += `\n--- CHARACTER ---\nID: ${c.id}\nName: ${c.name} (${c.breed})\nTraits: ${c.personality}\nPrevious Status: ${c.status} ${timeContext}\nIs Currently Out: ${c.isOut}\n${memoryBlock}\n${specificContext}\n${gapContext}\n`;
                         });
 
                         let activeCatContext = "";
@@ -6287,7 +6294,7 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                         
                         [MANDATORY CONTINUITY RULES]:
                         1. **Δt Rule**: Check "[Δt RULE]" for each cat. 
-                           - If Δt > 240 mins (4h): The character MUST have changed their state significantly. NO STATIC LOOPS.
+                           - If Δt > 60 mins (1h): The character MUST have changed their state completely. If asleep, they MUST be awake now. NO STATIC LOOPS.
                            - If Δt < 30 mins: Maintain high continuity unless a major event happened.
                         2. **Memory Rule**: You MUST read the [FORCED MEMORY CONTEXT] for each cat. Their behavior, mood, and inner voice MUST reflect recent events.
                         3. **Physical Logic**: Actions must follow the passage of time.
