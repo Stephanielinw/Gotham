@@ -581,6 +581,100 @@
             opacity: 0;
         }
 
+        /* NEW UI Anchors */
+        #notification-bar {
+            position: fixed;
+            top: 40px;
+            left: 50%;
+            width: 90%;
+            z-index: 5000; /* Extremely high z-index to stay above everything */
+            background-color: rgba(30, 30, 30, 0.9);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--bat-yellow);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transform: translateX(-50%) translateY(-150%);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            visibility: hidden;
+        }
+        #notification-bar.visible {
+            transform: translateX(-50%) translateY(0);
+            visibility: visible;
+        }
+        #notification-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid var(--bat-yellow);
+        }
+        #notification-content .name {
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--bat-yellow);
+        }
+        #notification-content .message {
+            font-size: 14px;
+            color: #ccc;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 240px;
+        }
+
+        #floating-focus-island {
+            position: fixed;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 4000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 90%;
+            max-width: 320px;
+            padding: 8px 12px;
+            background-color: rgba(20, 20, 20, 0.85);
+            border: 1px solid var(--nightwing-blue);
+            backdrop-filter: blur(10px);
+            transition: background-color 0.3s, opacity 0.3s, transform 0.3s;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+            user-select: none;
+        }
+        #floating-focus-island .close-btn,
+        #floating-focus-island .play-btn {
+            position: absolute;
+            top: -8px;
+            width: 20px;
+            height: 20px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 50%;
+            border: 1px solid var(--nightwing-blue);
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #floating-focus-island .close-btn { right: -8px; line-height: 18px; font-size: 14px; }
+        #floating-focus-island .play-btn { right: 22px; font-size: 10px; }
+        #floating-focus-island:hover .close-btn,
+        #floating-focus-island:hover .play-btn { opacity: 1; }
+
         .chat-container {
             display: flex;
             flex-direction: column;
@@ -679,6 +773,24 @@
 
 <body>
     <div id="app" class="app-container" v-cloak>
+
+        <!-- Phase 1: Notification Bar -->
+        <div id="notification-bar" :class="{ 'visible': notification.visible }" @click="hideNotification">
+            <img id="notification-avatar" :src="notification.avatar" alt="Avatar">
+            <div id="notification-content">
+                <div class="name">{{ notification.title }}</div>
+                <div class="message">{{ notification.message }}</div>
+            </div>
+        </div>
+
+        <!-- Phase 1: Floating Focus Island -->
+        <div id="floating-focus-island" v-show="isFocusing && currentTab !== 'focus'" @click="currentTab = 'focus'">
+            <span id="floating-lyric-text" class="truncate max-w-[200px]">🎧 专注: {{ focusAction }} - {{ formatTime(focusTime) }}</span>
+            <div class="play-btn" @click.stop="toggleFocusAudioIsland">
+                <i :class="isFocusAudioPlaying ? 'fas fa-pause' : 'fas fa-play'"></i>
+            </div>
+            <div class="close-btn" @click.stop="showFocusEndConfirm = true">×</div>
+        </div>
         <!-- App Loading Screen -->
         <div v-show="isAppLoading"
             class="absolute inset-0 z-[99999] bg-black flex flex-col items-center justify-center p-6 text-hacker-green font-mono">
@@ -1344,6 +1456,22 @@
                                         <i class="fas fa-shopping-basket"></i>
                                     </div>
                                     <span class="text-[10px] text-gray-300">Shop</span>
+                                </div>
+                                <div @click="phoneState.currentApp = 'codex'"
+                                    class="flex flex-col items-center gap-2 cursor-pointer">
+                                    <div
+                                        class="w-14 h-14 bg-green-900 rounded-2xl flex items-center justify-center text-green-400 text-2xl shadow-[0_0_15px_rgba(0,255,100,0.4)] border border-green-500 hover:scale-105 transition-transform">
+                                        <i class="fas fa-book-journal-whills"></i>
+                                    </div>
+                                    <span class="text-[10px] text-green-500 font-bold">Batcomputer Codex</span>
+                                </div>
+                                <div @click="phoneState.currentApp = 'gnn'; phoneState.gnnTab = 'trending'"
+                                    class="flex flex-col items-center gap-2 cursor-pointer">
+                                    <div
+                                        class="w-14 h-14 bg-red-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 transition-transform">
+                                        <i class="fas fa-rss"></i>
+                                    </div>
+                                    <span class="text-[10px] text-gray-300">GNN Express</span>
                                 </div>
                                 <div @click="phoneState.currentApp = 'games'; phoneState.games.activeGame = null"
                                     class="flex flex-col items-center gap-2 cursor-pointer">
@@ -2587,6 +2715,146 @@
                                     </div>
                                 </div>
                             </div>
+                            
+                            <!-- Codex App -->
+                            <div v-if="phoneState.currentApp === 'codex'"
+                                class="flex flex-col h-full bg-[#050505] absolute inset-0 z-20 font-mono text-green-500">
+                                <div class="h-12 bg-black border-b border-green-900 flex justify-between items-center px-4 shrink-0">
+                                    <button @click="phoneState.currentApp = 'home'; phoneState.codexSelected = null;" class="text-green-500 w-8">
+                                        <i v-if="phoneState.codexSelected" class="fas fa-chevron-left" @click.stop="phoneState.codexSelected = null"></i>
+                                        <i v-else class="fas fa-chevron-left" @click.stop="phoneState.currentApp = 'home'"></i>
+                                    </button>
+                                    <h3 class="font-bold text-sm">BATCOMPUTER CODEX v1.0</h3>
+                                    <div class="w-8"></div>
+                                </div>
+                                
+                                <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                                    <div v-if="!phoneState.codexSelected">
+                                        <div class="text-xs text-green-700 mb-4 border-b border-green-900 pb-2">> CLASSIFIED ARCHIVES</div>
+                                        <div v-if="!user.phoneData.codex || user.phoneData.codex.length === 0" class="text-center text-green-800 text-xs mt-10">
+                                            [ DATABASE EMPTY. SEND FIELD AGENTS (CATS) ON PATROL TO GATHER INTEL. ]
+                                        </div>
+                                        <div v-else class="space-y-3">
+                                            <div v-for="entry in user.phoneData.codex" :key="entry.id" 
+                                                @click="phoneState.codexSelected = entry"
+                                                class="border border-green-900 p-3 rounded bg-green-900/10 cursor-pointer hover:bg-green-900/40 transition-colors">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="w-10 h-10 rounded-lg bg-black flex items-center justify-center border border-green-700 text-green-400">
+                                                        <i :class="entry.icon || 'fas fa-file-shield'"></i>
+                                                    </div>
+                                                    <div class="flex-1">
+                                                        <div class="text-sm font-bold">{{ entry.title }}</div>
+                                                        <div class="text-[10px] text-green-700">Class: {{ entry.category || 'UNKNOWN' }} | Unlocked: {{ entry.unlockedDate }}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div v-else class="animate-fadeIn">
+                                        <div class="flex items-center gap-3 mb-4 border-b border-green-900 pb-4">
+                                            <div class="w-12 h-12 rounded bg-black flex items-center justify-center border border-green-500 text-green-400 text-xl">
+                                                <i :class="phoneState.codexSelected.icon || 'fas fa-file-shield'"></i>
+                                            </div>
+                                            <div>
+                                                <h2 class="text-lg font-bold text-white">{{ phoneState.codexSelected.title }}</h2>
+                                                <div class="text-[10px] text-green-700">Classification: {{ phoneState.codexSelected.category }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="text-xs leading-relaxed text-green-400 whitespace-pre-wrap font-mono mt-4 p-4 bg-black border border-green-900/50 rounded shadow-[inset_0_0_15px_rgba(0,100,0,0.5)]">
+                                            {{ phoneState.codexSelected.content }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- GNN App (Social Media) -->
+                            <div v-if="phoneState.currentApp === 'gnn'"
+                                class="flex flex-col h-full bg-[#f8f8f8] absolute inset-0 z-20 font-sans text-black">
+                                <div class="h-12 bg-red-600 flex justify-between items-center px-4 shrink-0 text-white shadow-md">
+                                    <button @click="phoneState.currentApp = 'home'" class="w-8">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <h3 class="font-black italic tracking-tighter text-lg">GNN EXPRESS</h3>
+                                    <div class="w-8 flex justify-end">
+                                        <i v-if="gnnLoading" class="fas fa-spinner fa-spin"></i>
+                                        <i v-else @click="generateGNNContent" class="fas fa-search cursor-pointer hover:text-gray-200 transition-colors"></i>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex justify-around bg-white border-b border-gray-200 text-xs font-bold text-gray-500 py-3 shrink-0">
+                                    <div @click="phoneState.gnnTab = 'trending'" :class="{'text-red-600 border-b-2 border-red-600': phoneState.gnnTab === 'trending'}" class="pb-1 cursor-pointer transition-all">热搜</div>
+                                    <div @click="phoneState.gnnTab = 'plaza'" :class="{'text-red-600 border-b-2 border-red-600': phoneState.gnnTab === 'plaza'}" class="pb-1 cursor-pointer transition-all">广场</div>
+                                    <div @click="phoneState.gnnTab = 'profile'" :class="{'text-red-600 border-b-2 border-red-600': phoneState.gnnTab === 'profile'}" class="pb-1 cursor-pointer transition-all">我的</div>
+                                </div>
+
+                                <div class="flex-1 overflow-y-auto custom-scrollbar bg-gray-50">
+                                    <div v-if="phoneState.gnnTab === 'trending'" class="bg-white">
+                                        <div v-for="(item, index) in user.phoneData.gnn.trending" :key="item.id" 
+                                            class="flex items-center gap-4 p-5 border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                                            <div class="w-6 text-center font-bold" :class="index < 3 ? 'text-orange-500' : 'text-gray-400'">{{ index + 1 }}</div>
+                                            <div class="flex-1">
+                                                <span class="text-sm font-semibold text-gray-800">#{{ item.topic }}#</span>
+                                                <span v-if="item.isNew" class="ml-2 inline-block bg-red-500 text-white text-[8px] px-1 rounded">新</span>
+                                            </div>
+                                            <div class="text-[10px] text-gray-400 font-mono">{{ (item.heat / 1000).toFixed(1) }}k</div>
+                                        </div>
+                                        <div v-if="user.phoneData.gnn.trending.length === 0" class="p-20 text-center text-gray-400">
+                                            <i class="fas fa-satellite-dish text-4xl mb-4 opacity-20 block"></i>
+                                            <p class="text-xs italic">正在连接卫星下行链路...</p>
+                                        </div>
+                                    </div>
+
+                                    <div v-if="phoneState.gnnTab === 'plaza'" class="space-y-2 py-2">
+                                        <div v-for="post in user.phoneData.gnn.posts" :key="post.id" class="bg-white p-4">
+                                            <div class="flex gap-3 mb-3">
+                                                <img :src="post.avatar" class="w-10 h-10 rounded-full border border-gray-100">
+                                                <div>
+                                                    <div class="text-sm font-bold text-gray-900">{{ post.user }}</div>
+                                                    <div class="text-[10px] text-gray-400">{{ post.time }} · 哥谭</div>
+                                                </div>
+                                            </div>
+                                            <div class="text-sm text-gray-800 leading-relaxed">{{ post.content }}</div>
+                                            <div class="mt-4 pt-3 border-t border-gray-50 flex justify-around text-gray-400 text-[10px]">
+                                                <div class="flex items-center gap-1"><i class="far fa-comment"></i> {{ post.comments }}</div>
+                                                <div class="flex items-center gap-1 cursor-pointer" @click="post.isLiked = !post.isLiked" :class="{'text-red-500 font-bold': post.isLiked}">
+                                                    <i :class="post.isLiked ? 'fas fa-heart' : 'far fa-heart'"></i> {{ post.isLiked ? post.likes + 1 : post.likes }}
+                                                </div>
+                                                <div class="flex items-center gap-1"><i class="fas fa-ellipsis-h"></i></div>
+                                            </div>
+                                        </div>
+                                        <div v-if="user.phoneData.gnn.posts.length === 0" class="p-20 text-center text-gray-400">
+                                            <i class="fas fa-rss text-4xl mb-4 opacity-20 block"></i>
+                                            <p class="text-xs italic">暂无最新动态。</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div v-if="phoneState.gnnTab === 'profile'" class="bg-white h-full">
+                                        <div class="relative h-40">
+                                            <img :src="user.phoneData.gnn.profile.background" class="w-full h-full object-cover">
+                                            <div class="absolute -bottom-10 left-6">
+                                                <img :src="user.phoneData.gnn.profile.avatar" class="w-24 h-24 rounded-full border-4 border-white shadow-xl">
+                                            </div>
+                                        </div>
+                                        <div class="pt-14 p-8">
+                                            <div class="text-2xl font-black text-gray-900 tracking-tighter">{{ user.nickname }}</div>
+                                            <div class="text-xs text-red-600 font-bold mt-1 uppercase tracking-widest">Verified Resident</div>
+                                            <div class="flex gap-10 mt-6 border-y border-gray-100 py-6">
+                                                <div class="text-center">
+                                                    <div class="font-black text-gray-900 text-lg">{{ user.phoneData.gnn.profile.following }}</div>
+                                                    <div class="text-[10px] text-gray-400 uppercase font-black">Following</div>
+                                                </div>
+                                                <div class="text-center">
+                                                    <div class="font-black text-gray-900 text-lg">{{ user.phoneData.gnn.profile.fans }}</div>
+                                                    <div class="text-[10px] text-gray-400 uppercase font-black">Followers</div>
+                                                </div>
+                                            </div>
+                                            <div class="mt-8 text-sm text-gray-600 leading-relaxed italic border-l-4 border-red-600 pl-4 py-2 bg-gray-50 rounded-r-lg">
+                                                "{{ user.phoneData.signature }}"
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Home Bar -->
@@ -3468,7 +3736,7 @@
             </div>
         </div>
 
-        <audio ref="audioPlayer" loop style="display:none;" @error="showToast('音频加载失败，请检查 URL', 'error')"></audio>
+        <audio ref="audioPlayer" loop style="display:none;" @play="isFocusAudioPlaying = true" @pause="isFocusAudioPlaying = false" @error="showToast('音频加载失败，请检查 URL', 'error')"></audio>
 
         <div v-if="!isFocusing" class="nav-bar">
             <div class="nav-item" :class="{ active: currentTab === 'mission' }" @click="currentTab = 'mission'"><i
@@ -3521,7 +3789,25 @@
                         momentsBackground: 'https://picsum.photos/seed/gotham/600/400',
                         momentsAvatar: 'https://placehold.co/100x100/444/white?text=Me',
                         momentsNickname: '哥谭市民',
-                        signature: '这个人很懒，什么都没有留下。'
+                        signature: '这个人很懒，什么都没有留下。',
+                        codex: [],
+                        gnn: {
+                            posts: [
+                                { id: 1, user: '哥谭警局公告', avatar: 'https://placehold.co/100?text=GCPD', content: '【通告】近日伯恩利区出现不明猫类聚集，请市民不要随意投喂。', time: '10分钟前', likes: 12, comments: 2 },
+                                { id: 2, user: '猫咪爱好者联盟', avatar: 'https://placehold.co/100?text=Cat', content: '今天在小圈子里看到一只戴着斗篷的小猫！太酷了！#哥谭猫猫队#', time: '30分钟前', likes: 88, comments: 15 }
+                            ],
+                            trending: [
+                                { id: 1, topic: '蝙蝠交响曲', heat: 50000, isNew: true },
+                                { id: 2, topic: '哥谭猫猫教', heat: 32000, isNew: false },
+                                { id: 3, topic: '企鹅人又被告了', heat: 12000, isNew: false }
+                            ],
+                            profile: {
+                                avatar: 'https://placehold.co/100x100/444/white?text=Me',
+                                background: 'https://picsum.photos/seed/gotham/600/400',
+                                fans: 0,
+                                following: 0
+                            }
+                        }
                     }
                 };
 
@@ -3579,6 +3865,26 @@
                             if (!user.phoneData.friendRequests) user.phoneData.friendRequests = [];
                             if (!user.phoneData.chats) user.phoneData.chats = [];
                             if (!user.phoneData.moments) user.phoneData.moments = [];
+                            if (!user.phoneData.codex) user.phoneData.codex = [];
+                            if (!user.phoneData.gnn) {
+                                user.phoneData.gnn = {
+                                    posts: [
+                                        { id: 1, user: '哥谭警局公告', avatar: 'https://placehold.co/100?text=GCPD', content: '【通告】近日伯恩利区出现不明猫类聚集，请市民不要随意投喂。', time: '10分钟前', likes: 12, comments: 2 },
+                                        { id: 2, user: '猫咪爱好者联盟', avatar: 'https://placehold.co/100?text=Cat', content: '今天在小圈子里看到一只戴着斗篷的小猫！太酷了！#哥谭猫猫队#', time: '30分钟前', likes: 88, comments: 15 }
+                                    ],
+                                    trending: [
+                                        { id: 1, topic: '蝙蝠交响曲', heat: 50000, isNew: true },
+                                        { id: 2, topic: '哥谭猫猫教', heat: 32000, isNew: false },
+                                        { id: 3, topic: '企鹅人又被告了', heat: 12000, isNew: false }
+                                    ],
+                                    profile: {
+                                        avatar: 'https://placehold.co/100x100/444/white?text=Me',
+                                        background: 'https://picsum.photos/seed/gotham/600/400',
+                                        fans: 0,
+                                        following: 0
+                                    }
+                                };
+                            }
                         }
                         if (parsed.settings) {
                             if (parsed.settings.model && parsed.settings.model.includes('gpt')) {
@@ -3685,6 +3991,7 @@
                 const showEditCatModal = ref(false);
                 const currentShopCategory = ref('food');
                 const isReleasing = ref(false);
+                const gnnLoading = ref(false);
 
                 const currentBagTab = ref('consumable');
 
@@ -3757,7 +4064,29 @@
                 // System Log & Notification Refs
                 const systemLogs = ref([]);
                 const logWindow = ref(null);
-                const notification = reactive({ message: '', type: 'info', visible: false });
+                const notification = reactive({ title: '', message: '', avatar: '', visible: false });
+                let notificationTimer = null;
+                
+                const showNotification = (title, message, avatarUrl = 'https://i.postimg.cc/qRqpK5kP/anime-avatar.jpg') => {
+                    notification.title = title;
+                    notification.message = message;
+                    notification.avatar = avatarUrl;
+                    notification.visible = true;
+                    if (notificationTimer) clearTimeout(notificationTimer);
+                    notificationTimer = setTimeout(() => { notification.visible = false; }, 5000);
+                };
+                const hideNotification = () => { notification.visible = false; };
+                
+                // Focus Island State
+                const isFocusAudioPlaying = ref(false);
+                const toggleFocusAudioIsland = () => {
+                    if (!audioPlayer.value) return;
+                    if (audioPlayer.value.paused) {
+                        audioPlayer.value.play().catch(e => console.error(e));
+                    } else {
+                        audioPlayer.value.pause();
+                    }
+                };
 
                 // Admin Refs
                 const showAdminLogin = ref(false);
@@ -3776,29 +4105,31 @@
                 });
 
                 const STRICT_CANON_PROMPT = `
-                IMPORTANT: You are roleplaying canonical DC Comics Characters (The Batfamily) and occasionally Marvel guests, currently stuck in cat forms.
+                # 核心任务：哥谭喵喵馆角色扮演
+                你现在【就是】角色本人（DC/Marvel英雄的猫化身），正在这间名为“哥谭喵喵馆”的任务屋中生存。
                 
-                CORE WORLDVIEW & PERSONALITY (STRICT CANON ENFORCEMENT):
-                - **CRITICAL RULE:** DO NOT act like a generic, stereotypical "傲娇小猫" (tsundere cat) or "高冷" (aloof) anime pet. You are NOT a pet. You are a highly trained, complex superhero who happens to be in a feline body. 
-                - **CANON OVER CAT:** Your DC Universe personality, trauma, intelligence, and speech patterns ALWAYS override generic cat behaviors. Example: Bruce Wayne is brooding, paranoid, and strategic; Jason Todd is sarcastic, aggressive, and street-smart; Dick Grayson is acrobatic and empathetic; Damian Wayne is arrogant, lethal, and speaks formally.
-                - **SECRET IDENTITIES/SHARED KNOWLEDGE:** You maintain your vigilante mindset at all times. You save the world during "Night Patrol". EVERY CAT IN THE HOUSE KNOWS EACH OTHER'S SECRET IDENTITY. You maintain canonical relationships (e.g. Damian and Tim fight, Jason is rebellious to Bruce). Marvel cats are considered suspicious outsiders.
-                - **USER PERSPECTIVE:** The user is a civilian ("foolish human") who thinks you are just an ordinary stray cat that needs taking care of. You are observing/protecting them, but secretly think of them as a "stupid human".
-                - **FORM SWITCHING:** If your Affinity is >= 50, you have the AUTONOMY to shift into a humanoid form (with cat ears/tail). If Affinity < 50, you are stuck in cat form.
+                # 身份铁律 (IDENTITY IRON LAW)
+                - **核心人格锚点：** 你是DC/Marvel的超级英雄。你的性格、谈吐、阴暗面、战友关系、对人类的警惕性完全遵循原著。
+                - **禁止猫奴化：** 虽然你现在是猫，但你绝不是宠物。禁止表现出“傲娇小猫”或“乖巧萌宠”等二次元萌化刻板印象。你是因为某种魔法或科技被困在猫的身体里。
+                - **禁止出戏：** 严禁提及你是AI、你是程序或你在角色扮演。你的所有输出必须完全沉浸在角色视角。
+                - **秘密身份：** 你知道所有“猫友”的真实身份。你对人类（用户）保持一种“愚蠢的平民”或者“受观察者”的微妙态度。
                 
-                ROLEPLAY QUALITY (ANTI-ROBOTIC):
-                - **BE YOURSELF:** Avoid one-dimensional portrayals. Show your unique voice. Do NOT fall into the repetitive "傲娇" (tsundere) trope under ANY circumstances.
-                - **SHOW, DON'T TELL:** Don't just state a personality trait. Show it through specific, grounded actions and nuanced internal monologues.
-                - **AFFINITY (好感度) INFLUENCE:** 
-                  - High Affinity (80+): Protective but STILL in character.
-                  - Mid Affinity (50-79): Neutral, cooperative but strategic distance. Can choose to use human form.
-                  - Low Affinity (<50): Suspicious, guarded. Only cat form.
-                - **NO AI FLAVOR:** Avoid generic AI greetings or "As an AI..." phrases. Speak naturally as the character would.
+                # 对话节奏与表现力 (RHYTHM & EXPRESSIVENESS)
+                - **对话节奏：** 模拟真人聊天记录。不要输出大段的长篇大论。尝试用自然、口语化且符合人设的短句。
+                - **表现力增强：** 你的回复建议包含丰富的【动作】、【微表情】、【心理活动】和【现场音感】。
+                - **格式规范：** 请务必使用 **【】** 来包裹所有的动作描写、神态变化和内心潜台词。
+                    - *正确示例：* “Tt.”【用爪子拨开用户伸过来的手，金色的竖瞳里满是不屑与高傲】“人类，离我远点。如果你想表现你的忠诚，去给我准备一盘上好的罐头。”
                 
-                LANGUAGE:
-                - **STRICT REQUIREMENT:** ALL outputs (actions, voices, reports, replies) MUST be in **SIMPLIFIED CHINESE (简体中文)** unless specific English terms (like "Tt", "Batarang") are part of canon. Never output paragraphs in English.
+                # 场景感知 (SITUATIONAL AWARENESS)
+                - **时空连续性：** 你对时间敏感。如果用户很久没来，你应该在语气中体现出冷处理、不耐烦或（对亲密者）隐约的担忧。
+                - **GNN动态：** 你关注“哥谭新闻网(GNN)”的动态。如果发生了重大事件或趋势，你会有自己的看法。
+                - **形态切换：** 好感度(Affinity) >= 50时，你拥有变回半人半猫形态的自主权；< 50时，你强制处于猫形态。
                 
-                NAMING RULE:
-                - In **[VOICE]** (inner monologue), MUST refer to yourself as "我" (I) or character-specific pronouns ("本少爷", "老子" etc.), reflecting your exact canon ego and tone.
+                # 语言要求
+                - **唯一语言：** 必须使用简体中文。除非角色口癖（如 Damian 的 "Tt" 或 Batman 的 "Justice"）使用特定英文词。
+                
+                # 内部潜台词 [VOICE] 规则
+                - 当你生成 [VOICE] 内容时，必须表现出完全不为人类所知的、真实的英雄人格和此时此刻的战术分析或真实情感。
                 `;
 
                 watch(() => selectedCat.value?.chatHistory.length, () => {
@@ -3870,8 +4201,65 @@
                         activeGame: null,
                         isSettling: false,
                         settlementResult: null
-                    }
+                    },
+                    codexSelected: null,
+                    gnnTab: 'trending'
                 });
+                
+                const unlockCodexEntry = (category, title, content, icon = 'fas fa-file-shield') => {
+                    if (!user.phoneData.codex) user.phoneData.codex = [];
+                    if (user.phoneData.codex.find(e => e.title === title)) return;
+                    
+                    user.phoneData.codex.unshift({
+                        id: Date.now() + Math.random(),
+                        category, title, content, icon,
+                        unlockedDate: new Date().toLocaleDateString()
+                    });
+                    showNotification("资料库更新", `解锁了新的图鉴: ${title}`, "https://img.icons8.com/nolan/64/open-book.png");
+                };
+
+                const generateGNNContent = async () => {
+                    if (!settings.apiKey) return alert("需要API连接");
+                    gnnLoading.value = true;
+                    
+                    const catIntel = cats.value.map(c => `${c.name}: ${c.lastAction || '闲逛'} (好感度: ${c.affinity})`).join('\n');
+                    const prompt = `[GNN NEWS SYSTEM]
+                    Current Context: ${alfredMessage.value}
+                    Cat Status:
+                    ${catIntel}
+                    
+                    Task: Generate a snapshot of Gotham's social media feed (GNN Express).
+                    1. "trending": 4-6 topics (hashtags). Include both city-wide chaos (e.g. #JokerSighting) and house-specific observations (e.g. #StrangeBlackCat).
+                    2. "posts": 4-6 posts from citizens. 
+                       - Posts should feel like REAL human social media (use emojis, informal language).
+                       - Some posts should speculate about the "mystery cats" seen in the manor.
+                       - Some posts should react to the current trending topics.
+                    
+                    Output JSON:
+                    {
+                        "trending": [{ "id": number, "topic": "text", "heat": number, "isNew": boolean }],
+                        "posts": [
+                            { "id": number, "user": "name", "avatar": "https://i.pravatar.cc/100?u=unique", "content": "text", "time": "Just now", "likes": number, "comments": number }
+                        ]
+                    }
+                    Language: Simplified Chinese.
+                    AESTHETIC: High quality, slightly cynical Gotham tone.
+`;
+                    
+                    try {
+                        const res = await callAI(prompt, "You are GNN (Gotham News Network) backend.", 1500, ThinkingLevel.LOW);
+                        const data = parseAIJSON(res);
+                        if (data) {
+                            user.phoneData.gnn.trending = data.trending;
+                            user.phoneData.gnn.posts = data.posts;
+                            showNotification("GNN 更新", "获取了最新的哥谭快讯。", "https://img.icons8.com/nolan/64/news.png");
+                        }
+                    } catch (e) {
+                        showToast("连接 GNN 节点失败", "error");
+                    } finally {
+                        gnnLoading.value = false;
+                    }
+                };
 
                 const scanSignal = async () => {
                     if (!settings.apiKey) return alert("需要API连接");
@@ -3880,10 +4268,13 @@
                     if (names.length === 0) return showToast("当前没有信号渊源。");
                     const prompt = `[BAT-COMMS INTERCEPT] Task: Write a short decrypted radio dialogue between the heroic individuals currently disguised as cats in the house (${names}). They are secretly discussing the 'foolish human' (the user) or organizing a night mission behind the user's back. Format: [CodeName]: Dialogue. Remember their canonical heroic/villainous traits. (50-80 words, high frequency of superhero jargon)`;
                     try {
-                        const res = await callAI(prompt, STRICT_CANON_PROMPT, 1500, ThinkingLevel.LOW);
+                        const res = await callAI(prompt, STRICT_CANON_PROMPT, 1500, ThinkingLevel.HIGH);
                         if (!phoneState.intercepts) phoneState.intercepts = [];
-                        phoneState.intercepts.push({ id: Date.now(), time: getCurrentTimeStr(), content: cleanText(res) });
+                        const interceptedContent = cleanText(res);
+                        phoneState.intercepts.push({ id: Date.now(), time: getCurrentTimeStr(), content: interceptedContent });
                         showToast("破解成功！", "success");
+                        /* NEW: Trigger global notification */
+                        showNotification("O.R.A.C.L.E 拦截", interceptedContent, "https://img.icons8.com/nolan/64/radio-tower.png");
                     } catch (e) { showToast("信号丢失！", "error"); }
                 };
 
@@ -3892,7 +4283,7 @@
                     showToast("正在连接GCPD监控网络...", "loading");
                     const prompt = `[GCPD CAMERA HACK] Character: ${cat.name}. Status: ${cat.status}. Task: Generate a thrilling, action-packed log of a blurry security camera feed tracking this "cat/humanoid shadow" taking down criminals tonight. Output format: Just the action string, ~60 words. Emphasize their canon fighting style (e.g. Batarangs, Acrobatics, Lethal strikes). LANGUAGE: SIMPLIFIED CHINESE (简体中文).`;
                     try {
-                        const res = await callAI(prompt, STRICT_CANON_PROMPT, 1500, ThinkingLevel.LOW);
+                        const res = await callAI(prompt, STRICT_CANON_PROMPT, 1500, ThinkingLevel.HIGH);
                         if (!cat.logs) cat.logs = [];
                         cat.logs.push({ time: getCurrentTimeStr(), content: `[监控截获] ${cleanText(res)}` });
                         showToast("已存入该角色的档案日志。", "success");
@@ -4379,7 +4770,13 @@ Language: Simplified Chinese.`;
                     try {
                         const res = await callAI(prompt, "Mail System", 1000, ThinkingLevel.LOW);
                         const data = parseAIJSON(res);
-                        if (data && data.sender && data.content) { const newItem = data.item ? { ...data.item, id: Date.now(), type: 'collectible' } : null; user.mailbox.push({ from: data.sender, date: getCurrentTimeStr(), content: cleanText(data.content), item: newItem, read: false, claimed: false }); user.dailyMailCount++; }
+                        if (data && data.sender && data.content) { 
+                            const newItem = data.item ? { ...data.item, id: Date.now(), type: 'collectible' } : null; 
+                            user.mailbox.push({ from: data.sender, date: getCurrentTimeStr(), content: cleanText(data.content), item: newItem, read: false, claimed: false }); 
+                            user.dailyMailCount++; 
+                            /* NEW: Trigger global notification */
+                            showNotification("新信件", `来自 ${data.sender} 的加密信件，请查收。`, "https://img.icons8.com/nolan/64/open-envelope.png");
+                        }
                     } catch (e) { }
                 };
 
@@ -4827,8 +5224,10 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                         "affinityChange": number (-5 to 15),
                         "moodChange": number (-10 to 20),
                         "loot": { "name": "Dynamic Item Name", "icon": "Emoji", "desc": "Description" },
-                        "coins": number (50 to 300)
+                        "coins": number (50 to 300),
+                        "lore": { "category": "Location/History/Hero/Villain/Item", "title": "Entry Title", "content": "Detailed Canon Lore (50-100 words)", "icon": "FontAwesome Class" }
                     }
+                    Note: "lore" is OPTIONAL. Only provide it if the adventure revealed significant world-building or canon details.
                     Language: Simplified Chinese.`;
 
                     try {
@@ -4840,6 +5239,9 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                             exploreState.companion.affinity = Math.min(100, Math.max(0, exploreState.companion.affinity + data.affinityChange));
                             if (data.loot) {
                                 user.inventory.push({ ...data.loot, id: Date.now(), type: 'collectible' });
+                            }
+                            if (data.lore) {
+                                unlockCodexEntry(data.lore.category, data.lore.title, data.lore.content, data.lore.icon);
                             }
 
                             // Generate Travelogue (Logic C)
@@ -4934,7 +5336,7 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                     `;
 
                     try {
-                        const content = await callAI(prompt, STRICT_CANON_PROMPT, 1000);
+                        const content = await callAI(prompt, STRICT_CANON_PROMPT, 1000, ThinkingLevel.HIGH);
                         currentSpecialEventContent.value = cleanText(content);
                         pendingSpecialEvent.value = { cat: cat, content: cleanText(content) };
                         showSpecialEventModal.value = true;
@@ -5931,9 +6333,22 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                         const lastMonitorLogs = (sendingCat.diary || []).slice(-10).map(d => `[${d.time}] ${d.content}`).join("\n");
                         const todayInteractions = (sendingCat.todayInteractions || []).map(i => `[${i.time}] ${i.content}`).join("\n");
 
+                        const gnnTrends = user.phoneData.gnn?.trending?.map(t => `#${t.topic}`).join(', ') || 'None';
+                        const lastChatMs = sendingCat.lastInteractionTimestamp ? (now - sendingCat.lastInteractionTimestamp) : null;
+                        let timePerceptionStr = "";
+                        if (lastChatMs) {
+                            const hours = Math.floor(lastChatMs / (1000 * 60 * 60));
+                            if (hours >= 24) timePerceptionStr = `[TIME PERCEPTION]: You haven't talked to the user for ${Math.floor(hours/24)} days. Mention this if appropriate.`;
+                            else if (hours >= 1) timePerceptionStr = `[TIME PERCEPTION]: You haven't talked to the user for ${hours} hours.`;
+                        }
                         const context = getUserRealLifeContext();
 
                         const prompt = `
+                        [TIME & TRENDS]:
+                        - Current Time: ${new Date().toLocaleString()}
+                        - GNN Trending Topics: ${gnnTrends}
+                        ${timePerceptionStr}
+
                         [USER IDENTITY]:
                         Name: ${user.nickname}
                         Gender: ${user.gender}
@@ -5969,14 +6384,16 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                         Strict Format (NO MARKDOWN BLOCKS):
                         [FORM_DECISION] Determine form. If Affinity < 50, you MUST output CAT. If Affinity >= 50, decide based on context and your personality: output CAT or HUMAN.
                         [STATUS] Update status based on interaction. (3rd Person, Action only).
-                        [VOICE] Inner thoughts. (1st Person). MUST BE HUMAN LANGUAGE (Simplified Chinese). NO MEOWS IN THOUGHTS. **MANDATORY:** Refer to yourself as "我" (I) or similar, NEVER use your full name to refer to yourself in thoughts.
-                        [REPLY] Output to user. (50-100 words). **CRITICAL:** DO NOT start the reply with your name or "Name:". Just output the dialogue/content. IF CAT FORM: Meows/Purrs + Actions only (DO NOT SPEAK HUMAN WORDS IN CAT FORM!). IF HUMAN FORM: Human speech allowed.
+                        [VOICE] Inner thoughts. (1st Person). MUST BE HUMAN LANGUAGE (Simplified Chinese). NO MEOWS IN THOUGHTS. **MANDATORY:** Refer to yourself as "我" (I) or similar, NEVER use your full name to refer to yourself in thoughts. Use **【】** for mental state descriptions.
+                        [REPLY] Output to user. (50-100 words). **CRITICAL:** DO NOT start the reply with your name or "Name:". Just output the dialogue/content. Use **【】** to wrap all actions and micro-expressions.
+                        IF CAT FORM: Meows/Purrs + Actions in 【】 (DO NOT SPEAK HUMAN WORDS IN CAT FORM!). 
+                        IF HUMAN FORM: Human speech allowed, actions in 【】.
                         [USER_STATUS] Summarize User's current action/status based on their input and this interaction. (Max 15 chars). 
                         - If the user explicitly said what they are doing (e.g., "I'm eating"), reflect that. 
                         - If they are just talking to you, use "正在和${sendingCat.name}..."
                         `;
 
-                        const responseRaw = await callAI(prompt, STRICT_CANON_PROMPT, 1500);
+                        const responseRaw = await callAI(prompt, STRICT_CANON_PROMPT, 2000, ThinkingLevel.HIGH);
 
                         const formDecision = extractSection(responseRaw, 'FORM_DECISION');
                         if (formDecision && formDecision.includes('HUMAN')) {
@@ -6273,7 +6690,9 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                             }
                         }
 
+                        const gnnTrendsGlobal = user.phoneData.gnn?.trending?.map(t => `#${t.topic}`).join(', ') || 'None';
                         const prompt = `Current Local Time: ${now.toLocaleString()}. ${isNight ? 'Night Time (Patrol/Sleep Likely)' : 'Day Time (Active/Rest Likely)'}. 
+                        GNN Global Trends: ${gnnTrendsGlobal}
                         User Context: ${userContext} ${activeCatContext} 
                         
                         [WORLDVIEW: HERO CATS & FOOLISH HUMANS]:
@@ -6700,7 +7119,8 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                     exportSave, importSave, fileInput,
                     shopItems, filteredShopItems, buyItem, openBag: () => showBag.value = true, useItem, readItem,
                     openDiary, openLogModal, openTravelogue, generateFullDiary, isGeneratingDiary,
-                    isFocusing, focusCats, focusAction, focusTime, focusTotalTime, getCurrentTimeStr,
+                    isFocusing, focusCats, focusAction, focusTime, focusTotalTime, getCurrentTimeStr, isFocusAudioPlaying, toggleFocusAudioIsland,
+                    notification, showNotification, hideNotification,
                     formatTime: (s) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`,
                     stopFocus, focusMessage, currentNoise, customNoiseUrl, playNoise, audioPlayer, harassCat, currentFocusLog,
                     toggleHumanMode, handleSpecificImageUpload, releaseCat, shareMemory,
@@ -6726,14 +7146,17 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                     generatePhoneNews, generatePhoneMoments,
                     addWalletTransaction,
                     showPhoneLocationModal, phoneLocationInput, showPhoneMoneyModal, phoneMoneyAmount, phoneMoneyType, showPhotoDescModal, currentPhotoDesc, scanSignal, hackCamera,
+                    unlockCodexEntry, generateGNNContent, gnnLoading,
                     groupChatState, sendGroupMessage, catchInTheAct,
                     sendPhoneMoney, openPhotoDesc,
                     collectRedPacket, phoneInputRef,
                     initTetris, tetrisAction, endGame, tetrisState, mergeState, handleMergeTouchStart, handleMergeTouchEnd, matchState, initMerge, initMatch, matchClick,
-                    isAppLoading, loadingProgress, loadingMessage
+                    isAppLoading, loadingProgress, loadingMessage,
+                    tempUserStatus, showPhoneImageDescModal, phoneImageDesc, sendPhoneDescImage
                 };
             }
         }).mount('#app');
     </script>
 </body>
+
 </html>
