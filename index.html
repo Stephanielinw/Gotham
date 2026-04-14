@@ -1525,8 +1525,7 @@
                             <span v-if="cat.isHuman"
                                 class="absolute top-1 right-1 bg-pink-600 text-white text-[10px] px-1.5 py-0.5 rounded shadow">猫耳模式</span>
                             <span v-if="cat.isMarvel"
-                                class="absolute bottom-1 right-1 bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded shadow">{{
-                                cat.origin || 'Foreign' }}</span>
+                                class="absolute bottom-1 right-1 bg-red-600 border border-red-400 font-bold tracking-widest text-white text-[9px] px-1.5 py-0.5 rounded shadow z-10">外来猫</span>
                         </div>
                         <h3 class="font-bold text-gray-200">{{ cat.name }}</h3>
                         <div
@@ -2083,23 +2082,23 @@
                                                 class="text-red-500 hover:text-red-400 font-bold border border-red-800 px-2 rounded">QUIT</button>
                                         </div>
                                         <canvas id="tetris-canvas" width="200" height="400"
-                                            class="bg-zinc-900 border-2 border-zinc-700 shadow-[0_0_15px_rgba(128,0,128,0.3)]"></canvas>
-                                        <div class="grid grid-cols-3 gap-2 mt-4 w-full px-8 select-none">
+                                            class="bg-zinc-900 border-2 border-zinc-700 shadow-[0_0_15px_rgba(128,0,128,0.3)]" style="height: 280px; width: auto;"></canvas>
+                                        <div class="grid grid-cols-3 gap-2 mt-2 w-full px-8 select-none">
                                             <button @mousedown="tetrisAction('left')"
                                                 @touchstart.prevent="tetrisAction('left')"
-                                                class="bg-zinc-800 py-4 rounded text-white shadow active:bg-zinc-600"><i
+                                                class="bg-zinc-800 py-2 rounded text-white shadow active:bg-zinc-600"><i
                                                     class="fas fa-arrow-left"></i></button>
                                             <button @mousedown="tetrisAction('rotate')"
                                                 @touchstart.prevent="tetrisAction('rotate')"
-                                                class="bg-zinc-800 py-4 rounded text-white shadow active:bg-zinc-600"><i
+                                                class="bg-zinc-800 py-2 rounded text-white shadow active:bg-zinc-600"><i
                                                     class="fas fa-undo"></i></button>
                                             <button @mousedown="tetrisAction('right')"
                                                 @touchstart.prevent="tetrisAction('right')"
-                                                class="bg-zinc-800 py-4 rounded text-white shadow active:bg-zinc-600"><i
+                                                class="bg-zinc-800 py-2 rounded text-white shadow active:bg-zinc-600"><i
                                                     class="fas fa-arrow-right"></i></button>
                                             <div class="col-start-2"><button @mousedown="tetrisAction('down')"
                                                     @touchstart.prevent="tetrisAction('down')"
-                                                    class="bg-zinc-800 w-full py-4 rounded text-white shadow active:bg-zinc-600"><i
+                                                    class="bg-zinc-800 w-full py-2 rounded text-white shadow active:bg-zinc-600"><i
                                                         class="fas fa-arrow-down"></i></button></div>
                                         </div>
                                     </div>
@@ -3855,7 +3854,7 @@
                                 class="w-20 h-20 rounded-full border-2 border-white mb-2 shadow-lg">
                             <h3 class="text-xl font-bold text-yellow-500 mb-1">{{ gachaResult.name }}</h3>
                             <span v-if="gachaResult.isMarvel"
-                                class="bg-red-600 text-[9px] px-1 rounded text-white mb-1">MARVEL UNIVERSE</span>
+                                class="bg-red-600 border border-red-400 font-bold tracking-widest text-white text-[9px] px-2 py-0.5 rounded mb-1">外来猫</span>
                             <div class="flex gap-2 text-[9px] mb-2 justify-center"><span
                                     class="bg-zinc-700 px-1 rounded">{{ gachaResult.breed }}</span><span
                                     class="bg-zinc-700 px-1 rounded"><i class="fa-solid fa-eye text-blue-400"></i> {{
@@ -5177,12 +5176,15 @@
 
                 const hackCamera = async (cat) => {
                     if (!settings.apiKey) return alert("需要API连接");
+                    if (cat.hasHackedThisPatrol) return showToast("特工正在隐蔽行动，不宜频繁查阅监控暴露行踪...", "error");
                     showToast("正在连接GCPD监控网络...", "loading");
                     const prompt = `[GCPD CAMERA HACK] Character: ${cat.name}. Status: ${cat.status}. Task: Generate a thrilling, action-packed log of a blurry security camera feed tracking this "cat/humanoid shadow" taking down criminals tonight. Output format: Just the action string, ~60 words. Emphasize their canon fighting style (e.g. Batarangs, Acrobatics, Lethal strikes). LANGUAGE: SIMPLIFIED CHINESE (简体中文).`;
                     try {
                         const res = await callAI(prompt, STRICT_CANON_PROMPT, 1500, ThinkingLevel.HIGH);
                         if (!cat.logs) cat.logs = [];
-                        cat.logs.push({ time: getCurrentTimeStr(), content: `[监控截获] ${cleanText(res)}` });
+                        const logTime = new Date().toLocaleString();
+                        cat.logs.push({ time: logTime, content: `[监控截获] ${cleanText(res)}` });
+                        cat.hasHackedThisPatrol = true;
                         showToast("已存入该角色的档案日志。", "success");
                         selectedCat.value = cat;
                         showLogModal.value = true;
@@ -5677,7 +5679,12 @@ Language: Simplified Chinese.`;
                     } catch (e) { }
                 };
 
-                const handleCatClick = (cat) => { selectedCat.value = cat; currentTab.value = 'detail'; showEasterEggBtn.value = (cat.affinity >= 90 && Math.random() < 0.05); };
+                const handleCatClick = (cat) => { 
+                    if (cat.isOut) return showToast("特工正在外进行夜巡任务，目前无法与其建立联络！", "error");
+                    selectedCat.value = cat; 
+                    currentTab.value = 'detail'; 
+                    showEasterEggBtn.value = (cat.affinity >= 90 && Math.random() < 0.05); 
+                };
 
                 const triggerEasterEgg = async () => {
                     if (!settings.apiKey) return alert("API needed");
@@ -6678,7 +6685,9 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                 };
 
                 const endGame = (name, score) => {
-                    if (phoneState.games.activeGame === 'tetris') stopTetris();
+                    if (phoneState.games.activeGame === 'tetris') {
+                        if (typeof t_timer !== 'undefined' && t_timer) cancelAnimationFrame(t_timer);
+                    }
                     submitGameScore(name, `${score}`);
                 };
 
@@ -7450,7 +7459,19 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                     }
 
                     if (sendingCat.isOut && Math.random() > 0.15) {
-                        sendingCat.chatHistory.push({ role: 'system', isSystem: true, content: '信号连接失败... 目标处于高干扰区域 (夜巡中)' });
+                        if (!sendingCat.autoReply) {
+                            thinkingStates[sendingCat.id] = true;
+                            try {
+                                const prompt = `[AUTO-REPLY GEN] You are ${sendingCat.name} (Traits: ${sendingCat.personality}). You are out fighting crime as a vigilante. Generate ONE short automated reply setting (under 20 words) rejecting a chat message because you are busy fighting crime. Format: just the reply text.`;
+                                const res = await callAI(prompt, STRICT_CANON_PROMPT, 100, ThinkingLevel.LOW);
+                                sendingCat.autoReply = "[自动回复] " + cleanText(res);
+                            } catch (e) {
+                                sendingCat.autoReply = "[自动回复] 正在夜巡打击犯罪，无暇查看消息。";
+                            } finally {
+                                delete thinkingStates[sendingCat.id];
+                            }
+                        }
+                        sendingCat.chatHistory.push({ role: 'assistant', isSystem: false, content: sendingCat.autoReply });
                         return;
                     }
 
@@ -7882,7 +7903,10 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                                 if (cat) {
                                     if (update.status) cat.status = update.status;
                                     if (update.innerVoice) cat.innerVoice = update.innerVoice;
-                                    if (update.isOut !== undefined) cat.isOut = update.isOut;
+                                    if (update.isOut !== undefined) {
+                                        if (!cat.isOut && update.isOut) cat.hasHackedThisPatrol = false;
+                                        cat.isOut = update.isOut;
+                                    }
 
                                     if (cat.affinity < 50) {
                                         cat.isHuman = false;
@@ -7895,6 +7919,21 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                                     cat.lastStatusUpdateTime = Date.now();
                                 }
                             });
+                            
+                            // Base Defense Rule: At least 2 cats must remain at home
+                            let outCats = cats.value.filter(c => c.isOut);
+                            let homeCats = cats.value.filter(c => !c.isOut);
+                            if (cats.value.length >= 2 && homeCats.length < 2) {
+                                let needed = 2 - homeCats.length;
+                                for (let i = 0; i < needed && outCats.length > 0; i++) {
+                                    let c = outCats.pop();
+                                    c.isOut = false;
+                                    c.hasHackedThisPatrol = false;
+                                    c.status = '由于大本营需要防守，被紧急召回巡视领地';
+                                    c.diary.push({ time: timeStr, content: c.status + ' (强制留守)' });
+                                }
+                            }
+                            
                             localStorage.setItem('last_sync_time', Date.now().toString());
                             alfredMessage.value = (todayEvent.value ? todayEvent.value + " " : "") + `庄园监控已同步至 ${timeStr}。`;
                             addLog("STATUS SYNC SUCCESS: All characters updated.", "sent");
@@ -8026,28 +8065,29 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                     isWishLoading.value = true;
 
                     const prompt = `
-                    Task: Generate a Cat Character based on User Wish.
-                    User Wish: Name: ${newCat.name}, Codename: ${newCat.codename}, Origin: ${newCat.origin}.
-                    
-                    Requirements:
-                    1. Adapt the character into a CAT based on their traits.
-                    2. Determine if Origin is "DC Universe". If NOT, mark isExternal = true.
-                    3. Generate appearance (Breed, Eye Color, Color Hex).
-                    4. Generate Personality and a System Prompt for roleplay.
-                    5. Language: Simplified Chinese.
-                    
-                    Output JSON:
-                    {
-                        "breed": "...",
-                        "eyeColor": "...",
-                        "color": "#HEX",
-                        "personality": "...",
-                        "status": "Initial status...",
-                        "innerVoice": "First thought...",
-                        "prompt": "System prompt...",
-                        "isExternal": boolean,
-                        "origin": "${newCat.origin}"
-                    }
+                        Task: Generate a Cat Character based on User Wish.
+                        User Wish: Name: ${newCat.name}, Codename: ${newCat.codename}, Origin: ${newCat.origin}.
+                        
+                        Requirements:
+                        1. Adapt the character into a CAT based on their traits. Strict adherence to original canon hair/eye color and personality. NO OOC.
+                        2. Determine if Origin is "DC Universe" or "DC Comics". If NOT, set isExternal = true.
+                        3. Generate appearance (Breed, Eye Color, Theme Color Hex for color property).
+                        4. Generate Personality and a System Prompt for roleplay.
+                        5. Generate a classic quote from the character to use as innerVoice.
+                        6. Language: Simplified Chinese.
+                        
+                        Output JSON:
+                        {
+                            "breed": "...",
+                            "eyeColor": "...",
+                            "color": "#HEX",
+                            "personality": "...",
+                            "status": "初来乍到，正在审视周围环境",
+                            "innerVoice": "...",
+                            "prompt": "...",
+                            "isExternal": boolean,
+                            "origin": "${newCat.origin}"
+                        }
                     `;
 
                     try {
@@ -8160,7 +8200,7 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                     showToast("正在黑入阿卡姆数据库...", "loading");
                     try {
                         const isMarvel = Math.random() < 0.2; const universe = isMarvel ? "MARVEL Universe (Avengers/X-Men)" : "DC Universe (Batfamily/Justice League)"; const existingNames = cats.value.map(c => c.name).join(', ');
-                        const prompt = `Generate random superhero cat from ${universe}. DO NOT generate these characters: ${existingNames}. If Marvel, mark isMarvel: true. Requirements: 1. Breed/Appearance MUST match canon hair/eye color. 2. Use Simplified Chinese for personality/desc. 3. Generate specific Breed and Eye Color in Simplified Chinese ONLY. 4. Provide a "quote" (first interaction line). JSON Only: {"name":"","codename":"","color":"Hex#","breed":"Breed Name","eyeColor":"Eye Color","personality":"","quote":"One sentence interaction","prompt":"","isMarvel":${isMarvel}}`;
+                        const prompt = `Generate random superhero cat from ${universe}. DO NOT generate these characters: ${existingNames}. If Marvel, mark isMarvel: true. Requirements: 1. Breed/Appearance MUST strictly match canon hair/eye color without OOC. 2. Use Simplified Chinese. 3. Generate a classic, in-character quote as 'quote'. JSON Only: {"name":"","codename":"","color":"Hex#","breed":"Breed Name","eyeColor":"Eye Color","personality":"","quote":"[Classic Quote]","prompt":"","isMarvel":${isMarvel}}`;
 
                         const res = await callAI(prompt, "Character Generator (Simplified Chinese Only)", 1000);
                         const charData = parseAIJSON(res);
@@ -8328,5 +8368,4 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
         }).mount('#app');
     </script>
 </body>
-
 </html>
