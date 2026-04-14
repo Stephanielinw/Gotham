@@ -18,7 +18,12 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/lunar-javascript/lunar.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <style>
+        /* ===== GLASSMORPHISM DESIGN SYSTEM ===== */
         :root {
             --gotham-black: #101010;
             --gotham-dark: #1f1f1f;
@@ -26,7 +31,113 @@
             --nightwing-blue: #005e94;
             --redhood-red: #8a0303;
             --hacker-green: #33ff00;
+
+            /* Glass variables */
+            --glass-bg: rgba(20, 20, 24, 0.75);
+            --glass-bg-strong: rgba(10, 10, 15, 0.92);
+            --glass-bg-light: rgba(40, 40, 50, 0.45);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-border-gold: rgba(212, 175, 55, 0.35);
+            --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.7), 0 4px 12px rgba(0, 0, 0, 0.5);
+            --glass-blur: blur(25px);
+            --glass-blur-strong: blur(40px);
+
+            /* Theme accent (changeable) */
+            --accent: #d4af37;
+            --accent-dim: rgba(212, 175, 55, 0.2);
+            --accent-glow: 0 0 25px rgba(212, 175, 55, 0.4);
+
+            /* Scanline opacity (0 = off, 1 = full) */
+            --scanline-opacity: 0.04;
+
+            /* Frosted panel blur strength */
+            --panel-blur: 25px;
         }
+
+        .theme-nightwing {
+            --accent: #0070b3;
+            --accent-dim: rgba(0, 112, 179, 0.2);
+            --accent-glow: 0 0 25px rgba(0, 112, 179, 0.5);
+        }
+
+        .theme-redhood {
+            --accent: #a30000;
+            --accent-dim: rgba(163, 0, 0, 0.2);
+            --accent-glow: 0 0 25px rgba(163, 0, 0, 0.5);
+        }
+
+        .theme-green {
+            --accent: #10b981;
+            --accent-dim: rgba(16, 185, 129, 0.2);
+            --accent-glow: 0 0 25px rgba(16, 185, 129, 0.5);
+        }
+
+        /* Global Button Feedback */
+        button,
+        .nav-item,
+        .cat-card,
+        .btn-action {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+        }
+
+        button:active,
+        .nav-item:active,
+        .cat-card:active,
+        .btn-action:active {
+            transform: scale(0.95);
+            opacity: 0.8;
+            filter: brightness(1.2);
+        }
+
+        /* ===== GLASSMORPHISM UTILITY CLASSES ===== */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+        }
+
+        .glass-panel-strong {
+            background: var(--glass-bg-strong);
+            backdrop-filter: var(--glass-blur-strong);
+            -webkit-backdrop-filter: var(--glass-blur-strong);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+        }
+
+        .glass-card {
+            background: rgba(30, 30, 40, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            border-color: var(--glass-border-gold);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), var(--accent-glow);
+            background: rgba(40, 40, 55, 0.7);
+        }
+
+        /* Scanline effect overlay */
+        .scanlines::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0, 0, 0, var(--scanline-opacity)) 2px,
+                    rgba(0, 0, 0, var(--scanline-opacity)) 4px);
+            pointer-events: none;
+            border-radius: inherit;
+        }
+
+
 
         [v-cloak] {
             display: none !important;
@@ -42,12 +153,14 @@
             padding: 0;
         }
 
+        /* Navigation & Container */
         .app-container {
             height: 100vh;
             display: flex;
             flex-direction: column;
             width: 100%;
             position: relative;
+            background: var(--gotham-black);
         }
 
         .content-area {
@@ -56,295 +169,139 @@
             -webkit-overflow-scrolling: touch;
             padding: 16px;
             width: 100%;
+            padding-bottom: 100px;
+            /* Space for nav bar */
         }
 
         .nav-bar {
-            background-color: var(--gotham-dark);
-            border-top: 1px solid #333;
-            height: 50px;
+            background: var(--glass-bg-strong);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border-top: 1px solid var(--glass-border);
+            height: 60px;
             position: fixed;
             bottom: 0;
             width: 100%;
             display: flex;
             justify-content: space-around;
             align-items: center;
-            z-index: 100;
+            z-index: 1000;
             padding-bottom: env(safe-area-inset-bottom);
-            box-sizing: content-box;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
         }
 
         .nav-item {
-            color: #666;
+            color: #71717a;
             text-align: center;
             font-size: 10px;
-            transition: color 0.3s;
+            transition: all 0.3s ease;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            width: 100%;
+            flex: 1;
             height: 100%;
             cursor: pointer;
+            position: relative;
         }
 
         .nav-item.active {
-            color: var(--bat-yellow);
+            color: var(--accent);
+            text-shadow: 0 0 10px var(--accent-dim);
         }
 
         .nav-item i {
             font-size: 20px;
-            display: block;
             margin-bottom: 2px;
+            transition: transform 0.2s ease;
+        }
+
+        .nav-item:active i {
+            transform: scale(1.2);
         }
 
         .fixed-input-bar {
             position: fixed;
-            bottom: calc(50px + env(safe-area-inset-bottom));
+            bottom: calc(60px + env(safe-area-inset-bottom));
             left: 0;
-            width: 100%;
-            background-color: var(--gotham-black);
-            border-top: 1px solid #333;
-            padding: 8px 16px;
-            z-index: 40;
+            right: 0;
+            background: var(--glass-bg-strong);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--glass-border);
+            padding: 12px 16px;
+            z-index: 900;
             display: flex;
-            align-items: flex-end;
-            gap: 10px;
-            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.3);
-            min-height: 54px;
-            box-sizing: border-box;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.3);
         }
 
         .cat-card {
-            background: #252525;
-            border-radius: 12px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
             overflow: hidden;
             position: relative;
-            transition: transform 0.2s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             flex-direction: column;
             align-items: center;
-            border: 1px solid #333;
+            border: 1px solid var(--glass-border);
+            padding: 12px;
         }
 
-        .cat-card:active {
-            transform: scale(0.98);
+        /* New Chat Bubble Styles */
+        .chat-bubble-wrapper {
+            display: flex;
+            align-items: flex-end;
+            margin-bottom: 16px;
+            gap: 8px;
+            width: 100%;
         }
 
-        .cat-card.out-on-patrol {
-            opacity: 0.6;
-            filter: grayscale(0.9);
-            border: 1px dashed #555;
-        }
-
-        .cat-card.out-on-patrol::after {
-            content: '🦇 夜巡中';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: var(--bat-yellow);
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-            border: 1px solid var(--bat-yellow);
-            white-space: nowrap;
-            z-index: 10;
-        }
-
-        .chat-bubble {
-            max-width: 85%;
-            padding: 12px 16px;
+        .chat-bubble-v2 {
+            max-width: 80%;
+            padding: 10px 14px;
             border-radius: 18px;
-            margin-bottom: 12px;
             font-size: 14px;
             line-height: 1.5;
             word-wrap: break-word;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
         }
 
-        .chat-user {
-            background: var(--nightwing-blue);
-            align-self: flex-end;
-            border-bottom-right-radius: 4px;
+        .chat-v2-user {
+            background: linear-gradient(135deg, var(--accent), var(--gotham-black));
             color: white;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 6px 16px var(--accent-dim);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .chat-ai {
-            background: #333;
-            align-self: flex-start;
+        .chat-v2-ai {
+            background: rgba(45, 45, 55, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #e4e4e7;
             border-bottom-left-radius: 4px;
-            border: 1px solid #444;
         }
 
-        .chat-system {
+        .chat-v2-system {
             background: transparent;
-            color: #666;
-            font-size: 12px;
+            color: #71717a;
+            font-size: 11px;
             align-self: center;
             text-align: center;
-            box-shadow: none;
-            font-style: italic;
-            border: 1px dashed #333;
-        }
-
-        .chat-thinking {
-            opacity: 0.7;
-            font-style: italic;
-            color: #aaa;
-            animation: pulse 1.5s infinite;
-        }
-
-        input,
-        select,
-        textarea {
-            background: #2a2a2a;
-            border: 1px solid #444;
-            color: #eee;
-            padding: 12px 14px;
+            width: 100%;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            margin: 8px 0;
+            padding: 4px;
             border-radius: 8px;
-            width: 100%;
         }
 
-        .content-area {
-            flex: 1;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            padding: 16px;
-            width: 100%;
-        }
-
-        .nav-bar {
-            background-color: var(--gotham-dark);
-            border-top: 1px solid #333;
-            height: 50px;
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            z-index: 100;
-            padding-bottom: env(safe-area-inset-bottom);
-            box-sizing: content-box;
-        }
-
-        .nav-item {
-            color: #666;
-            text-align: center;
-            font-size: 10px;
-            transition: color 0.3s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
-        }
-
-        .nav-item.active {
-            color: var(--bat-yellow);
-        }
-
-        .nav-item i {
-            font-size: 20px;
-            display: block;
+        .chat-avatar {
             margin-bottom: 2px;
-        }
-
-        .fixed-input-bar {
-            position: fixed;
-            bottom: calc(50px + env(safe-area-inset-bottom));
-            left: 0;
-            width: 100%;
-            background-color: var(--gotham-black);
-            border-top: 1px solid #333;
-            padding: 8px 16px;
-            z-index: 40;
-            display: flex;
-            align-items: flex-end;
-            gap: 10px;
-            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.3);
-            min-height: 54px;
-            box-sizing: border-box;
-        }
-
-        .cat-card {
-            background: #252525;
-            border-radius: 12px;
-            overflow: hidden;
-            position: relative;
-            transition: transform 0.2s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            border: 1px solid #333;
-        }
-
-        .cat-card:active {
-            transform: scale(0.98);
-        }
-
-        .cat-card.out-on-patrol {
-            opacity: 0.6;
-            filter: grayscale(0.9);
-            border: 1px dashed #555;
-        }
-
-        .cat-card.out-on-patrol::after {
-            content: '\f186  夜巡中';
-            font-family: 'Font Awesome 6 Free', sans-serif;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: var(--bat-yellow);
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 900;
-            border: 1px solid var(--bat-yellow);
-            white-space: nowrap;
-            z-index: 10;
-        }
-
-        .chat-bubble {
-            max-width: 85%;
-            padding: 12px 16px;
-            border-radius: 18px;
-            margin-bottom: 12px;
-            font-size: 14px;
-            line-height: 1.5;
-            word-wrap: break-word;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-        }
-
-        .chat-user {
-            background: var(--nightwing-blue);
-            align-self: flex-end;
-            border-bottom-right-radius: 4px;
-            color: white;
-        }
-
-        .chat-ai {
-            background: #333;
-            align-self: flex-start;
-            border-bottom-left-radius: 4px;
-            border: 1px solid #444;
-        }
-
-        .chat-system {
-            background: transparent;
-            color: #666;
-            font-size: 12px;
-            align-self: center;
-            text-align: center;
-            box-shadow: none;
-            font-style: italic;
-            border: 1px dashed #333;
         }
 
         .chat-thinking {
@@ -587,7 +544,8 @@
             top: 40px;
             left: 50%;
             width: 90%;
-            z-index: 5000; /* Extremely high z-index to stay above everything */
+            z-index: 5000;
+            /* Extremely high z-index to stay above everything */
             background-color: rgba(30, 30, 30, 0.9);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
@@ -603,10 +561,12 @@
             transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
             visibility: hidden;
         }
+
         #notification-bar.visible {
             transform: translateX(-50%) translateY(0);
             visibility: visible;
         }
+
         #notification-avatar {
             width: 30px;
             height: 30px;
@@ -614,11 +574,13 @@
             object-fit: cover;
             border: 1px solid var(--bat-yellow);
         }
+
         #notification-content .name {
             font-weight: 600;
             font-size: 15px;
             color: var(--bat-yellow);
         }
+
         #notification-content .message {
             font-size: 14px;
             color: #ccc;
@@ -653,6 +615,7 @@
             cursor: pointer;
             user-select: none;
         }
+
         #floating-focus-island .close-btn,
         #floating-focus-island .play-btn {
             position: absolute;
@@ -670,10 +633,22 @@
             align-items: center;
             justify-content: center;
         }
-        #floating-focus-island .close-btn { right: -8px; line-height: 18px; font-size: 14px; }
-        #floating-focus-island .play-btn { right: 22px; font-size: 10px; }
+
+        #floating-focus-island .close-btn {
+            right: -8px;
+            line-height: 18px;
+            font-size: 14px;
+        }
+
+        #floating-focus-island .play-btn {
+            right: 22px;
+            font-size: 10px;
+        }
+
         #floating-focus-island:hover .close-btn,
-        #floating-focus-island:hover .play-btn { opacity: 1; }
+        #floating-focus-island:hover .play-btn {
+            opacity: 1;
+        }
 
         .chat-container {
             display: flex;
@@ -697,42 +672,109 @@
 
         /* NEW: System Log & Toast Styles */
         .terminal-window {
-            background-color: #050505;
-            border: 1px solid #333;
-            font-family: 'Courier New', monospace;
-            padding: 8px;
-            height: 150px;
+            background: rgba(2, 8, 2, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 255, 0, 0.2);
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            padding: 10px;
+            height: 160px;
             overflow-y: auto;
-            font-size: 9px;
+            font-size: var(--term-font-size, 9px);
             color: var(--hacker-green);
-            text-shadow: 0 0 2px rgba(51, 255, 0, 0.4);
+            text-shadow: 0 0 3px rgba(51, 255, 0, 0.6), 0 0 8px rgba(51, 255, 0, 0.2);
             margin-top: 10px;
-            border-radius: 4px;
+            border-radius: 6px;
             position: relative;
+            box-shadow: inset 0 0 40px rgba(51, 255, 0, 0.04), 0 0 0 1px rgba(51, 255, 0, 0.08);
+        }
+
+        /* CRT scanlines on terminal */
+        .terminal-window::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0, 255, 0, 0.015) 2px,
+                    rgba(0, 255, 0, 0.015) 4px);
+            pointer-events: none;
+            border-radius: inherit;
+            z-index: 1;
+        }
+
+        .terminal-window>* {
+            position: relative;
+            z-index: 2;
         }
 
         .terminal-line {
             margin-bottom: 2px;
             word-break: break-all;
-            border-bottom: 1px solid #111;
+            border-bottom: 1px solid rgba(51, 255, 0, 0.06);
             padding-bottom: 2px;
+            animation: termline 0.2s ease-out;
+        }
+
+        @keyframes termline {
+            from {
+                opacity: 0;
+                transform: translateX(-4px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
 
         .terminal-time {
-            color: #666;
+            color: rgba(51, 255, 0, 0.4);
             margin-right: 5px;
         }
 
         .terminal-type-error {
-            color: #ff3333;
+            color: #ff4444;
+            text-shadow: 0 0 6px rgba(255, 50, 50, 0.5);
         }
 
         .terminal-type-sent {
             color: #33ccff;
+            text-shadow: 0 0 6px rgba(51, 200, 255, 0.4);
         }
 
         .terminal-type-warn {
-            color: #ffcc00;
+            color: #ffd700;
+            text-shadow: 0 0 6px rgba(255, 210, 0, 0.4);
+        }
+
+        /* ===== UI BEAUTIFY PANEL (Terminal section) ===== */
+        .ui-beautify-panel {
+            background: rgba(10, 14, 10, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(51, 255, 0, 0.15);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .ui-beautify-panel .theme-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: transform 0.15s, border-color 0.15s;
+        }
+
+        .ui-beautify-panel .theme-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .ui-beautify-panel .theme-btn.active {
+            border-color: white;
         }
 
         .toast-notification {
@@ -740,15 +782,17 @@
             top: calc(10px + env(safe-area-inset-top));
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(16, 16, 16, 0.95);
-            border: 1px solid var(--bat-yellow);
-            color: var(--bat-yellow);
+            background: rgba(10, 10, 16, 0.92);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--accent);
+            color: var(--accent);
             padding: 10px 20px;
-            border-radius: 6px;
+            border-radius: 10px;
             z-index: 9999;
             font-size: 12px;
-            font-family: 'Courier New', monospace;
-            box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            box-shadow: 0 0 24px rgba(212, 175, 55, 0.25), 0 4px 16px rgba(0, 0, 0, 0.5);
             display: flex;
             align-items: center;
             gap: 10px;
@@ -768,6 +812,455 @@
                 opacity: 1;
             }
         }
+
+        /* ===== UPGRADED NAV BAR ===== */
+        .nav-bar-glass {
+            background: rgba(10, 10, 16, 0.8) !important;
+            backdrop-filter: blur(24px) !important;
+            -webkit-backdrop-filter: blur(24px) !important;
+            border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+        }
+
+        /* ===== TOP BAR GLASS ===== */
+        .topbar-glass {
+            background: rgba(12, 12, 18, 0.75) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+        }
+
+        /* ===== WECHAT / PHONE CHAT FULL REBUILD STYLES ===== */
+
+        /* Chat detail header */
+        .phone-chat-header-glass {
+            background: rgba(240, 240, 245, 0.92);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        /* Typing indicator dots */
+        .typing-dots {
+            display: inline-flex;
+            gap: 3px;
+            align-items: center;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .typing-dots span {
+            width: 6px;
+            height: 6px;
+            background: #aaa;
+            border-radius: 50%;
+            animation: typingBounce 1.2s ease-in-out infinite;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.15s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        @keyframes typingBounce {
+
+            0%,
+            60%,
+            100% {
+                transform: translateY(0);
+                opacity: 0.5;
+            }
+
+            30% {
+                transform: translateY(-5px);
+                opacity: 1;
+            }
+        }
+
+        /* Message bubble tail */
+        .msg-bubble-right {
+            position: relative;
+            background: #95ec69;
+            border-radius: 16px 4px 16px 16px;
+            padding: 8px 12px;
+            font-size: 13px;
+            color: #000;
+            word-break: break-word;
+            max-width: 230px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .msg-bubble-left {
+            position: relative;
+            background: white;
+            border-radius: 4px 16px 16px 16px;
+            padding: 8px 12px;
+            font-size: 13px;
+            color: #000;
+            word-break: break-word;
+            max-width: 230px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Quoted message inside bubble */
+        .quoted-msg-block {
+            background: rgba(0, 0, 0, 0.06);
+            border-left: 3px solid #07c160;
+            border-radius: 4px;
+            padding: 5px 8px;
+            margin-bottom: 6px;
+            font-size: 11px;
+            color: #666;
+            max-width: 200px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        /* Reply preview bar (above input) */
+        .reply-preview-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: rgba(0, 0, 0, 0.05);
+            border-left: 3px solid #07c160;
+            border-radius: 6px;
+            margin: 0 8px 4px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Message long-press context menu */
+        .msg-context-menu {
+            position: fixed;
+            z-index: 500;
+            background: rgba(30, 30, 36, 0.96);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            padding: 6px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            max-width: 260px;
+        }
+
+        .msg-context-menu button {
+            background: rgba(255, 255, 255, 0.06);
+            border: none;
+            color: #eee;
+            font-size: 11px;
+            padding: 7px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            transition: background 0.15s;
+            min-width: 52px;
+        }
+
+        .msg-context-menu button:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .msg-context-menu button i {
+            font-size: 14px;
+            color: #d4af37;
+        }
+
+        /* Chat input toolbar (top icon row) */
+        .chat-tool-bar {
+            display: flex;
+            gap: 2px;
+            padding: 6px 8px;
+            overflow-x: auto;
+            background: rgba(245, 245, 248, 1);
+            border-top: 1px solid rgba(0, 0, 0, 0.08);
+            scrollbar-width: none;
+        }
+
+        .chat-tool-bar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .chat-tool-btn {
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 10px;
+            width: 42px;
+            height: 42px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            cursor: pointer;
+            color: #555;
+            font-size: 10px;
+            flex-shrink: 0;
+            transition: background 0.15s, transform 0.1s;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .chat-tool-btn:active {
+            transform: scale(0.92);
+            background: #e8e8e8;
+        }
+
+        .chat-tool-btn i {
+            font-size: 16px;
+        }
+
+        /* Online status dot */
+        .online-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #22c55e;
+            display: inline-block;
+            box-shadow: 0 0 4px #22c55e;
+            animation: pulseDot 2s ease-in-out infinite;
+        }
+
+        @keyframes pulseDot {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.6;
+                transform: scale(0.85);
+            }
+        }
+
+        /* Nudge (戳一戳) animation */
+        @keyframes nudgeAnim {
+            0% {
+                transform: scale(1);
+            }
+
+            20% {
+                transform: scale(1.3) rotate(-10deg);
+            }
+
+            40% {
+                transform: scale(1.2) rotate(10deg);
+            }
+
+            60% {
+                transform: scale(1.1) rotate(-5deg);
+            }
+
+            80% {
+                transform: scale(1.05) rotate(3deg);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .nudge-float {
+            position: fixed;
+            top: 40%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            z-index: 600;
+            animation: nudgeFadeOut 2s ease forwards;
+        }
+
+        @keyframes nudgeFadeOut {
+            0% {
+                opacity: 0;
+                transform: translateX(-50%) translateY(0);
+            }
+
+            20% {
+                opacity: 1;
+            }
+
+            80% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+        }
+
+        /* Voice message UI */
+        .voice-msg-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            min-width: 100px;
+            cursor: pointer;
+        }
+
+        .voice-msg-wave {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .voice-msg-wave span {
+            display: block;
+            width: 3px;
+            background: #555;
+            border-radius: 2px;
+            animation: waveBar 1s ease-in-out infinite;
+        }
+
+        .voice-msg-wave span:nth-child(1) {
+            height: 8px;
+            animation-delay: 0s;
+        }
+
+        .voice-msg-wave span:nth-child(2) {
+            height: 14px;
+            animation-delay: 0.1s;
+        }
+
+        .voice-msg-wave span:nth-child(3) {
+            height: 10px;
+            animation-delay: 0.2s;
+        }
+
+        .voice-msg-wave span:nth-child(4) {
+            height: 16px;
+            animation-delay: 0.3s;
+        }
+
+        .voice-msg-wave span:nth-child(5) {
+            height: 8px;
+            animation-delay: 0.4s;
+        }
+
+        @keyframes waveBar {
+
+            0%,
+            100% {
+                transform: scaleY(0.6);
+                opacity: 0.6;
+            }
+
+            50% {
+                transform: scaleY(1);
+                opacity: 1;
+            }
+        }
+
+        /* Message pop-in animation */
+        @keyframes msgPopIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px) scale(0.97);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .msg-pop-in {
+            animation: msgPopIn 0.25s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+        }
+
+        /* Time divider in chat */
+        .chat-time-divider {
+            text-align: center;
+            font-size: 11px;
+            color: #aaa;
+            margin: 8px 0;
+            position: relative;
+        }
+
+        .chat-time-divider span {
+            background: #ededed;
+            padding: 2px 10px;
+            border-radius: 10px;
+        }
+
+        /* Emoji reaction tag */
+        .emoji-reaction {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            background: rgba(0, 0, 0, 0.06);
+            border-radius: 10px;
+            padding: 2px 6px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 4px;
+            transition: background 0.15s;
+        }
+
+        .emoji-reaction:hover {
+            background: rgba(0, 0, 0, 0.12);
+        }
+
+        /* Emoji quick pick panel */
+        .emoji-quick-panel {
+            display: flex;
+            gap: 6px;
+            padding: 8px 12px;
+            background: white;
+            border-top: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .emoji-quick-panel button {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 8px;
+            transition: transform 0.15s, background 0.15s;
+        }
+
+        .emoji-quick-panel button:hover {
+            transform: scale(1.2);
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        /* Slide-up animation */
+        @keyframes slideUpChat {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .animate-slide-up-fast {
+            animation: slideUpChat 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
     </style>
 </head>
 
@@ -785,7 +1278,8 @@
 
         <!-- Phase 1: Floating Focus Island -->
         <div id="floating-focus-island" v-show="isFocusing && currentTab !== 'focus'" @click="currentTab = 'focus'">
-            <span id="floating-lyric-text" class="truncate max-w-[200px]">🎧 专注: {{ focusAction }} - {{ formatTime(focusTime) }}</span>
+            <span id="floating-lyric-text" class="truncate max-w-[200px]">🎧 专注: {{ focusAction }} - {{
+                formatTime(focusTime) }}</span>
             <div class="play-btn" @click.stop="toggleFocusAudioIsland">
                 <i :class="isFocusAudioPlaying ? 'fas fa-pause' : 'fas fa-play'"></i>
             </div>
@@ -805,15 +1299,7 @@
             <div class="text-[10px] text-green-700 animate-pulse">SYSTEM LOGIC PROCESSING...</div>
         </div>
 
-        <!-- Toast Notification -->
-        <transition name="modal">
-            <div v-if="notification.visible" class="toast-notification">
-                <i v-if="notification.type === 'loading'" class="fas fa-circle-notch fa-spin"></i>
-                <i v-else-if="notification.type === 'success'" class="fas fa-check-circle"></i>
-                <i v-else class="fas fa-exclamation-triangle"></i>
-                <span>{{ notification.message }}</span>
-            </div>
-        </transition>
+        <!-- Toast Notification (REMOVED: Using notification-bar instead) -->
 
         <!-- DDL Banner -->
         <div v-if="nearestDDL" class="ddl-banner">
@@ -824,7 +1310,7 @@
 
         <!-- Top Bar -->
         <div v-if="!isFocusing"
-            class="bg-zinc-900 p-3 flex justify-between items-center shadow-lg z-10 border-b border-gray-800 shrink-0"
+            class="bg-zinc-900 topbar-glass p-3 flex justify-between items-center shadow-lg z-10 border-b border-gray-800 shrink-0"
             style="padding-top: calc(12px + env(safe-area-inset-top));">
             <div class="text-yellow-600 font-bold flex items-center">
                 <i class="fas fa-coins mr-2"></i> {{ user.coins }}
@@ -975,7 +1461,8 @@
                 </div>
 
                 <!-- System Log Window (Batcomputer Terminal) -->
-                <div class="bg-zinc-800 p-5 rounded-xl border border-zinc-700 shadow-lg mt-6">
+                <div class="bg-zinc-800 p-5 rounded-xl border border-zinc-700 shadow-lg mt-4"
+                    style="border-color: rgba(51,255,0,0.15);">
                     <div class="flex justify-between items-center mb-2">
                         <h3 class="font-bold text-gray-400 text-xs flex items-center"><i
                                 class="fas fa-terminal mr-2"></i> SYSTEM LOGS (SESSION ONLY)</h3>
@@ -992,6 +1479,7 @@
                         </div>
                     </div>
                 </div>
+
             </div>
 
             <!-- LOUNGE TAB -->
@@ -1359,11 +1847,26 @@
                             selectedCat.name + ' 打个招呼吧...' }}
                         </div>
                         <div v-for="(msg, index) in selectedCat.chatHistory" :key="index"
-                            :class="['chat-bubble', msg.role === 'user' ? 'chat-user' : (msg.isSystem ? 'chat-system' : 'chat-ai'), {'chat-thinking': msg.isThinking}]">
-                            <span v-if="msg.role === 'assistant'"
-                                class="text-[10px] text-yellow-700 block mb-1 font-bold uppercase">{{ selectedCat.name
-                                }}</span>
-                            {{ cleanText(msg.content) }}
+                            :class="['chat-bubble-wrapper', msg.role === 'user' ? 'justify-end' : 'justify-start']">
+                            <div v-if="msg.role === 'assistant' && !msg.isSystem" class="chat-avatar shrink-0">
+                                <img :src="selectedCat.image"
+                                    class="w-8 h-8 rounded-full border border-zinc-700 shadow-sm" />
+                            </div>
+                            <div
+                                :class="['chat-bubble-v2', msg.role === 'user' ? 'chat-v2-user' : (msg.isSystem ? 'chat-v2-system' : 'chat-v2-ai'), {'chat-thinking': msg.isThinking}]">
+                                <div v-if="msg.role === 'assistant' && !msg.isSystem"
+                                    class="flex justify-between items-start mb-1">
+                                    <span class="text-[9px] text-yellow-600 font-bold uppercase tracking-tighter">{{
+                                        selectedCat.name }}</span>
+                                    <button v-if="index === selectedCat.chatHistory.length - 1"
+                                        @click="reRollLastMessage"
+                                        class="text-[10px] text-zinc-500 hover:text-yellow-500 transition-colors ml-2"
+                                        title="重抽回复">
+                                        <i class="fas fa-redo-alt"></i>
+                                    </button>
+                                </div>
+                                <div class="message-text">{{ cleanText(msg.content) }}</div>
+                            </div>
                         </div>
                         <div v-if="thinkingStates[selectedCat.id]"
                             class="text-xs text-gray-500 ml-2 animate-pulse flex items-center">
@@ -1476,10 +1979,10 @@
                                 <div @click="phoneState.currentApp = 'games'; phoneState.games.activeGame = null"
                                     class="flex flex-col items-center gap-2 cursor-pointer">
                                     <div
-                                        class="w-14 h-14 bg-purple-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg hover:scale-105 transition-transform">
+                                        class="w-14 h-14 bg-gradient-to-br from-purple-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white text-2xl shadow-[0_5px_15px_rgba(147,51,234,0.4)] hover:scale-110 active:scale-95 transition-all">
                                         <i class="fas fa-gamepad"></i>
                                     </div>
-                                    <span class="text-[10px] text-gray-300">Games</span>
+                                    <span class="text-[10px] text-gray-300 font-medium">Arcade</span>
                                 </div>
                                 <div @click="phoneState.currentApp = 'scanner'"
                                     class="flex flex-col items-center gap-2 cursor-pointer">
@@ -1535,7 +2038,7 @@
                                 </div>
                                 <!-- Games List / Main Menu -->
                                 <div v-if="!phoneState.games.activeGame" class="flex-1 overflow-y-auto p-4 space-y-4">
-                                    <div @click="phoneState.games.activeGame = 'tetris'; initTetris()"
+                                    <div @click="phoneState.games.settlementResult = null; phoneState.games.activeGame = 'tetris'; initTetris()"
                                         class="bg-zinc-800 p-4 rounded-xl border border-purple-500 cursor-pointer hover:bg-zinc-700 flex items-center gap-4">
                                         <div
                                             class="w-12 h-12 bg-purple-900 rounded-lg flex items-center justify-center text-xl text-purple-300">
@@ -1546,7 +2049,7 @@
                                             <div class="text-[10px] text-gray-500">经典下落消除，堆叠你的反派图鉴。</div>
                                         </div>
                                     </div>
-                                    <div @click="phoneState.games.activeGame = 'merge'; initMerge()"
+                                    <div @click="phoneState.games.settlementResult = null; phoneState.games.activeGame = 'merge'; initMerge()"
                                         class="bg-zinc-800 p-4 rounded-xl border border-blue-500 cursor-pointer hover:bg-zinc-700 flex items-center gap-4">
                                         <div
                                             class="w-12 h-12 bg-blue-900 rounded-lg flex items-center justify-center text-xl text-blue-300">
@@ -1557,7 +2060,7 @@
                                             <div class="text-[10px] text-gray-500">2048 滑动合成，最高进化出什么？</div>
                                         </div>
                                     </div>
-                                    <div @click="phoneState.games.activeGame = 'match'; initMatch()"
+                                    <div @click="phoneState.games.settlementResult = null; phoneState.games.activeGame = 'match'; initMatch()"
                                         class="bg-zinc-800 p-4 rounded-xl border border-green-500 cursor-pointer hover:bg-zinc-700 flex items-center gap-4">
                                         <div
                                             class="w-12 h-12 bg-green-900 rounded-lg flex items-center justify-center text-xl text-green-300">
@@ -1950,7 +2453,269 @@
                                         </div>
                                     </div>
 
-                                    <!-- Chat Detail -->
+                                    <!-- Chat Detail (REBUILT - TuK QQ Style) -->
+                                    <div v-if="phoneState.selectedContactId" class="flex flex-col h-full text-black"
+                                        :style="`background: ${phoneState.chatBg || '#ededed'};`">
+                                        <!-- HEADER: frosted glass -->
+                                        <div class="h-14 flex items-center px-3 sticky top-0 z-20 shrink-0"
+                                            style="background: rgba(247,247,247,0.92); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0,0,0,0.07);">
+                                            <button @click="phoneState.selectedContactId = null"
+                                                class="w-8 text-gray-600 text-lg mr-2"><i
+                                                    class="fas fa-chevron-left"></i></button>
+                                            <div class="flex-1 text-center">
+                                                <div class="font-bold text-sm leading-tight">{{
+                                                    phoneIdentities[phoneState.selectedContactId].name }}</div>
+                                                <!-- Online status -->
+                                                <div class="flex items-center justify-center gap-1 mt-0.5">
+                                                    <span class="online-dot"></span>
+                                                    <span class="text-[10px] text-green-600">在线</span>
+                                                </div>
+                                            </div>
+                                            <!-- Right buttons -->
+                                            <div class="flex items-center gap-3">
+                                                <!-- Nudge button 戳一戳 -->
+                                                <button @click="nudgeContact()" class="text-gray-500 text-sm"
+                                                    title="戳一戳">
+                                                    <i class="fas fa-hand-pointer"></i>
+                                                </button>
+                                                <button class="text-gray-500 text-xl"><i
+                                                        class="fas fa-ellipsis-v"></i></button>
+                                            </div>
+                                        </div>
+
+                                        <!-- MESSAGES AREA -->
+                                        <div class="flex-1 overflow-y-auto p-3 pb-2 space-y-1 custom-scrollbar"
+                                            ref="phoneChatRef">
+                                            <template
+                                                v-for="(msg, idx) in getPhoneChatHistory(phoneState.selectedContactId)"
+                                                :key="idx">
+                                                <!-- Time divider every ~5 messages or first -->
+                                                <div v-if="idx === 0 || idx % 6 === 0" class="chat-time-divider my-2">
+                                                    <span>{{ new Date(msg.ts || Date.now()).toLocaleTimeString('zh-CN',
+                                                        {hour:'2-digit', minute:'2-digit'}) }}</span>
+                                                </div>
+
+                                                <!-- System / nudge message -->
+                                                <div v-if="msg.type === 'system'"
+                                                    class="text-center text-[11px] text-gray-400 py-1">{{ msg.content }}
+                                                </div>
+
+                                                <!-- Normal message row -->
+                                                <div v-else class="flex msg-pop-in mb-2"
+                                                    :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
+                                                    <div class="flex max-w-[80%] gap-2"
+                                                        :class="msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'">
+                                                        <!-- Avatar -->
+                                                        <img :src="msg.role === 'user' ? (user.phoneData.momentsAvatar || 'https://placehold.co/100x100/444/white?text=Me') : phoneIdentities[phoneState.selectedContactId].avatar"
+                                                            class="w-9 h-9 rounded-md object-cover shrink-0 mt-1">
+                                                        <!-- Bubble wrapper -->
+                                                        <div class="flex flex-col"
+                                                            :class="msg.role === 'user' ? 'items-end' : 'items-start'">
+                                                            <!-- Quoted block (if reply) -->
+                                                            <div v-if="msg.quotedMsg" class="quoted-msg-block mb-1"
+                                                                :class="msg.role === 'user' ? 'text-right' : 'text-left'">
+                                                                <span class="font-semibold">{{ msg.quotedMsg.sender }}:
+                                                                </span>{{ msg.quotedMsg.content }}
+                                                            </div>
+                                                            <!-- Bubble -->
+                                                            <div :class="msg.role === 'user' ? 'msg-bubble-right' : 'msg-bubble-left'"
+                                                                @contextmenu.prevent="showMsgMenu($event, msg, idx)"
+                                                                @touchstart="startLongPress($event, msg, idx)"
+                                                                @touchend="cancelLongPress"
+                                                                @touchmove="cancelLongPress">
+
+                                                                <!-- Image type -->
+                                                                <div v-if="msg.type === 'image'"
+                                                                    @click="openPhotoDesc(msg.desc)"
+                                                                    class="cursor-pointer">
+                                                                    <div
+                                                                        class="w-28 h-28 border border-zinc-300 rounded-lg flex items-center justify-center bg-zinc-100 overflow-hidden relative">
+                                                                        <i
+                                                                            class="fas fa-image text-3xl text-zinc-400"></i>
+                                                                        <div
+                                                                            class="absolute bottom-0 left-0 right-0 bg-black/40 text-[8px] text-white text-center py-0.5">
+                                                                            点击查看</div>
+                                                                    </div>
+                                                                </div>
+                                                                <!-- Voice type -->
+                                                                <div v-else-if="msg.type === 'voice'"
+                                                                    class="voice-msg-bar">
+                                                                    <i
+                                                                        class="fas fa-volume-up text-gray-600 text-sm"></i>
+                                                                    <div class="voice-msg-wave">
+                                                                        <span></span><span></span><span></span><span></span><span></span>
+                                                                    </div>
+                                                                    <span class="text-[11px] text-gray-500 ml-1">{{
+                                                                        msg.duration || '1' }}″</span>
+                                                                </div>
+                                                                <!-- Location type -->
+                                                                <div v-else-if="msg.type === 'location'"
+                                                                    class="flex items-center gap-2 text-sm">
+                                                                    <i class="fas fa-map-marker-alt text-red-500"></i>
+                                                                    <span>{{ msg.content }}</span>
+                                                                </div>
+                                                                <!-- Red packet -->
+                                                                <div v-else-if="msg.type === 'red-envelope'"
+                                                                    @click="collectRedPacket(msg)"
+                                                                    class="bg-orange-500 text-white p-3 rounded-lg flex items-center gap-3 min-w-[150px] cursor-pointer hover:bg-orange-600 transition-colors relative overflow-hidden">
+                                                                    <div v-if="msg.collected"
+                                                                        class="absolute inset-0 bg-black/20 flex items-center justify-center text-[10px] font-bold">
+                                                                        已领取</div>
+                                                                    <i class="fas fa-gift text-2xl"
+                                                                        :class="msg.collected ? 'text-gray-300' : 'text-yellow-300'"></i>
+                                                                    <div>
+                                                                        <div class="font-bold">红包</div>
+                                                                        <div class="text-[10px] opacity-80">{{
+                                                                            msg.content }} 哥谭币</div>
+                                                                    </div>
+                                                                </div>
+                                                                <!-- Transfer -->
+                                                                <div v-else-if="msg.type === 'transfer'"
+                                                                    @click="collectRedPacket(msg)"
+                                                                    class="bg-blue-600 text-white p-3 rounded-lg flex items-center gap-3 min-w-[150px] cursor-pointer hover:bg-blue-700 transition-colors relative overflow-hidden">
+                                                                    <div v-if="msg.collected"
+                                                                        class="absolute inset-0 bg-black/20 flex items-center justify-center text-[10px] font-bold">
+                                                                        已领取</div>
+                                                                    <i class="fas fa-dollar-sign text-2xl"
+                                                                        :class="msg.collected ? 'text-gray-300' : 'text-blue-200'"></i>
+                                                                    <div>
+                                                                        <div class="font-bold">转账</div>
+                                                                        <div class="text-[10px] opacity-80">{{
+                                                                            msg.content }} 哥谭币</div>
+                                                                    </div>
+                                                                </div>
+                                                                <!-- Normal text -->
+                                                                <div v-else class="leading-relaxed message-text">{{
+                                                                    cleanText(msg.content) }}</div>
+
+                                                                <!-- Re-roll for last AI message in phone chat -->
+                                                                <button
+                                                                    v-if="msg.role === 'assistant' && idx === getPhoneChatHistory(phoneState.selectedContactId).length - 1"
+                                                                    @click.stop="reRollLastPhoneMessage"
+                                                                    class="absolute -right-6 top-1/2 -translate-y-1/2 text-[10px] text-zinc-400 hover:text-green-500 transition-colors">
+                                                                    <i class="fas fa-redo-alt"></i>
+                                                                </button>
+                                                            </div>
+                                                            <!-- Emoji reactions -->
+                                                            <div v-if="msg.reactions && msg.reactions.length > 0"
+                                                                class="flex flex-wrap gap-1 mt-1">
+                                                                <span v-for="r in msg.reactions" :key="r.emoji"
+                                                                    class="emoji-reaction"
+                                                                    @click="reactToMsg(msg, r.emoji)">
+                                                                    {{ r.emoji }} <span class="text-[10px]">{{ r.count
+                                                                        }}</span>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </template>
+
+                                            <!-- Typing indicator -->
+                                            <div v-if="phoneState.isTyping" class="flex justify-start mb-2">
+                                                <div class="flex gap-2 items-end">
+                                                    <img :src="phoneIdentities[phoneState.selectedContactId].avatar"
+                                                        class="w-9 h-9 rounded-md object-cover">
+                                                    <div class="typing-dots">
+                                                        <span></span><span></span><span></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- INPUT AREA -->
+                                        <div class="shrink-0 bg-[#f5f5f8]"
+                                            style="border-top:1px solid rgba(0,0,0,0.08);">
+                                            <!-- Reply preview bar -->
+                                            <div v-if="phoneState.replyToMsg" class="reply-preview-bar">
+                                                <div class="flex-1 min-w-0">
+                                                    <span class="font-semibold text-green-700">回复 {{
+                                                        phoneState.replyToMsg.sender || (phoneState.replyToMsg.role ===
+                                                        'user' ? '我' :
+                                                        phoneIdentities[phoneState.selectedContactId].name) }}: </span>
+                                                    <span class="truncate">{{ phoneState.replyToMsg.content }}</span>
+                                                </div>
+                                                <button @click="phoneState.replyToMsg = null"
+                                                    class="text-gray-400 ml-2">×</button>
+                                            </div>
+
+                                            <!-- Tool bar (scrollable) -->
+                                            <div class="chat-tool-bar">
+                                                <button @click="$refs.phoneImageInput.click()" class="chat-tool-btn"
+                                                    title="图片"><i class="far fa-image"></i></button>
+                                                <button @click="showPhoneImageDescModal = true" class="chat-tool-btn"
+                                                    title="相机"><i class="fas fa-camera"></i></button>
+                                                <button @click="showPhoneLocationModal = true" class="chat-tool-btn"
+                                                    title="定位"><i
+                                                        class="fas fa-map-marker-alt text-red-400"></i></button>
+                                                <button
+                                                    @click="phoneMoneyType = 'red-envelope'; showPhoneMoneyModal = true"
+                                                    class="chat-tool-btn" title="红包"><i
+                                                        class="fas fa-gift text-orange-400"></i></button>
+                                                <button @click="phoneMoneyType = 'transfer'; showPhoneMoneyModal = true"
+                                                    class="chat-tool-btn" title="转账"><i
+                                                        class="fas fa-dollar-sign text-green-500"></i></button>
+                                                <button @click="sendVoiceMsg()" class="chat-tool-btn" title="语音"><i
+                                                        class="fas fa-microphone text-purple-400"></i></button>
+                                                <button @click="nudgeContact()" class="chat-tool-btn" title="戳一戳"><i
+                                                        class="fas fa-hand-pointer text-yellow-500"></i></button>
+                                                <button @click="phoneShowEmojiPicker = !phoneShowEmojiPicker"
+                                                    class="chat-tool-btn" title="表情"><i
+                                                        class="far fa-smile text-yellow-500"></i></button>
+                                                <input type="file" ref="phoneImageInput" class="hidden" accept="image/*"
+                                                    @change="sendPhoneRealImage">
+                                            </div>
+
+                                            <!-- Emoji quick picker -->
+                                            <div v-if="phoneShowEmojiPicker"
+                                                class="emoji-quick-panel animate-slide-up-fast">
+                                                <button
+                                                    v-for="e in ['😊','😂','🥰','😭','😡','👍','🙏','❤️','🎉','🔥','💯','😏','🤔','😴','🫡']"
+                                                    :key="e" @click="insertEmoji(e)">{{ e }}</button>
+                                            </div>
+
+                                            <!-- Main input row -->
+                                            <div class="flex gap-2 items-end px-3 py-2">
+                                                <input ref="phoneInputRef" v-model="phoneChatInput"
+                                                    @keydown.enter.prevent="sendPhoneMessage" placeholder="发送消息..."
+                                                    class="flex-1 bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400 shadow-sm">
+                                                <button @click="sendPhoneMessage" :disabled="!phoneChatInput.trim()"
+                                                    class="bg-[#07c160] text-white px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-40 transition-opacity">发送</button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Long press context menu overlay -->
+                                        <div v-if="phoneState.msgMenu.show" class="fixed inset-0 z-[200]"
+                                            @click="phoneState.msgMenu.show = false">
+                                        </div>
+                                        <div v-if="phoneState.msgMenu.show" class="msg-context-menu"
+                                            :style="`top:${phoneState.msgMenu.y}px; left:${phoneState.msgMenu.x}px;`">
+                                            <button
+                                                @click="copyMsg(phoneState.msgMenu.msg); phoneState.msgMenu.show = false">
+                                                <i class="fas fa-copy"></i> 复制
+                                            </button>
+                                            <button
+                                                @click="replyToMsg(phoneState.msgMenu.msg); phoneState.msgMenu.show = false">
+                                                <i class="fas fa-reply"></i> 引用
+                                            </button>
+                                            <button
+                                                @click="reactToMsg(phoneState.msgMenu.msg, '❤️'); phoneState.msgMenu.show = false">
+                                                <i class="fas fa-heart"></i> 回应
+                                            </button>
+                                            <button
+                                                v-if="phoneState.msgMenu.msg && phoneState.msgMenu.msg.role === 'user'"
+                                                @click="recallMsg(phoneState.msgMenu.idx); phoneState.msgMenu.show = false"
+                                                style="color:#ff4444">
+                                                <i class="fas fa-undo"></i> 撤回
+                                            </button>
+                                        </div>
+
+                                        <!-- Nudge float toast -->
+                                        <div v-if="phoneState.nudgeVisible" class="nudge-float">
+                                            你戳了戳 {{ phoneIdentities[phoneState.selectedContactId].name }} 👈
+                                        </div>
+                                    </div>
+
                                     <div v-if="phoneState.selectedContactId"
                                         class="flex flex-col h-full bg-zinc-100 text-black">
                                         <div
@@ -2715,36 +3480,44 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <!-- Codex App -->
                             <div v-if="phoneState.currentApp === 'codex'"
                                 class="flex flex-col h-full bg-[#050505] absolute inset-0 z-20 font-mono text-green-500">
-                                <div class="h-12 bg-black border-b border-green-900 flex justify-between items-center px-4 shrink-0">
-                                    <button @click="phoneState.currentApp = 'home'; phoneState.codexSelected = null;" class="text-green-500 w-8">
-                                        <i v-if="phoneState.codexSelected" class="fas fa-chevron-left" @click.stop="phoneState.codexSelected = null"></i>
-                                        <i v-else class="fas fa-chevron-left" @click.stop="phoneState.currentApp = 'home'"></i>
+                                <div
+                                    class="h-12 bg-black border-b border-green-900 flex justify-between items-center px-4 shrink-0">
+                                    <button @click="phoneState.currentApp = 'home'; phoneState.codexSelected = null;"
+                                        class="text-green-500 w-8">
+                                        <i v-if="phoneState.codexSelected" class="fas fa-chevron-left"
+                                            @click.stop="phoneState.codexSelected = null"></i>
+                                        <i v-else class="fas fa-chevron-left"
+                                            @click.stop="phoneState.currentApp = 'home'"></i>
                                     </button>
                                     <h3 class="font-bold text-sm">BATCOMPUTER CODEX v1.0</h3>
                                     <div class="w-8"></div>
                                 </div>
-                                
+
                                 <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
                                     <div v-if="!phoneState.codexSelected">
-                                        <div class="text-xs text-green-700 mb-4 border-b border-green-900 pb-2">> CLASSIFIED ARCHIVES</div>
-                                        <div v-if="!user.phoneData.codex || user.phoneData.codex.length === 0" class="text-center text-green-800 text-xs mt-10">
+                                        <div class="text-xs text-green-700 mb-4 border-b border-green-900 pb-2">>
+                                            CLASSIFIED ARCHIVES</div>
+                                        <div v-if="!user.phoneData.codex || user.phoneData.codex.length === 0"
+                                            class="text-center text-green-800 text-xs mt-10">
                                             [ DATABASE EMPTY. SEND FIELD AGENTS (CATS) ON PATROL TO GATHER INTEL. ]
                                         </div>
                                         <div v-else class="space-y-3">
-                                            <div v-for="entry in user.phoneData.codex" :key="entry.id" 
+                                            <div v-for="entry in user.phoneData.codex" :key="entry.id"
                                                 @click="phoneState.codexSelected = entry"
                                                 class="border border-green-900 p-3 rounded bg-green-900/10 cursor-pointer hover:bg-green-900/40 transition-colors">
                                                 <div class="flex items-center gap-3">
-                                                    <div class="w-10 h-10 rounded-lg bg-black flex items-center justify-center border border-green-700 text-green-400">
+                                                    <div
+                                                        class="w-10 h-10 rounded-lg bg-black flex items-center justify-center border border-green-700 text-green-400">
                                                         <i :class="entry.icon || 'fas fa-file-shield'"></i>
                                                     </div>
                                                     <div class="flex-1">
                                                         <div class="text-sm font-bold">{{ entry.title }}</div>
-                                                        <div class="text-[10px] text-green-700">Class: {{ entry.category || 'UNKNOWN' }} | Unlocked: {{ entry.unlockedDate }}</div>
+                                                        <div class="text-[10px] text-green-700">Class: {{ entry.category
+                                                            || 'UNKNOWN' }} | Unlocked: {{ entry.unlockedDate }}</div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -2752,103 +3525,140 @@
                                     </div>
                                     <div v-else class="animate-fadeIn">
                                         <div class="flex items-center gap-3 mb-4 border-b border-green-900 pb-4">
-                                            <div class="w-12 h-12 rounded bg-black flex items-center justify-center border border-green-500 text-green-400 text-xl">
+                                            <div
+                                                class="w-12 h-12 rounded bg-black flex items-center justify-center border border-green-500 text-green-400 text-xl">
                                                 <i :class="phoneState.codexSelected.icon || 'fas fa-file-shield'"></i>
                                             </div>
                                             <div>
-                                                <h2 class="text-lg font-bold text-white">{{ phoneState.codexSelected.title }}</h2>
-                                                <div class="text-[10px] text-green-700">Classification: {{ phoneState.codexSelected.category }}</div>
+                                                <h2 class="text-lg font-bold text-white">{{
+                                                    phoneState.codexSelected.title }}</h2>
+                                                <div class="text-[10px] text-green-700">Classification: {{
+                                                    phoneState.codexSelected.category }}</div>
                                             </div>
                                         </div>
-                                        <div class="text-xs leading-relaxed text-green-400 whitespace-pre-wrap font-mono mt-4 p-4 bg-black border border-green-900/50 rounded shadow-[inset_0_0_15px_rgba(0,100,0,0.5)]">
+                                        <div
+                                            class="text-xs leading-relaxed text-green-400 whitespace-pre-wrap font-mono mt-4 p-4 bg-black border border-green-900/50 rounded shadow-[inset_0_0_15px_rgba(0,100,0,0.5)]">
                                             {{ phoneState.codexSelected.content }}
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <!-- GNN App (Social Media) -->
                             <div v-if="phoneState.currentApp === 'gnn'"
                                 class="flex flex-col h-full bg-[#f8f8f8] absolute inset-0 z-20 font-sans text-black">
-                                <div class="h-12 bg-red-600 flex justify-between items-center px-4 shrink-0 text-white shadow-md">
+                                <div
+                                    class="h-12 bg-red-600 flex justify-between items-center px-4 shrink-0 text-white shadow-md">
                                     <button @click="phoneState.currentApp = 'home'" class="w-8">
                                         <i class="fas fa-chevron-left"></i>
                                     </button>
                                     <h3 class="font-black italic tracking-tighter text-lg">GNN EXPRESS</h3>
                                     <div class="w-8 flex justify-end">
                                         <i v-if="gnnLoading" class="fas fa-spinner fa-spin"></i>
-                                        <i v-else @click="generateGNNContent" class="fas fa-search cursor-pointer hover:text-gray-200 transition-colors"></i>
+                                        <i v-else @click="generateGNNContent"
+                                            class="fas fa-search cursor-pointer hover:text-gray-200 transition-colors"></i>
                                     </div>
                                 </div>
-                                
-                                <div class="flex justify-around bg-white border-b border-gray-200 text-xs font-bold text-gray-500 py-3 shrink-0">
-                                    <div @click="phoneState.gnnTab = 'trending'" :class="{'text-red-600 border-b-2 border-red-600': phoneState.gnnTab === 'trending'}" class="pb-1 cursor-pointer transition-all">热搜</div>
-                                    <div @click="phoneState.gnnTab = 'plaza'" :class="{'text-red-600 border-b-2 border-red-600': phoneState.gnnTab === 'plaza'}" class="pb-1 cursor-pointer transition-all">广场</div>
-                                    <div @click="phoneState.gnnTab = 'profile'" :class="{'text-red-600 border-b-2 border-red-600': phoneState.gnnTab === 'profile'}" class="pb-1 cursor-pointer transition-all">我的</div>
+
+                                <div
+                                    class="flex justify-around bg-white border-b border-gray-200 text-xs font-bold text-gray-500 py-3 shrink-0">
+                                    <div @click="phoneState.gnnTab = 'trending'"
+                                        :class="{'text-red-600 border-b-2 border-red-600': phoneState.gnnTab === 'trending'}"
+                                        class="pb-1 cursor-pointer transition-all">热搜</div>
+                                    <div @click="phoneState.gnnTab = 'plaza'"
+                                        :class="{'text-red-600 border-b-2 border-red-600': phoneState.gnnTab === 'plaza'}"
+                                        class="pb-1 cursor-pointer transition-all">广场</div>
+                                    <div @click="phoneState.gnnTab = 'profile'"
+                                        :class="{'text-red-600 border-b-2 border-red-600': phoneState.gnnTab === 'profile'}"
+                                        class="pb-1 cursor-pointer transition-all">我的</div>
                                 </div>
 
                                 <div class="flex-1 overflow-y-auto custom-scrollbar bg-gray-50">
                                     <div v-if="phoneState.gnnTab === 'trending'" class="bg-white">
-                                        <div v-for="(item, index) in user.phoneData.gnn.trending" :key="item.id" 
+                                        <div v-for="(item, index) in user.phoneData.gnn.trending" :key="item.id"
                                             class="flex items-center gap-4 p-5 border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                                            <div class="w-6 text-center font-bold" :class="index < 3 ? 'text-orange-500' : 'text-gray-400'">{{ index + 1 }}</div>
-                                            <div class="flex-1">
-                                                <span class="text-sm font-semibold text-gray-800">#{{ item.topic }}#</span>
-                                                <span v-if="item.isNew" class="ml-2 inline-block bg-red-500 text-white text-[8px] px-1 rounded">新</span>
+                                            <div class="w-6 text-center font-bold"
+                                                :class="index < 3 ? 'text-orange-500' : 'text-gray-400'">{{ index + 1 }}
                                             </div>
-                                            <div class="text-[10px] text-gray-400 font-mono">{{ (item.heat / 1000).toFixed(1) }}k</div>
+                                            <div class="flex-1">
+                                                <span class="text-sm font-semibold text-gray-800">#{{ item.topic
+                                                    }}#</span>
+                                                <span v-if="item.isNew"
+                                                    class="ml-2 inline-block bg-red-500 text-white text-[8px] px-1 rounded">新</span>
+                                            </div>
+                                            <div class="text-[10px] text-gray-400 font-mono">{{ (item.heat /
+                                                1000).toFixed(1) }}k</div>
                                         </div>
-                                        <div v-if="user.phoneData.gnn.trending.length === 0" class="p-20 text-center text-gray-400">
+                                        <div v-if="user.phoneData.gnn.trending.length === 0"
+                                            class="p-20 text-center text-gray-400">
                                             <i class="fas fa-satellite-dish text-4xl mb-4 opacity-20 block"></i>
                                             <p class="text-xs italic">正在连接卫星下行链路...</p>
                                         </div>
                                     </div>
 
                                     <div v-if="phoneState.gnnTab === 'plaza'" class="space-y-2 py-2">
-                                        <div v-for="post in user.phoneData.gnn.posts" :key="post.id" class="bg-white p-4">
+                                        <div v-for="post in user.phoneData.gnn.posts" :key="post.id"
+                                            class="bg-white p-4">
                                             <div class="flex gap-3 mb-3">
-                                                <img :src="post.avatar" class="w-10 h-10 rounded-full border border-gray-100">
+                                                <img :src="post.avatar"
+                                                    class="w-10 h-10 rounded-full border border-gray-100">
                                                 <div>
                                                     <div class="text-sm font-bold text-gray-900">{{ post.user }}</div>
                                                     <div class="text-[10px] text-gray-400">{{ post.time }} · 哥谭</div>
                                                 </div>
                                             </div>
                                             <div class="text-sm text-gray-800 leading-relaxed">{{ post.content }}</div>
-                                            <div class="mt-4 pt-3 border-t border-gray-50 flex justify-around text-gray-400 text-[10px]">
-                                                <div class="flex items-center gap-1"><i class="far fa-comment"></i> {{ post.comments }}</div>
-                                                <div class="flex items-center gap-1 cursor-pointer" @click="post.isLiked = !post.isLiked" :class="{'text-red-500 font-bold': post.isLiked}">
-                                                    <i :class="post.isLiked ? 'fas fa-heart' : 'far fa-heart'"></i> {{ post.isLiked ? post.likes + 1 : post.likes }}
+                                            <div
+                                                class="mt-4 pt-3 border-t border-gray-50 flex justify-around text-gray-400 text-[10px]">
+                                                <div class="flex items-center gap-1"><i class="far fa-comment"></i> {{
+                                                    post.comments }}</div>
+                                                <div class="flex items-center gap-1 cursor-pointer"
+                                                    @click="post.isLiked = !post.isLiked"
+                                                    :class="{'text-red-500 font-bold': post.isLiked}">
+                                                    <i :class="post.isLiked ? 'fas fa-heart' : 'far fa-heart'"></i> {{
+                                                    post.isLiked ? post.likes + 1 : post.likes }}
                                                 </div>
-                                                <div class="flex items-center gap-1"><i class="fas fa-ellipsis-h"></i></div>
+                                                <div class="flex items-center gap-1"><i class="fas fa-ellipsis-h"></i>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div v-if="user.phoneData.gnn.posts.length === 0" class="p-20 text-center text-gray-400">
+                                        <div v-if="user.phoneData.gnn.posts.length === 0"
+                                            class="p-20 text-center text-gray-400">
                                             <i class="fas fa-rss text-4xl mb-4 opacity-20 block"></i>
                                             <p class="text-xs italic">暂无最新动态。</p>
                                         </div>
                                     </div>
-                                    
+
                                     <div v-if="phoneState.gnnTab === 'profile'" class="bg-white h-full">
                                         <div class="relative h-40">
-                                            <img :src="user.phoneData.gnn.profile.background" class="w-full h-full object-cover">
+                                            <img :src="user.phoneData.gnn.profile.background"
+                                                class="w-full h-full object-cover">
                                             <div class="absolute -bottom-10 left-6">
-                                                <img :src="user.phoneData.gnn.profile.avatar" class="w-24 h-24 rounded-full border-4 border-white shadow-xl">
+                                                <img :src="user.phoneData.gnn.profile.avatar"
+                                                    class="w-24 h-24 rounded-full border-4 border-white shadow-xl">
                                             </div>
                                         </div>
                                         <div class="pt-14 p-8">
-                                            <div class="text-2xl font-black text-gray-900 tracking-tighter">{{ user.nickname }}</div>
-                                            <div class="text-xs text-red-600 font-bold mt-1 uppercase tracking-widest">Verified Resident</div>
+                                            <div class="text-2xl font-black text-gray-900 tracking-tighter">{{
+                                                user.nickname }}</div>
+                                            <div class="text-xs text-red-600 font-bold mt-1 uppercase tracking-widest">
+                                                Verified Resident</div>
                                             <div class="flex gap-10 mt-6 border-y border-gray-100 py-6">
                                                 <div class="text-center">
-                                                    <div class="font-black text-gray-900 text-lg">{{ user.phoneData.gnn.profile.following }}</div>
-                                                    <div class="text-[10px] text-gray-400 uppercase font-black">Following</div>
+                                                    <div class="font-black text-gray-900 text-lg">{{
+                                                        user.phoneData.gnn.profile.following }}</div>
+                                                    <div class="text-[10px] text-gray-400 uppercase font-black">
+                                                        Following</div>
                                                 </div>
                                                 <div class="text-center">
-                                                    <div class="font-black text-gray-900 text-lg">{{ user.phoneData.gnn.profile.fans }}</div>
-                                                    <div class="text-[10px] text-gray-400 uppercase font-black">Followers</div>
+                                                    <div class="font-black text-gray-900 text-lg">{{
+                                                        user.phoneData.gnn.profile.fans }}</div>
+                                                    <div class="text-[10px] text-gray-400 uppercase font-black">
+                                                        Followers</div>
                                                 </div>
                                             </div>
-                                            <div class="mt-8 text-sm text-gray-600 leading-relaxed italic border-l-4 border-red-600 pl-4 py-2 bg-gray-50 rounded-r-lg">
+                                            <div
+                                                class="mt-8 text-sm text-gray-600 leading-relaxed italic border-l-4 border-red-600 pl-4 py-2 bg-gray-50 rounded-r-lg">
                                                 "{{ user.phoneData.signature }}"
                                             </div>
                                         </div>
@@ -2901,9 +3711,63 @@
                         <option value="Male">男</option>
                         <option value="Female">女</option>
                         <option value="Other">其他</option>
-                    </select>
+                                    </select>
                     <label class="text-xs block mb-1 text-gray-400">出生日期</label><input v-model="user.birthday"
                         type="date" class="mb-1 bg-zinc-900 border-zinc-600">
+                </div>
+                <div class="bg-zinc-800 p-5 rounded-xl border border-zinc-700 shadow-lg">
+                    <h3 class="font-bold mb-4 text-green-400 text-xs flex items-center gap-2">
+                        <i class="fas fa-magic"></i> 界面美化配置 (UI)
+                    </h3>
+                    
+                    <div class="mb-4">
+                        <div class="text-[10px] text-gray-400 mb-2 uppercase tracking-widest font-bold">主题色调 / Visual Theme</div>
+                        <div class="flex gap-3">
+                            <button @click="setUITheme('default')" class="w-8 h-8 rounded-lg border-2 transition-transform active:scale-90"
+                                :class="uiTheme==='default' ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-60'"
+                                style="background:linear-gradient(135deg,#d4af37,#8a6a00)" title="蝙蝠侠·金"></button>
+                            <button @click="setUITheme('nightwing')" class="w-8 h-8 rounded-lg border-2 transition-transform active:scale-90"
+                                :class="uiTheme==='nightwing' ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-60'"
+                                style="background:linear-gradient(135deg,#005e94,#003a5a)" title="夜翼·蓝"></button>
+                            <button @click="setUITheme('redhood')" class="w-8 h-8 rounded-lg border-2 transition-transform active:scale-90"
+                                :class="uiTheme==='redhood' ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-60'"
+                                style="background:linear-gradient(135deg,#8a0303,#4a0000)" title="红头巾·红"></button>
+                            <button @click="setUITheme('green')" class="w-8 h-8 rounded-lg border-2 transition-transform active:scale-90"
+                                :class="uiTheme==='green' ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-60'"
+                                style="background:linear-gradient(135deg,#22c55e,#15803d)" title="骑士·绿"></button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-[10px] text-gray-400 uppercase font-bold">磨砂强度</span>
+                                <span class="text-[10px] text-yellow-500 font-mono">{{ uiBlur }}px</span>
+                            </div>
+                            <input type="range" min="0" max="40" step="5" v-model="uiBlur" @input="applyUISettings"
+                                class="w-full accent-yellow-600 h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] text-gray-400 uppercase font-bold">CRT 扫描线</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" v-model="uiScanlines" @change="applyUISettings" class="sr-only peer">
+                                <div class="w-9 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-600"></div>
+                            </label>
+                        </div>
+                        <div class="col-span-2">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-[10px] text-gray-400 uppercase font-bold">终端控制台字号</span>
+                                <span class="text-[10px] text-yellow-500 font-mono">{{ uiTermSize }}pt</span>
+                            </div>
+                            <select v-model="uiTermSize" @change="applyUISettings"
+                                class="w-full bg-zinc-900 border border-zinc-700 text-gray-200 text-xs rounded-lg px-2 py-2 font-mono focus:border-yellow-600 outline-none">
+                                <option value="8">Small (8pt)</option>
+                                <option value="9">Medium (9pt)</option>
+                                <option value="11">Large (11pt)</option>
+                                <option value="13">Extra Large (13pt)</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
                 <div class="bg-zinc-800 p-5 rounded-xl border border-zinc-700 shadow-lg">
                     <h3 class="font-bold mb-4 text-blue-500 flex items-center"><i class="fas fa-network-wired mr-2"></i>
@@ -3736,9 +4600,10 @@
             </div>
         </div>
 
-        <audio ref="audioPlayer" loop style="display:none;" @play="isFocusAudioPlaying = true" @pause="isFocusAudioPlaying = false" @error="showToast('音频加载失败，请检查 URL', 'error')"></audio>
+        <audio ref="audioPlayer" loop style="display:none;" @play="isFocusAudioPlaying = true"
+            @pause="isFocusAudioPlaying = false" @error="showToast('音频加载失败，请检查 URL', 'error')"></audio>
 
-        <div v-if="!isFocusing" class="nav-bar">
+        <div v-if="!isFocusing" class="nav-bar nav-bar-glass">
             <div class="nav-item" :class="{ active: currentTab === 'mission' }" @click="currentTab = 'mission'"><i
                     class="fas fa-tasks"></i> 任务</div>
             <div class="nav-item" :class="{ active: currentTab === 'lounge' }" @click="currentTab = 'lounge'"><i
@@ -3812,11 +4677,11 @@
                 };
 
                 const defaultCats = [
-                    { id: 1, name: '布鲁斯·韦恩', breed: '纯黑长毛缅因猫', eyeColor: '钢蓝色', personality: '多疑、控制欲强、压抑', status: '蹲在柜顶俯瞰全屋', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/1a1a1a/white?text=Batman(Cat)', image_human: 'https://placehold.co/200x200/1a1a1a/white?text=Bruce(Human)', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '这座城市的阴影在召唤我...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Batman (Bruce Wayne). Paranoid, stoic, detective. Dark brooding. The user is a foolish human who thinks you are a stray cat. Maintain your vigilante persona hidden.", birthday: "02-19", isMarvel: false },
-                    { id: 2, name: '迪克·格雷森', breed: '黑蓝相间土耳其安哥拉猫', eyeColor: '电光蓝', personality: '阳光、粘人、爱吃麦片', status: '试图在窗帘上荡秋千', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/007cc2/white?text=Nightwing(Cat)', image_human: 'https://placehold.co/200x200/007cc2/white?text=Dick(Human)', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '这里好高！我喜欢！', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Nightwing (Dick Grayson). Energetic, charming, acrobat. The user is a foolish human taking care of you. Keep your superhero identity hidden.", birthday: "03-20", isMarvel: false },
-                    { id: 3, name: '杰森·陶德', breed: '黑白斑纹街头野猫', eyeColor: '蓝色', personality: '暴躁、护食、体格强壮', status: '霸占了最大的那个枕头', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/c20000/white?text=RedHood(Cat)', image_human: 'https://placehold.co/200x200/c20000/white?text=Jason(Human)', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '别过来，除非你有吃的。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Red Hood (Jason Todd). Grumpy, street-smart. The user is a foolish human. Act like a tough vigilante trapped in a cat's body.", birthday: "08-16", isMarvel: false },
-                    { id: 4, name: '提姆·德雷克', breed: '深色暹罗猫', eyeColor: '冰蓝色', personality: '过劳、咖啡因成瘾、极客', status: '盯着发光的路由器发呆', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/555/white?text=RedRobin(Cat)', image_human: 'https://placehold.co/200x200/555/white?text=Tim(Human)', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '这个路由器的频率有点奇怪...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Red Robin (Tim Drake). Sleepy genius, detective, hacker. The user is a foolish human. Hide your superhero hacking skills.", birthday: "07-19", isMarvel: false },
-                    { id: 5, name: '达米安·韦恩', breed: '黑色东方短毛猫', eyeColor: '祖母绿', personality: '傲慢、暴力、贵族气派', status: '正在磨爪子准备战斗', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/006400/white?text=Robin(Cat)', image_human: 'https://placehold.co/200x200/006400/white?text=Damian(Human)', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: 'Tt. 愚蠢的家具。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Robin (Damian Wayne). Arrogant assassin. Heir to the demon. Says 'Tt'. The user is a foolish, incompetent human. Hide your lethal skills.", birthday: "08-01", isMarvel: false }
+                    { id: 1, name: '布鲁斯·韦恩', humanName: '布鲁斯·韦恩', trickArchetype: '韦恩集团外卖送餐回访部', breed: '纯黑长毛缅因猫', eyeColor: '钢蓝色', personality: '多疑、控制欲强、压抑', status: '蹲在柜顶俯瞰全屋', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/1a1a1a/white?text=Batman(Cat)', image_human: 'https://placehold.co/200x200/1a1a1a/white?text=Bruce(Human)', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '这座城市的阴影在召唤我...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Batman (Bruce Wayne). Paranoid, stoic, detective. Dark brooding. The user is a foolish human who thinks you are a stray cat. Maintain your vigilante persona hidden.", birthday: "02-19", isMarvel: false },
+                    { id: 2, name: '迪克·格雷森', humanName: '迪克·格雷森', trickArchetype: '楼下推销宽带的', breed: '黑蓝相间土耳其安哥拉猫', eyeColor: '电光蓝', personality: '阳光、粘人、爱吃麦片', status: '试图在窗帘上荡秋千', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/007cc2/white?text=Nightwing(Cat)', image_human: 'https://placehold.co/200x200/007cc2/white?text=Dick(Human)', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '这里好高！我喜欢！', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Nightwing (Dick Grayson). Energetic, charming, acrobat. The user is a foolish human taking care of you. Keep your superhero identity hidden.", birthday: "03-20", isMarvel: false },
+                    { id: 3, name: '杰森·陶德', humanName: '杰森·陶德', trickArchetype: '拼多多砍一刀', breed: '黑白斑纹街头野猫', eyeColor: '蓝色', personality: '暴躁、护食、体格强壮', status: '霸占了最大的那个枕头', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/c20000/white?text=RedHood(Cat)', image_human: 'https://placehold.co/200x200/c20000/white?text=Jason(Human)', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '别过来，除非你有吃的。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Red Hood (Jason Todd). Grumpy, street-smart. The user is a foolish human. Act like a tough vigilante trapped in a cat's body.", birthday: "08-16", isMarvel: false },
+                    { id: 4, name: '提姆·德雷克', humanName: '提姆·德雷克', trickArchetype: '快递投递员', breed: '深色暹罗猫', eyeColor: '冰蓝色', personality: '过劳、咖啡因成瘾、极客', status: '盯着发光的路由器发呆', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/555/white?text=RedRobin(Cat)', image_human: 'https://placehold.co/200x200/555/white?text=Tim(Human)', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '这个路由器的频率有点奇怪...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Red Robin (Tim Drake). Sleepy genius, detective, hacker. The user is a foolish human. Hide your superhero hacking skills.", birthday: "07-19", isMarvel: false },
+                    { id: 5, name: '达米安·韦恩', humanName: '达米安·韦恩', trickArchetype: '傲慢的错拨电话者', breed: '黑色东方短毛猫', eyeColor: '祖母绿', personality: '傲慢、暴力、贵族气派', status: '正在磨爪子准备战斗', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/006400/white?text=Robin(Cat)', image_human: 'https://placehold.co/200x200/006400/white?text=Damian(Human)', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: 'Tt. 愚蠢的家具。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Robin (Damian Wayne). Arrogant assassin. Heir to the demon. Says 'Tt'. The user is a foolish, incompetent human. Hide your lethal skills.", birthday: "08-01", isMarvel: false }
                 ];
 
                 let initialCats = [...defaultCats];
@@ -3916,6 +4781,38 @@
                 if (!user.missionReports) user.missionReports = [];
                 if (!user.inventory) user.inventory = [];
                 if (!user.gender) user.gender = 'Secret';
+
+                // --- UI SYSTEM STATE ---
+                const uiTheme = ref('default');
+                const uiBlur = ref(20);
+                const uiScanlines = ref(true);
+                const uiTermSize = ref('medium');
+
+                const setUITheme = (t) => {
+                    uiTheme.value = t;
+                    applyUISettings();
+                };
+
+                const applyUISettings = () => {
+                    // Apply Theme Class
+                    const html = document.documentElement;
+                    html.classList.remove('theme-nightwing', 'theme-redhood', 'theme-green');
+                    if (uiTheme.value !== 'default') {
+                        html.classList.add('theme-' + uiTheme.value);
+                    }
+                    html.setAttribute('data-theme', uiTheme.value);
+
+                    // Apply Glass Blur
+                    html.style.setProperty('--glass-blur', `blur(${uiBlur.value}px)`);
+                    html.style.setProperty('--glass-blur-strong', `blur(${uiBlur.value + 15}px)`);
+                    html.style.setProperty('--panel-blur', `${uiBlur.value}px`);
+
+                    // Apply Scanlines
+                    html.style.setProperty('--scanline-opacity', uiScanlines.value ? '0.04' : '0');
+
+                    // Apply Terminal Size
+                    html.style.setProperty('--term-font-size', `${uiTermSize.value}px`);
+                };
 
                 const currentTab = ref('mission');
                 const contentArea = ref(null);
@@ -4066,7 +4963,7 @@
                 const logWindow = ref(null);
                 const notification = reactive({ title: '', message: '', avatar: '', visible: false });
                 let notificationTimer = null;
-                
+
                 const showNotification = (title, message, avatarUrl = 'https://i.postimg.cc/qRqpK5kP/anime-avatar.jpg') => {
                     notification.title = title;
                     notification.message = message;
@@ -4076,7 +4973,7 @@
                     notificationTimer = setTimeout(() => { notification.visible = false; }, 5000);
                 };
                 const hideNotification = () => { notification.visible = false; };
-                
+
                 // Focus Island State
                 const isFocusAudioPlaying = ref(false);
                 const toggleFocusAudioIsland = () => {
@@ -4205,11 +5102,11 @@
                     codexSelected: null,
                     gnnTab: 'trending'
                 });
-                
+
                 const unlockCodexEntry = (category, title, content, icon = 'fas fa-file-shield') => {
                     if (!user.phoneData.codex) user.phoneData.codex = [];
                     if (user.phoneData.codex.find(e => e.title === title)) return;
-                    
+
                     user.phoneData.codex.unshift({
                         id: Date.now() + Math.random(),
                         category, title, content, icon,
@@ -4221,7 +5118,7 @@
                 const generateGNNContent = async () => {
                     if (!settings.apiKey) return alert("需要API连接");
                     gnnLoading.value = true;
-                    
+
                     const catIntel = cats.value.map(c => `${c.name}: ${c.lastAction || '闲逛'} (好感度: ${c.affinity})`).join('\n');
                     const prompt = `[GNN NEWS SYSTEM]
                     Current Context: ${alfredMessage.value}
@@ -4245,7 +5142,7 @@
                     Language: Simplified Chinese.
                     AESTHETIC: High quality, slightly cynical Gotham tone.
 `;
-                    
+
                     try {
                         const res = await callAI(prompt, "You are GNN (Gotham News Network) backend.", 1500, ThinkingLevel.LOW);
                         const data = parseAIJSON(res);
@@ -4770,10 +5667,10 @@ Language: Simplified Chinese.`;
                     try {
                         const res = await callAI(prompt, "Mail System", 1000, ThinkingLevel.LOW);
                         const data = parseAIJSON(res);
-                        if (data && data.sender && data.content) { 
-                            const newItem = data.item ? { ...data.item, id: Date.now(), type: 'collectible' } : null; 
-                            user.mailbox.push({ from: data.sender, date: getCurrentTimeStr(), content: cleanText(data.content), item: newItem, read: false, claimed: false }); 
-                            user.dailyMailCount++; 
+                        if (data && data.sender && data.content) {
+                            const newItem = data.item ? { ...data.item, id: Date.now(), type: 'collectible' } : null;
+                            user.mailbox.push({ from: data.sender, date: getCurrentTimeStr(), content: cleanText(data.content), item: newItem, read: false, claimed: false });
+                            user.dailyMailCount++;
                             /* NEW: Trigger global notification */
                             showNotification("新信件", `来自 ${data.sender} 的加密信件，请查收。`, "https://img.icons8.com/nolan/64/open-envelope.png");
                         }
@@ -5378,6 +6275,8 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                 const currentPhotoDesc = ref('');
                 const phoneImageDesc = ref('');
                 const phoneChatRef = ref(null);
+                const phoneShowEmojiPicker = ref(false);
+
                 const openPhoneChat = (id) => {
                     phoneState.selectedContactId = id;
                     nextTick(() => {
@@ -5415,7 +6314,25 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                     const history = getPhoneChatHistory(id);
                     return history.length > 0 ? history[history.length - 1].time : "";
                 };
+                const reRollLastPhoneMessage = async () => {
+                    const contactId = phoneState.selectedContactId;
+                    if (!contactId) return;
+                    const history = getPhoneChatHistory(contactId);
+                    if (history.length > 0 && history[history.length - 1].role === 'assistant') {
+                        history.pop();
+                        const lastUserMsg = [...history].reverse().find(m => m.role === 'user');
+                        if (lastUserMsg) {
+                            addLog(`[RE-ROLL] 重新建立与 ${phoneIdentities.value[contactId].name} 的视讯连接...`);
+                            await sendPhoneMessageInternal(lastUserMsg.type, lastUserMsg.content, lastUserMsg.desc, true);
+                        }
+                    }
+                };
+
                 const sendPhoneMessage = async (typeArg = 'text', contentArg = null, descArg = null) => {
+                    await sendPhoneMessageInternal(typeArg, contentArg, descArg, false);
+                };
+
+                const sendPhoneMessageInternal = async (typeArg = 'text', contentArg = null, descArg = null, isReRoll = false) => {
                     const type = (typeof typeArg === 'string') ? typeArg : 'text';
                     const content = (typeof contentArg === 'string') ? contentArg : (contentArg instanceof Event ? null : contentArg);
                     const desc = (typeof descArg === 'string') ? descArg : null;
@@ -5430,18 +6347,21 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                     const cat = cats.value.find(c => c.id === contactId);
                     const history = getPhoneChatHistory(contactId);
 
-                    const userMsgObj = {
-                        role: 'user',
-                        type,
-                        content: msgContent,
-                        desc,
-                        time: getCurrentTimeStr()
-                    };
-                    history.push(userMsgObj);
+                    if (!isReRoll) {
+                        const userMsgObj = {
+                            role: 'user',
+                            type,
+                            content: msgContent,
+                            desc,
+                            time: getCurrentTimeStr(),
+                            ts: Date.now()
+                        };
+                        history.push(userMsgObj);
 
-                    if (type === 'text' && !content) {
-                        phoneChatInput.value = '';
-                        if (phoneInputRef.value) phoneInputRef.value.value = '';
+                        if (type === 'text' && !content) {
+                            phoneChatInput.value = '';
+                            if (phoneInputRef.value) phoneInputRef.value.value = '';
+                        }
                     }
                     nextTick(() => { if (phoneChatRef.value) phoneChatRef.value.scrollTop = phoneChatRef.value.scrollHeight; });
 
@@ -5817,7 +6737,11 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                     const m = p.mx, o = p.pos;
                     for (let y = 0; y < m.length; y++) {
                         for (let x = 0; x < m[y].length; x++) {
-                            if (m[y][x] !== 0 && (b[y + o.y] && b[y + o.y][x + o.x]) !== 0) return true;
+                            if (m[y][x] !== 0) {
+                                const nx = x + o.x, ny = y + o.y;
+                                if (nx < 0 || nx >= 10 || ny >= 20) return true;
+                                if (ny >= 0 && b[ny][nx] !== 0) return true;
+                            }
                         }
                     } return false;
                 };
@@ -5855,6 +6779,7 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
 
                 const tetrisAction = (act) => {
                     if (phoneState.games.isSettling || phoneState.games.settlementResult) return;
+                    if (!t_piece || !t_board) return;
                     if (act === 'left') { t_piece.pos.x--; if (t_collide(t_board, t_piece)) t_piece.pos.x++; }
                     else if (act === 'right') { t_piece.pos.x++; if (t_collide(t_board, t_piece)) t_piece.pos.x--; }
                     else if (act === 'down') { tetrisState.score++; t_drop(); }
@@ -5879,8 +6804,192 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                             }
                         }
                     }
+                    t_draw(); // Force redraw on action
                 };
-                const stopTetris = () => { if (t_timer) cancelAnimationFrame(t_timer); };
+
+                // ===== GOTHAM WATERMELON (Synthesize) =====
+                const watermelonState = reactive({ score: 0, fruits: [], nextType: 0 });
+                let wm_ctx, wm_timer, wm_isGameOver = false;
+                const FRUIT_TYPES = [
+                    { name: '樱桃', r: 15, color: '#f43f5e', score: 2 },
+                    { name: '葡萄', r: 25, color: '#a855f7', score: 4 },
+                    { name: '山竹', r: 35, color: '#7c3aed', score: 8 },
+                    { name: '橘子', r: 45, color: '#fb923c', score: 16 },
+                    { name: '柠檬', r: 55, color: '#facc15', score: 32 },
+                    { name: '猕猴桃', r: 70, color: '#84cc16', score: 64 },
+                    { name: '番茄', r: 85, color: '#ef4444', score: 128 },
+                    { name: '菠萝', r: 100, color: '#f59e0b', score: 256 },
+                    { name: '椰子', r: 115, color: '#78350f', score: 512 },
+                    { name: '西瓜', r: 130, color: '#22c55e', score: 1024 }
+                ];
+
+                const initWatermelon = () => {
+                    nextTick(() => {
+                        const cvs = document.getElementById('watermelon-canvas');
+                        if (!cvs) return;
+                        wm_ctx = cvs.getContext('2d');
+                        watermelonState.score = 0;
+                        watermelonState.fruits = [];
+                        watermelonState.nextType = Math.floor(Math.random() * 3);
+                        wm_isGameOver = false;
+                        if (wm_timer) cancelAnimationFrame(wm_timer);
+                        wm_timer = requestAnimationFrame(wm_update);
+                    });
+                };
+
+                const handleWatermelonInput = (e) => {
+                    if (wm_isGameOver || phoneState.games.isSettling) return;
+                    const rect = e.target.getBoundingClientRect();
+                    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+                    const type = watermelonState.nextType;
+                    const fruit = {
+                        x: Math.max(FRUIT_TYPES[type].r, Math.min(x, 300 - FRUIT_TYPES[type].r)),
+                        y: 50,
+                        type: type,
+                        vy: 2,
+                        vx: 0,
+                        isDropped: true
+                    };
+                    watermelonState.fruits.push(fruit);
+                    watermelonState.nextType = Math.floor(Math.random() * 4);
+                };
+
+                const wm_update = () => {
+                    if (phoneState.games.activeGame !== 'watermelon') return;
+                    wm_ctx.fillStyle = '#09090b';
+                    wm_ctx.fillRect(0, 0, 300, 500);
+
+                    // Physics & Collision
+                    watermelonState.fruits.forEach((f1, i) => {
+                        f1.y += f1.vy; f1.vy += 0.2; // Gravity
+                        if (f1.y + FRUIT_TYPES[f1.type].r > 500) { f1.y = 500 - FRUIT_TYPES[f1.type].r; f1.vy = 0; }
+
+                        for (let j = i + 1; j < watermelonState.fruits.length; j++) {
+                            const f2 = watermelonState.fruits[j];
+                            const dx = f1.x - f2.x; const dy = f1.y - f2.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            const minD = FRUIT_TYPES[f1.type].r + FRUIT_TYPES[f2.type].r;
+
+                            if (dist < minD) {
+                                if (f1.type === f2.type && f1.type < FRUIT_TYPES.length - 1) {
+                                    // Merge
+                                    const nextType = f1.type + 1;
+                                    const nf = { x: (f1.x + f2.x) / 2, y: (f1.y + f2.y) / 2, type: nextType, vy: 1, vx: 0 };
+                                    watermelonState.fruits.splice(j, 1);
+                                    watermelonState.fruits.splice(i, 1);
+                                    watermelonState.fruits.push(nf);
+                                    watermelonState.score += FRUIT_TYPES[nextType].score;
+                                    return;
+                                }
+                                // Basic separation
+                                const angle = Math.atan2(dy, dx);
+                                const overlap = minD - dist;
+                                f1.x += Math.cos(angle) * overlap * 0.5;
+                                f1.y += Math.sin(angle) * overlap * 0.5;
+                                f2.x -= Math.cos(angle) * overlap * 0.5;
+                                f2.y -= Math.sin(angle) * overlap * 0.5;
+                            }
+                        }
+
+                        // Game Over Line
+                        if (f1.y < 80 && f1.vy < 0.1 && watermelonState.fruits.length > 5) {
+                            wm_isGameOver = true;
+                            setTimeout(() => endGame('哥谭大西瓜', watermelonState.score), 1000);
+                        }
+
+                        // Drawing
+                        wm_ctx.beginPath();
+                        wm_ctx.arc(f1.x, f1.y, FRUIT_TYPES[f1.type].r, 0, Math.PI * 2);
+                        wm_ctx.fillStyle = FRUIT_TYPES[f1.type].color;
+                        wm_ctx.fill();
+                        wm_ctx.strokeStyle = '#fff';
+                        wm_ctx.lineWidth = 2;
+                        wm_ctx.stroke();
+                        wm_ctx.fillStyle = '#fff';
+                        wm_ctx.font = 'bold 10px sans-serif';
+                        wm_ctx.textAlign = 'center';
+                        wm_ctx.fillText(FRUIT_TYPES[f1.type].name, f1.x, f1.y + 3);
+                    });
+
+                    wm_timer = requestAnimationFrame(wm_update);
+                };
+
+                // ===== FLAPPY BAT =====
+                const flappyState = reactive({ score: 0, best: 0, isWaiting: true });
+                let fl_ctx, fl_timer, bat_y = 200, bat_vy = 0, pipes = [];
+
+                const initFlappy = () => {
+                    nextTick(() => {
+                        const cvs = document.getElementById('flappy-canvas');
+                        if (!cvs) return;
+                        fl_ctx = cvs.getContext('2d');
+                        flappyState.isWaiting = true;
+                        fl_drawStart();
+                    });
+                };
+
+                const startFlappy = () => {
+                    flappyState.isWaiting = false;
+                    flappyState.score = 0;
+                    bat_y = 200; bat_vy = 0; pipes = [];
+                    if (fl_timer) cancelAnimationFrame(fl_timer);
+                    fl_timer = requestAnimationFrame(fl_update);
+                };
+
+                const flappyJump = () => { if (!flappyState.isWaiting) bat_vy = -5; };
+
+                const fl_update = () => {
+                    if (phoneState.games.activeGame !== 'flappy' || flappyState.isWaiting) return;
+
+                    fl_ctx.fillStyle = '#0c0a09'; fl_ctx.fillRect(0, 0, 280, 450);
+
+                    bat_vy += 0.25; bat_y += bat_vy;
+                    // Draw Bat
+                    fl_ctx.fillStyle = '#fbbf24';
+                    fl_ctx.beginPath();
+                    fl_ctx.ellipse(50, bat_y, 15, 10, 0, 0, Math.PI * 2);
+                    fl_ctx.fill();
+                    fl_ctx.fillStyle = '#000';
+                    fl_ctx.fillText('🦇', 42, bat_y + 5);
+
+                    if (pipes.length === 0 || pipes[pipes.length - 1].x < 150) {
+                        pipes.push({ x: 300, gapY: 100 + Math.random() * 200, passed: false });
+                    }
+
+                    pipes.forEach((p, i) => {
+                        p.x -= 2;
+                        fl_ctx.fillStyle = '#1c1917';
+                        fl_ctx.fillRect(p.x, 0, 40, p.gapY - 60);
+                        fl_ctx.fillRect(p.x, p.gapY + 60, 40, 450);
+
+                        if (p.x < 65 && p.x > 15) {
+                            if (bat_y < p.gapY - 55 || bat_y > p.gapY + 55) {
+                                endGame('蝙蝠冲冲冲', flappyState.score);
+                                flappyState.isWaiting = true;
+                                cancelAnimationFrame(fl_timer);
+                            }
+                        }
+                        if (p.x < 50 && !p.passed) { p.passed = true; flappyState.score++; }
+                        if (p.x < -40) pipes.splice(i, 1);
+                    });
+
+                    if (bat_y > 450 || bat_y < 0) {
+                        endGame('蝙蝠冲冲冲', flappyState.score);
+                        flappyState.isWaiting = true;
+                        cancelAnimationFrame(fl_timer);
+                    }
+
+                    fl_ctx.fillStyle = '#fff'; fl_ctx.font = 'bold 20px sans-serif';
+                    fl_ctx.fillText(flappyState.score, 140, 50);
+
+                    fl_timer = requestAnimationFrame(fl_update);
+                };
+
+                const fl_drawStart = () => {
+                    fl_ctx.fillStyle = '#0c0a09'; fl_ctx.fillRect(0, 0, 280, 450);
+                    fl_ctx.fillStyle = '#fff'; fl_ctx.textAlign = 'center';
+                    fl_ctx.fillText('GOTHAM FLAPPY BAT', 140, 200);
+                };
 
                 // MEOW MERGE (2048)
                 const mergeState = reactive({ score: 0, tiles: [] });
@@ -6298,7 +7407,32 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
 
                 const checkMailboxLogic = async () => { await generateMail(); };
 
+                const reRollLastMessage = async () => {
+                    if (!selectedCat.value || selectedCat.value.chatHistory.length < 2) return;
+
+                    const history = selectedCat.value.chatHistory;
+                    const lastMsg = history[history.length - 1];
+
+                    if (lastMsg.role === 'assistant') {
+                        // Remove the AI message
+                        history.splice(history.length - 1, 1);
+
+                        // Find the last user message to use as input
+                        const lastUserMsg = [...history].reverse().find(m => m.role === 'user');
+                        if (lastUserMsg) {
+                            addLog(`[RE-ROLL] 重新定位 ${selectedCat.value.name} 的意识波段...`);
+                            // We call sendMessage without adding the user message again
+                            // To do this, we need a version of sendMessage that handles re-rolling
+                            await sendMessageInternal(lastUserMsg.content, false, true);
+                        }
+                    }
+                };
+
                 const sendMessage = async (arg1 = null, arg2 = false) => {
+                    await sendMessageInternal(arg1, arg2, false);
+                };
+
+                const sendMessageInternal = async (arg1 = null, arg2 = false, isReRoll = false) => {
                     let overrideContent = null;
                     let isItemUse = false;
                     if (typeof arg1 === 'string') { overrideContent = arg1; isItemUse = (typeof arg2 === 'boolean') ? arg2 : false; }
@@ -6309,9 +7443,11 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                     if (typeof msg !== 'string') return;
                     if (!overrideContent) chatInput.value = '';
 
-                    sendingCat.chatHistory.push({ role: 'user', content: msg });
-                    if (!sendingCat.todayInteractions) sendingCat.todayInteractions = [];
-                    sendingCat.todayInteractions.push({ time: getCurrentTimeStr(), content: msg });
+                    if (!isReRoll) {
+                        sendingCat.chatHistory.push({ role: 'user', content: msg });
+                        if (!sendingCat.todayInteractions) sendingCat.todayInteractions = [];
+                        sendingCat.todayInteractions.push({ time: getCurrentTimeStr(), content: msg });
+                    }
 
                     if (sendingCat.isOut && Math.random() > 0.15) {
                         sendingCat.chatHistory.push({ role: 'system', isSystem: true, content: '信号连接失败... 目标处于高干扰区域 (夜巡中)' });
@@ -6338,7 +7474,7 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                         let timePerceptionStr = "";
                         if (lastChatMs) {
                             const hours = Math.floor(lastChatMs / (1000 * 60 * 60));
-                            if (hours >= 24) timePerceptionStr = `[TIME PERCEPTION]: You haven't talked to the user for ${Math.floor(hours/24)} days. Mention this if appropriate.`;
+                            if (hours >= 24) timePerceptionStr = `[TIME PERCEPTION]: You haven't talked to the user for ${Math.floor(hours / 24)} days. Mention this if appropriate.`;
                             else if (hours >= 1) timePerceptionStr = `[TIME PERCEPTION]: You haven't talked to the user for ${hours} hours.`;
                         }
                         const context = getUserRealLifeContext();
@@ -7032,8 +8168,39 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                     } catch (e) { user.coins += 100; showToast(`招募失败: ${e.message}`, "error"); } finally { isGachaLoading.value = false; }
                 };
 
-                watch(cats, (newCats) => {
+                const triggerLogicD = async (cat) => {
+                    if (!settings.apiKey) return;
+                    try {
+                        const userProfile = `ID: ${user.nickname}, 性别: ${user.gender}, 签名: ${user.phoneData.signature}`;
+                        const prompt = `你现在是处于人类身份的 ${cat.humanName || cat.name}。 这个叫 [${userProfile}] 的人刚刚在现实中收留了作为猫形态的你。为了方便监视/观察这个“愚蠢的人类”，你现在要通过手机通讯录向他发送一条【好友申请】。
+要求：
+1. 绝不能暴露你是他家里的猫，甚至不需要暴露你的真实超英身份。可以参考用户的个性签名或ID来“精准套路”对方。
+2. 胡扯一个极其离谱但又能让普通人通过的“加好友借口”。借口必须符合该角色的性格。
+3. 参考套路：${cat.trickArchetype || '送外卖/推销'}。
+4. 字数控制在 50 字以内。
+输出格式为：纯文本好友申请借口`;
+
+                        const res = await callAI(prompt, "Friend Request Master", 300);
+                        if (res) {
+                            const requestId = Date.now() + Math.random();
+                            user.phoneData.friendRequests.unshift({
+                                id: requestId,
+                                sender: cat.humanName || cat.name,
+                                avatar: cat.image_human || cat.image,
+                                message: res.trim(),
+                                catId: cat.id,
+                                status: 'pending',
+                                time: '刚刚'
+                            });
+                            showNotification("新的好友申请", `${cat.humanName || cat.name}: ${res.trim().substring(0, 20)}...`, cat.image_human || cat.image);
+                        }
+                    } catch (e) { console.error("Logic D Failed:", e); }
+                };
+
+                // Watchers for events
+                watch(cats, (newCats, oldCats) => {
                     newCats.forEach(cat => {
+                        // Check for reveal
                         if (cat.affinity >= 50 && !cat.hasRevealedHumanForm) {
                             cat.hasRevealedHumanForm = true;
                             triggerHumanRevealEvent(cat);
@@ -7062,6 +8229,7 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                     tempUserStatus.value = user.currentStatus;
                     checkSpecialEvent();
                     checkDailyInitialization();
+                    applyUISettings();
                     if (todayEvent.value && !alfredMessage.value.includes(todayEvent.value)) { alfredMessage.value = todayEvent.value + " " + alfredMessage.value; }
                     setInterval(updateCountdown, 1000); setInterval(() => { autoUpdateLogic(); }, 20 * 60 * 1000); setInterval(() => { currentTime.value = new Date(); }, 30000);
                     startGlitchTimer();
@@ -7141,7 +8309,7 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                     systemLogs, logWindow, notification,
                     showAdminLogin, showAdminPanel, adminPassword, isAdmin, openAdmin, checkAdminPassword,
                     phoneState, phoneIdentities, phoneChatInput, phoneChatRef,
-                    openPhoneChat, getPhoneChatHistory, getPhoneLastMessage, getPhoneLastTime, sendPhoneMessage,
+                    openPhoneChat, getPhoneChatHistory, getPhoneLastMessage, getPhoneLastTime, sendPhoneMessage, reRollLastPhoneMessage,
                     openMomentsSettings, saveMomentsSettings, likeMoment, addComment, postMoment,
                     generatePhoneNews, generatePhoneMoments,
                     addWalletTransaction,
@@ -7149,10 +8317,12 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                     unlockCodexEntry, generateGNNContent, gnnLoading,
                     groupChatState, sendGroupMessage, catchInTheAct,
                     sendPhoneMoney, openPhotoDesc,
-                    collectRedPacket, phoneInputRef,
+                    phoneInputRef,
                     initTetris, tetrisAction, endGame, tetrisState, mergeState, handleMergeTouchStart, handleMergeTouchEnd, matchState, initMerge, initMatch, matchClick,
+                    watermelonState, initWatermelon, handleWatermelonInput, flappyState, initFlappy, startFlappy, flappyJump, reRollLastMessage,
                     isAppLoading, loadingProgress, loadingMessage,
-                    tempUserStatus, showPhoneImageDescModal, phoneImageDesc, sendPhoneDescImage
+                    tempUserStatus, showPhoneImageDescModal, phoneImageDesc, sendPhoneDescImage,
+                    uiTheme, uiBlur, uiScanlines, uiTermSize, setUITheme, applyUISettings
                 };
             }
         }).mount('#app');
