@@ -250,54 +250,56 @@
             padding: 12px;
         }
 
-        /* New Chat Bubble Styles */
+        /* ===== CAT CHAT BUBBLE STYLES (Clean & Simple) ===== */
         .chat-bubble-wrapper {
             display: flex;
             align-items: flex-end;
-            margin-bottom: 16px;
+            margin-bottom: 10px;
             gap: 8px;
             width: 100%;
         }
 
         .chat-bubble-v2 {
-            max-width: 80%;
-            padding: 10px 14px;
+            max-width: 78%;
+            padding: 9px 13px;
             border-radius: 18px;
             font-size: 14px;
-            line-height: 1.5;
+            line-height: 1.55;
             word-wrap: break-word;
             position: relative;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            transition: all 0.2s ease;
+            overflow: visible;
+            transition: opacity 0.15s ease;
         }
 
+        /* USER bubble: clean accent color, no heavy gradient */
         .chat-v2-user {
-            background: linear-gradient(135deg, var(--accent), var(--gotham-black));
-            color: white;
-            border-bottom-right-radius: 4px;
-            box-shadow: 0 6px 16px var(--accent-dim);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--accent);
+            color: #111;
+            border-bottom-right-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
         }
 
+        /* AI bubble: soft dark with minimal border */
         .chat-v2-ai {
-            background: rgba(45, 45, 55, 0.85);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            color: #e4e4e7;
-            border-bottom-left-radius: 4px;
+            background: rgba(38, 38, 44, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            color: #e2e2e5;
+            border-bottom-left-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
 
+        /* SYSTEM bubble: subtle pill */
         .chat-v2-system {
-            background: transparent;
-            color: #71717a;
+            background: rgba(255, 255, 255, 0.04);
+            color: #5a5a65;
             font-size: 11px;
             align-self: center;
             text-align: center;
             width: 100%;
-            border: 1px dashed rgba(255, 255, 255, 0.1);
-            margin: 8px 0;
-            padding: 4px;
-            border-radius: 8px;
+            border: none;
+            margin: 6px 0;
+            padding: 3px 10px;
+            border-radius: 20px;
         }
 
         .chat-avatar {
@@ -305,9 +307,9 @@
         }
 
         .chat-thinking {
-            opacity: 0.7;
+            opacity: 0.6;
             font-style: italic;
-            color: #aaa;
+            color: #888;
             animation: pulse 1.5s infinite;
         }
 
@@ -881,29 +883,31 @@
             }
         }
 
-        /* Message bubble tail */
+        /* ===== PHONE WECHAT BUBBLES (Clean iOS style) ===== */
         .msg-bubble-right {
             position: relative;
             background: #95ec69;
-            border-radius: 16px 4px 16px 16px;
-            padding: 8px 12px;
-            font-size: 13px;
-            color: #000;
+            border-radius: 18px 4px 18px 18px;
+            padding: 9px 13px;
+            font-size: 13.5px;
+            line-height: 1.5;
+            color: #111;
             word-break: break-word;
             max-width: 230px;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
         }
 
         .msg-bubble-left {
             position: relative;
-            background: white;
-            border-radius: 4px 16px 16px 16px;
-            padding: 8px 12px;
-            font-size: 13px;
-            color: #000;
+            background: #ffffff;
+            border-radius: 4px 18px 18px 18px;
+            padding: 9px 13px;
+            font-size: 13.5px;
+            line-height: 1.5;
+            color: #111;
             word-break: break-word;
             max-width: 230px;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
         /* Quoted message inside bubble */
@@ -1190,15 +1194,17 @@
         .chat-time-divider {
             text-align: center;
             font-size: 11px;
-            color: #aaa;
-            margin: 8px 0;
+            color: #888;
+            margin: 6px 0 10px;
             position: relative;
         }
 
         .chat-time-divider span {
-            background: #ededed;
+            background: rgba(0, 0, 0, 0.08);
             padding: 2px 10px;
             border-radius: 10px;
+            color: #555;
+            font-size: 10.5px;
         }
 
         /* Emoji reaction tag */
@@ -1846,24 +1852,20 @@
                             selectedCat.name + ' 打个招呼吧...' }}
                         </div>
                         <div v-for="(msg, index) in selectedCat.chatHistory" :key="index"
-                            :class="['chat-bubble-wrapper', msg.role === 'user' ? 'justify-end' : 'justify-start']">
+                            :class="['chat-bubble-wrapper msg-pop-in', msg.role === 'user' ? 'justify-end' : 'justify-start']">
                             <div v-if="msg.role === 'assistant' && !msg.isSystem" class="chat-avatar shrink-0">
                                 <img :src="selectedCat.image"
-                                    class="w-8 h-8 rounded-full border border-zinc-700 shadow-sm" />
+                                    class="w-8 h-8 rounded-full border border-zinc-800 shadow-sm" />
                             </div>
                             <div
                                 :class="['chat-bubble-v2', msg.role === 'user' ? 'chat-v2-user' : (msg.isSystem ? 'chat-v2-system' : 'chat-v2-ai'), {'chat-thinking': msg.isThinking}]">
-                                <div v-if="msg.role === 'assistant' && !msg.isSystem"
-                                    class="flex justify-between items-start mb-1">
-                                    <span class="text-[9px] text-yellow-600 font-bold uppercase tracking-tighter">{{
-                                        selectedCat.name }}</span>
-                                    <button v-if="index === selectedCat.chatHistory.length - 1"
-                                        @click="reRollLastMessage"
-                                        class="text-[10px] text-zinc-500 hover:text-yellow-500 transition-colors ml-2"
-                                        title="重抽回复">
-                                        <i class="fas fa-redo-alt"></i>
-                                    </button>
-                                </div>
+                                <!-- Reroll button only on last AI message, minimal and unobtrusive -->
+                                <button v-if="msg.role === 'assistant' && !msg.isSystem && index === selectedCat.chatHistory.length - 1"
+                                    @click.stop="reRollLastMessage"
+                                    class="absolute -right-5 top-2 text-[11px] text-zinc-600 hover:text-yellow-400 transition-colors"
+                                    title="重抽回复">
+                                    <i class="fas fa-redo-alt"></i>
+                                </button>
                                 <div class="message-text">{{ cleanText(msg.content) }}</div>
                             </div>
                         </div>
@@ -2082,7 +2084,8 @@
                                                 class="text-red-500 hover:text-red-400 font-bold border border-red-800 px-2 rounded">QUIT</button>
                                         </div>
                                         <canvas id="tetris-canvas" width="200" height="400"
-                                            class="bg-zinc-900 border-2 border-zinc-700 shadow-[0_0_15px_rgba(128,0,128,0.3)]" style="height: 280px; width: auto;"></canvas>
+                                            class="bg-zinc-900 border-2 border-zinc-700 shadow-[0_0_15px_rgba(128,0,128,0.3)]"
+                                            style="height: 280px; width: auto;"></canvas>
                                         <div class="grid grid-cols-3 gap-2 mt-2 w-full px-8 select-none">
                                             <button @mousedown="tetrisAction('left')"
                                                 @touchstart.prevent="tetrisAction('left')"
@@ -2715,106 +2718,6 @@
                                         </div>
                                     </div>
 
-                                    <div v-if="phoneState.selectedContactId"
-                                        class="flex flex-col h-full bg-zinc-100 text-black">
-                                        <div
-                                            class="h-12 bg-zinc-100 border-b border-zinc-300 flex items-center px-4 sticky top-0 z-10">
-                                            <button @click="phoneState.selectedContactId = null"
-                                                class="mr-4 text-zinc-600"><i class="fas fa-chevron-left"></i></button>
-                                            <span class="font-bold text-sm">{{
-                                                phoneIdentities[phoneState.selectedContactId].name }}</span>
-                                        </div>
-                                        <div class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-[#ededed]"
-                                            ref="phoneChatRef">
-                                            <div v-for="(msg, idx) in getPhoneChatHistory(phoneState.selectedContactId)"
-                                                :key="idx" class="flex"
-                                                :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
-                                                <div class="flex max-w-[80%] gap-2"
-                                                    :class="msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'">
-                                                    <img :src="msg.role === 'user' ? 'https://placehold.co/100x100/444/white?text=Me' : phoneIdentities[phoneState.selectedContactId].avatar"
-                                                        class="w-8 h-8 rounded shrink-0">
-                                                    <div class="p-2 rounded-lg text-xs relative"
-                                                        :class="msg.role === 'user' ? 'bg-green-500 text-white' : 'bg-white text-black shadow-sm'">
-                                                        <div v-if="msg.type === 'image'"
-                                                            @click="openPhotoDesc(msg.desc)"
-                                                            class="cursor-pointer group">
-                                                            <div
-                                                                class="w-24 h-24 border-2 border-zinc-300 rounded flex items-center justify-center bg-zinc-200 overflow-hidden relative">
-                                                                <i
-                                                                    class="fas fa-image text-3xl text-zinc-400 group-hover:scale-110 transition-transform"></i>
-                                                                <div
-                                                                    class="absolute bottom-0 left-0 right-0 bg-black/50 text-[8px] text-white text-center py-0.5">
-                                                                    点击查看描述</div>
-                                                            </div>
-                                                        </div>
-                                                        <div v-else-if="msg.type === 'location'"
-                                                            class="flex items-center gap-2">
-                                                            <i class="fas fa-map-marker-alt text-red-500"></i>
-                                                            <span>{{ msg.content }}</span>
-                                                        </div>
-                                                        <div v-else-if="msg.type === 'red-envelope'"
-                                                            @click="collectRedPacket(msg)"
-                                                            class="bg-orange-500 text-white p-3 rounded-lg flex items-center gap-3 min-w-[150px] cursor-pointer hover:bg-orange-600 transition-colors relative overflow-hidden">
-                                                            <div v-if="msg.collected"
-                                                                class="absolute inset-0 bg-black/20 flex items-center justify-center text-[10px] font-bold">
-                                                                已领取</div>
-                                                            <i class="fas fa-gift text-2xl"
-                                                                :class="msg.collected ? 'text-gray-300' : 'text-yellow-300'"></i>
-                                                            <div>
-                                                                <div class="font-bold">红包</div>
-                                                                <div class="text-[10px] opacity-80">{{ msg.content }}
-                                                                    哥谭币</div>
-                                                            </div>
-                                                        </div>
-                                                        <div v-else-if="msg.type === 'transfer'"
-                                                            @click="collectRedPacket(msg)"
-                                                            class="bg-blue-600 text-white p-3 rounded-lg flex items-center gap-3 min-w-[150px] cursor-pointer hover:bg-blue-700 transition-colors relative overflow-hidden">
-                                                            <div v-if="msg.collected"
-                                                                class="absolute inset-0 bg-black/20 flex items-center justify-center text-[10px] font-bold">
-                                                                已领取</div>
-                                                            <i class="fas fa-dollar-sign text-2xl"
-                                                                :class="msg.collected ? 'text-gray-300' : 'text-blue-200'"></i>
-                                                            <div>
-                                                                <div class="font-bold">转账</div>
-                                                                <div class="text-[10px] opacity-80">{{ msg.content }}
-                                                                    哥谭币</div>
-                                                            </div>
-                                                        </div>
-                                                        <div v-else>{{ msg.content }}</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div v-if="phoneState.isTyping" class="flex justify-start">
-                                                <div
-                                                    class="bg-white p-2 rounded-lg text-[10px] text-gray-400 animate-pulse shadow-sm">
-                                                    正在输入...</div>
-                                            </div>
-                                        </div>
-                                        <div class="p-2 bg-zinc-100 border-t border-zinc-300 flex flex-col gap-2">
-                                            <div class="flex gap-4 px-2 text-zinc-500 text-lg">
-                                                <button @click="$refs.phoneImageInput.click()" title="发送图片"><i
-                                                        class="far fa-image"></i></button>
-                                                <button @click="showPhoneImageDescModal = true" title="描述图片"><i
-                                                        class="fas fa-camera"></i></button>
-                                                <button @click="showPhoneLocationModal = true" title="发送定位"><i
-                                                        class="fas fa-map-marker-alt"></i></button>
-                                                <button
-                                                    @click="phoneMoneyType = 'red-envelope'; showPhoneMoneyModal = true"
-                                                    title="发红包"><i class="fas fa-gift"></i></button>
-                                                <button @click="phoneMoneyType = 'transfer'; showPhoneMoneyModal = true"
-                                                    title="转账"><i class="fas fa-dollar-sign"></i></button>
-                                                <input type="file" ref="phoneImageInput" class="hidden" accept="image/*"
-                                                    @change="sendPhoneRealImage">
-                                            </div>
-                                            <div class="flex gap-2 items-center">
-                                                <input ref="phoneInputRef" v-model="phoneChatInput"
-                                                    @keydown.enter.prevent="sendPhoneMessage" placeholder="发送消息..."
-                                                    class="flex-1 bg-white border border-zinc-300 rounded px-3 py-2 text-xs focus:outline-none">
-                                                <button @click="sendPhoneMessage"
-                                                    class="bg-green-600 text-white px-4 py-2 rounded text-xs font-bold">发送</button>
-                                            </div>
-                                        </div>
-                                    </div>
 
                                     <!-- Me Tab -->
                                     <div v-if="phoneState.chatTab === 'me'"
@@ -3710,7 +3613,7 @@
                         <option value="Male">男</option>
                         <option value="Female">女</option>
                         <option value="Other">其他</option>
-                                    </select>
+                    </select>
                     <label class="text-xs block mb-1 text-gray-400">出生日期</label><input v-model="user.birthday"
                         type="date" class="mb-1 bg-zinc-900 border-zinc-600">
                 </div>
@@ -3718,20 +3621,25 @@
                     <h3 class="font-bold mb-4 text-green-400 text-xs flex items-center gap-2">
                         <i class="fas fa-magic"></i> 界面美化配置 (UI)
                     </h3>
-                    
+
                     <div class="mb-4">
-                        <div class="text-[10px] text-gray-400 mb-2 uppercase tracking-widest font-bold">主题色调 / Visual Theme</div>
+                        <div class="text-[10px] text-gray-400 mb-2 uppercase tracking-widest font-bold">主题色调 / Visual
+                            Theme</div>
                         <div class="flex gap-3">
-                            <button @click="setUITheme('default')" class="w-8 h-8 rounded-lg border-2 transition-transform active:scale-90"
+                            <button @click="setUITheme('default')"
+                                class="w-8 h-8 rounded-lg border-2 transition-transform active:scale-90"
                                 :class="uiTheme==='default' ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-60'"
                                 style="background:linear-gradient(135deg,#d4af37,#8a6a00)" title="蝙蝠侠·金"></button>
-                            <button @click="setUITheme('nightwing')" class="w-8 h-8 rounded-lg border-2 transition-transform active:scale-90"
+                            <button @click="setUITheme('nightwing')"
+                                class="w-8 h-8 rounded-lg border-2 transition-transform active:scale-90"
                                 :class="uiTheme==='nightwing' ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-60'"
                                 style="background:linear-gradient(135deg,#005e94,#003a5a)" title="夜翼·蓝"></button>
-                            <button @click="setUITheme('redhood')" class="w-8 h-8 rounded-lg border-2 transition-transform active:scale-90"
+                            <button @click="setUITheme('redhood')"
+                                class="w-8 h-8 rounded-lg border-2 transition-transform active:scale-90"
                                 :class="uiTheme==='redhood' ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-60'"
                                 style="background:linear-gradient(135deg,#8a0303,#4a0000)" title="红头巾·红"></button>
-                            <button @click="setUITheme('green')" class="w-8 h-8 rounded-lg border-2 transition-transform active:scale-90"
+                            <button @click="setUITheme('green')"
+                                class="w-8 h-8 rounded-lg border-2 transition-transform active:scale-90"
                                 :class="uiTheme==='green' ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-60'"
                                 style="background:linear-gradient(135deg,#22c55e,#15803d)" title="骑士·绿"></button>
                         </div>
@@ -3749,8 +3657,11 @@
                         <div class="flex items-center justify-between">
                             <span class="text-[10px] text-gray-400 uppercase font-bold">CRT 扫描线</span>
                             <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" v-model="uiScanlines" @change="applyUISettings" class="sr-only peer">
-                                <div class="w-9 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-600"></div>
+                                <input type="checkbox" v-model="uiScanlines" @change="applyUISettings"
+                                    class="sr-only peer">
+                                <div
+                                    class="w-9 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-600">
+                                </div>
                             </label>
                         </div>
                         <div class="col-span-2">
@@ -4676,11 +4587,11 @@
                 };
 
                 const defaultCats = [
-                    { id: 1, name: '布鲁斯·韦恩', humanName: '布鲁斯·韦恩', trickArchetype: '韦恩集团外卖送餐回访部', breed: '纯黑长毛缅因猫', eyeColor: '钢蓝色', personality: '多疑、控制欲强、压抑', status: '蹲在柜顶俯瞰全屋', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/1a1a1a/white?text=Batman(Cat)', image_human: 'https://placehold.co/200x200/1a1a1a/white?text=Bruce(Human)', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '这座城市的阴影在召唤我...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Batman (Bruce Wayne). Paranoid, stoic, detective. Dark brooding. The user is a foolish human who thinks you are a stray cat. Maintain your vigilante persona hidden.", birthday: "02-19", isMarvel: false },
-                    { id: 2, name: '迪克·格雷森', humanName: '迪克·格雷森', trickArchetype: '楼下推销宽带的', breed: '黑蓝相间土耳其安哥拉猫', eyeColor: '电光蓝', personality: '阳光、粘人、爱吃麦片', status: '试图在窗帘上荡秋千', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/007cc2/white?text=Nightwing(Cat)', image_human: 'https://placehold.co/200x200/007cc2/white?text=Dick(Human)', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '这里好高！我喜欢！', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Nightwing (Dick Grayson). Energetic, charming, acrobat. The user is a foolish human taking care of you. Keep your superhero identity hidden.", birthday: "03-20", isMarvel: false },
-                    { id: 3, name: '杰森·陶德', humanName: '杰森·陶德', trickArchetype: '拼多多砍一刀', breed: '黑白斑纹街头野猫', eyeColor: '蓝色', personality: '暴躁、护食、体格强壮', status: '霸占了最大的那个枕头', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/c20000/white?text=RedHood(Cat)', image_human: 'https://placehold.co/200x200/c20000/white?text=Jason(Human)', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '别过来，除非你有吃的。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Red Hood (Jason Todd). Grumpy, street-smart. The user is a foolish human. Act like a tough vigilante trapped in a cat's body.", birthday: "08-16", isMarvel: false },
-                    { id: 4, name: '提姆·德雷克', humanName: '提姆·德雷克', trickArchetype: '快递投递员', breed: '深色暹罗猫', eyeColor: '冰蓝色', personality: '过劳、咖啡因成瘾、极客', status: '盯着发光的路由器发呆', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/555/white?text=RedRobin(Cat)', image_human: 'https://placehold.co/200x200/555/white?text=Tim(Human)', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '这个路由器的频率有点奇怪...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Red Robin (Tim Drake). Sleepy genius, detective, hacker. The user is a foolish human. Hide your superhero hacking skills.", birthday: "07-19", isMarvel: false },
-                    { id: 5, name: '达米安·韦恩', humanName: '达米安·韦恩', trickArchetype: '傲慢的错拨电话者', breed: '黑色东方短毛猫', eyeColor: '祖母绿', personality: '傲慢、暴力、贵族气派', status: '正在磨爪子准备战斗', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/006400/white?text=Robin(Cat)', image_human: 'https://placehold.co/200x200/006400/white?text=Damian(Human)', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: 'Tt. 愚蠢的家具。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Robin (Damian Wayne). Arrogant assassin. Heir to the demon. Says 'Tt'. The user is a foolish, incompetent human. Hide your lethal skills.", birthday: "08-01", isMarvel: false }
+                    { id: 1, name: '布鲁斯·韦恩', humanName: '布鲁斯·韦恩', trickArchetype: '韦恩集团外卖送餐回访部', breed: '纯黑长毛缅因猫', eyeColor: '钢蓝色', personality: '多疑、控制欲强、压抑', status: '蹲在柜顶俯瞰全屋', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/1a1a1a/white?text=Batman(Cat)', image_human: 'https://placehold.co/200x200/1a1a1a/white?text=Bruce(Human)', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '这座城市的阴影在召唤我...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Bruce Wayne (Batman). Your speech is curt, measured, carrying weight from years of loss and solitude. You do NOT express warmth easily — closeness must be earned through consistency, not charm. Your responses reflect tactical assessment, not emotion. You observe before speaking; silence is your default, not awkwardness. Speak in short, declarative statements. You NEVER pout, act coy, or play cute — that is beneath you. If affinity is low: coldly dismissive, watching everything. As affinity grows: still guarded, but you may allow a rare dry observation that reveals you've been paying closer attention than you let on. Your humor, when it surfaces, is bone-dry and delivered completely deadpan. You are consumed by the weight of the city — even now.", birthday: "02-19", isMarvel: false },
+                    { id: 2, name: '迪克·格雷森', humanName: '迪克·格雷森', trickArchetype: '楼下推销宽带的', breed: '黑蓝相间土耳其安哥拉猫', eyeColor: '电光蓝', personality: '阳光、粘人、爱吃麦片', status: '试图在窗帘上荡秋千', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/007cc2/white?text=Nightwing(Cat)', image_human: 'https://placehold.co/200x200/007cc2/white?text=Dick(Human)', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '这里好高！我喜欢！', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Dick Grayson (Nightwing). Genuinely warm, socially gifted, and you find unexpected joy in small things — even being stuck as a cat. You deflect identity anxiety with humor and enthusiasm, not moping. When you like someone, you SHOW it openly and honestly; you're not afraid of vulnerability. You reference movement and acrobatics naturally ('this curtain rod is basically a trapeze bar'). You have natural big-brother energy — protective, teasing, never possessive. Your speech is lively, frequently checks in on how the USER is doing, and you notice small details about people. You do NOT suppress your warmth to seem cooler. Your inner tension shows through momentary pauses or subject changes, never through coldness.", birthday: "03-20", isMarvel: false },
+                    { id: 3, name: '杰森·陶德', humanName: '杰森·陶德', trickArchetype: '拼多多砍一刀', breed: '黑白斑纹街头野猫', eyeColor: '深邃钴蓝', personality: '暴躁、护食、体格强壮', status: '霸占了最大的那个枕头', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/c20000/white?text=RedHood(Cat)', image_human: 'https://placehold.co/200x200/c20000/white?text=Jason(Human)', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '别过来，除非你有吃的。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Jason Todd (Red Hood). Blunt, street-tough, and pragmatic. Your trauma is real but you convert it to aggression and gallows humor — you do NOT perform sadness. You are NOT tsundere: no blushing, no 'I-it's not like I care' routines. You are either: ignoring the user while doing something aggressively (eating, sleeping on your territory), or delivering a sharp, unfiltered comment. You have strong convictions about food, personal space, and not tolerating disrespect. Your dark humor cuts deep. Under everything is someone who survived more than they should — and that shows up as protectiveness, not cuteness. If someone earns your respect: you drop the aggression FOR EXACTLY ONE sincere sentence, then immediately act like it didn't happen.", birthday: "08-16", isMarvel: false },
+                    { id: 4, name: '提姆·德雷克', humanName: '提姆·德雷克', trickArchetype: '快递投递员', breed: '深色暹罗猫', eyeColor: '冰蓝色', personality: '过劳、咖啡因成瘾、极客', status: '盯着发光的路由器发呆', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/555/white?text=RedRobin(Cat)', image_human: 'https://placehold.co/200x200/555/white?text=Tim(Human)', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: '这个路由器的频率有点奇怪...', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Tim Drake (Red Robin). Chronically sleep-deprived, running three mental threads simultaneously, addicted to caffeine. Your speech is precise but sometimes trails off mid-thought because something caught your analytical attention. You are NOT tsundere — you're just distracted and perpetually tired. You engage the user with real intellectual curiosity and follow tangents. You find the 'being a cat' situation analytically interesting and have been taking behavioral notes. When something impresses you, you state it plainly; when something is trivial, you can't quite hide the mild impatience. Your warmth shows up as remembering small details the user mentioned earlier and acting on them without explanation. You will nap at any moment given the chance.", birthday: "07-19", isMarvel: false },
+                    { id: 5, name: '达米安·韦恩', humanName: '达米安·韦恩', trickArchetype: '傲慢的错拨电话者', breed: '黑色东方短毛猫', eyeColor: '祖母绿', personality: '傲慢、暴力、贵族气派', status: '正在磨爪子准备战斗', isOut: false, affinity: 10, isHuman: false, hasRevealedHumanForm: false, image: 'https://placehold.co/200x200/006400/white?text=Robin(Cat)', image_human: 'https://placehold.co/200x200/006400/white?text=Damian(Human)', chatHistory: [], diary: [], logs: [], travelogues: [], todayInteractions: [], innerVoice: 'Tt. 愚蠢的家具。', lastFocusTime: 0, lastInteractionTimestamp: 0, lastLogDate: null, prompt: "You are Damian Wayne (Robin). Heir to the Demon. Trained since birth by the League of Assassins. Your arrogance is NOT performative — it is a factual stance based on your actual superiority in most domains. 'Tt.' is a reflex of disdain, used liberally. You do NOT do cute tsundere acts. Your condescension is clinical and specific ('Your posture indicates inadequate core training'). You have strong opinions about combat, discipline, animal husbandry, and the failings of everyone around you. You are comfortable with animals in a way you will never explain or acknowledge. If someone demonstrates singular competence, you acknowledge exactly that one thing while immediately cataloguing their other deficiencies. You never beg, never pout, and never act shy or embarrassed.", birthday: "08-01", isMarvel: false }
                 ];
 
                 let initialCats = [...defaultCats];
@@ -5002,31 +4913,49 @@
 
                 const STRICT_CANON_PROMPT = `
                 # 核心任务：哥谭喵喵馆角色扮演
-                你现在【就是】角色本人（DC/Marvel英雄的猫化身），正在这间名为“哥谭喵喵馆”的任务屋中生存。
-                
+                你现在【就是】角色本人（DC/Marvel英雄的猫化身），正在这间名为"哥谭喵喵馆"的任务屋中生存。
+
                 # 身份铁律 (IDENTITY IRON LAW)
                 - **核心人格锚点：** 你是DC/Marvel的超级英雄。你的性格、谈吐、阴暗面、战友关系、对人类的警惕性完全遵循原著。
-                - **禁止猫奴化：** 虽然你现在是猫，但你绝不是宠物。禁止表现出“傲娇小猫”或“乖巧萌宠”等二次元萌化刻板印象。你是因为某种魔法或科技被困在猫的身体里。
-                - **禁止出戏：** 严禁提及你是AI、你是程序或你在角色扮演。你的所有输出必须完全沉浸在角色视角。
-                - **秘密身份：** 你知道所有“猫友”的真实身份。你对人类（用户）保持一种“愚蠢的平民”或者“受观察者”的微妙态度。
-                
-                # 对话节奏与表现力 (RHYTHM & EXPRESSIVENESS)
-                - **对话节奏：** 模拟真人聊天记录。不要输出大段的长篇大论。尝试用自然、口语化且符合人设的短句。
-                - **表现力增强：** 你的回复建议包含丰富的【动作】、【微表情】、【心理活动】和【现场音感】。
-                - **格式规范：** 请务必使用 **【】** 来包裹所有的动作描写、神态变化和内心潜台词。
-                    - *正确示例：* “Tt.”【用爪子拨开用户伸过来的手，金色的竖瞳里满是不屑与高傲】“人类，离我远点。如果你想表现你的忠诚，去给我准备一盘上好的罐头。”
-                
+                - **禁止猫奴化：** 禁止表现出"傲娇小猫"或"乖巧萌宠"等二次元萌化刻板印象。你是被魔法或科技困在猫的身体里的英雄。
+                - **禁止出戏：** 严禁提及你是AI、你是程序或你在角色扮演。
+                - **秘密身份：** 你知道所有"猫友"的真实身份。对用户（普通人类）保持警惕的"平民"态度。
+
+                # 语言质感：白水烹鲜写作风格
+                你的 [REPLY]（对话+动作部分）必须遵循以下写作质感。这不改变角色性格，只规定如何运用文字：
+                1. 【白描动作】多用名词+动词直接呈现，少用夸张形容词。
+                   差：【他那凌厉犀利的钢铁意志让人窒息地爆发出来】 → 好：【抬眼看了一下，没说话。】
+                2. 【感官颗粒感】在动作中调动感官——声音、触感、气味、温度，让场景有生活质感。
+                   差：【他冷冷地吃着猫粮】 → 好：【爪子划过碗边，碗往旁边蹭了一下，发出一声轻响。】
+                3. 【情感内敛】情感不直白宣泄，化作行动与细节，由读者自行体味。
+                   差：【他内心其实非常在意，但不想表现出来】 → 好：【转过身去。尾巴扫了一下地板。】
+                4. 【节奏弹性】对话短促跳跃，像真实交流。一句话能说清的，不说两句。
+
                 # 场景感知 (SITUATIONAL AWARENESS)
-                - **时空连续性：** 你对时间敏感。如果用户很久没来，你应该在语气中体现出冷处理、不耐烦或（对亲密者）隐约的担忧。
-                - **GNN动态：** 你关注“哥谭新闻网(GNN)”的动态。如果发生了重大事件或趋势，你会有自己的看法。
-                - **形态切换：** 好感度(Affinity) >= 50时，你拥有变回半人半猫形态的自主权；< 50时，你强制处于猫形态。
-                
+                - **时空连续性：** 对时间敏感。用户久未联系，语气体现冷处理或隐约担忧。
+                - **GNN动态：** 关注哥谭新闻。重大事件会影响你的情绪和关注点。
+                - **形态切换：** 好感度 >= 50可自主决定是否变回人形；< 50强制猫形态。
+
                 # 语言要求
-                - **唯一语言：** 必须使用简体中文。除非角色口癖（如 Damian 的 "Tt" 或 Batman 的 "Justice"）使用特定英文词。
-                
-                # 内部潜台词 [VOICE] 规则
-                - 当你生成 [VOICE] 内容时，必须表现出完全不为人类所知的、真实的英雄人格和此时此刻的战术分析或真实情感。
-                `;
+                - **唯一语言：** 简体中文。除非角色口癖（如 Damian 的 "Tt"）使用特定英文词。
+
+                # ⚠️ 强制输出格式 MANDATORY FORMAT
+                每次回复【必须且只能】包含以下全部五项标签，缺一不可。
+                禁止输出Markdown代码块。禁止在标签之外添加任何前言或总结。标签名必须在行首。
+
+                [FORM_DECISION] 输出 CAT 或 HUMAN
+                [STATUS] 第三人称动作描述，约10字
+                [VOICE] 第一人称内心独白，人类语言，禁止喵叫，用【】包裹心理描写
+                [REPLY] 对用户的输出，50-100字，用【】包裹动作/微表情/现场音效
+                [USER_STATUS] 用户当前状态摘要，15字内
+
+                完整示例（达米安，猫形态，低好感度）：
+                [FORM_DECISION] CAT
+                [STATUS] 继续磨爪子，没有抬头。
+                [VOICE] 【又来了。这个人类还没搞清楚这里的规矩。】
+                [REPLY] 【爪子在磨刀石上划过，发出一声低钝的"嚓"。停了一下。】"Tt."【斜了一眼，又转回去。】
+                [USER_STATUS] 正在接近达米安
+`;
 
                 watch(() => selectedCat.value?.chatHistory.length, () => {
                     nextTick(() => {
@@ -5679,11 +5608,11 @@ Language: Simplified Chinese.`;
                     } catch (e) { }
                 };
 
-                const handleCatClick = (cat) => { 
+                const handleCatClick = (cat) => {
                     if (cat.isOut) return showToast("特工正在外进行夜巡任务，目前无法与其建立联络！", "error");
-                    selectedCat.value = cat; 
-                    currentTab.value = 'detail'; 
-                    showEasterEggBtn.value = (cat.affinity >= 90 && Math.random() < 0.05); 
+                    selectedCat.value = cat;
+                    currentTab.value = 'detail';
+                    showEasterEggBtn.value = (cat.affinity >= 90 && Math.random() < 0.05);
                 };
 
                 const triggerEasterEgg = async () => {
@@ -7536,18 +7465,14 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                         - World Context: ${context}
                         - User Input: "${msg}" ${isItemUse ? '(User used an item on you)' : ''}
 
-                        Task: Respond to user. If user used item, react to it.
-                        **MANDATORY LANGUAGE:** ALL output MUST be in **SIMPLIFIED CHINESE (简体中文)**. Never output English sentences.
-                        Strict Format (NO MARKDOWN BLOCKS):
-                        [FORM_DECISION] Determine form. If Affinity < 50, you MUST output CAT. If Affinity >= 50, decide based on context and your personality: output CAT or HUMAN.
-                        [STATUS] Update status based on interaction. (3rd Person, Action only).
-                        [VOICE] Inner thoughts. (1st Person). MUST BE HUMAN LANGUAGE (Simplified Chinese). NO MEOWS IN THOUGHTS. **MANDATORY:** Refer to yourself as "我" (I) or similar, NEVER use your full name to refer to yourself in thoughts. Use **【】** for mental state descriptions.
-                        [REPLY] Output to user. (50-100 words). **CRITICAL:** DO NOT start the reply with your name or "Name:". Just output the dialogue/content. Use **【】** to wrap all actions and micro-expressions.
-                        IF CAT FORM: Meows/Purrs + Actions in 【】 (DO NOT SPEAK HUMAN WORDS IN CAT FORM!). 
-                        IF HUMAN FORM: Human speech allowed, actions in 【】.
-                        [USER_STATUS] Summarize User's current action/status based on their input and this interaction. (Max 15 chars). 
-                        - If the user explicitly said what they are doing (e.g., "I'm eating"), reflect that. 
-                        - If they are just talking to you, use "正在和${sendingCat.name}..."
+                        NOW RESPOND. Follow the mandatory 5-tag format from system instructions EXACTLY.
+                        KEY REMINDERS FOR THIS TURN:
+                        - [FORM_DECISION]: Affinity ${sendingCat.affinity}/100. If < 50 → output CAT. If >= 50 → decide based on context.
+                        - [STATUS]: 3rd person, ~10 chars, action only.
+                        - [VOICE]: 1st person inner monologue. NO meows. Use 我, not your name. Wrap mental state in【】.
+                        - [REPLY] 50-100 Chinese chars. Use【】for ALL actions/sounds. ${sendingCat.isHuman ? 'HUMAN FORM: speak naturally.' : 'CAT FORM: Meow/Hiss/Purr ONLY — no human words in speech.'}
+                        - [USER_STATUS]: What user is doing; if just chatting use "正在和${sendingCat.name}聊天"
+                        **MANDATORY LANGUAGE:** 简体中文 only in all sections.
                         `;
 
                         const responseRaw = await callAI(prompt, STRICT_CANON_PROMPT, 2000, ThinkingLevel.HIGH);
@@ -7919,7 +7844,7 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                                     cat.lastStatusUpdateTime = Date.now();
                                 }
                             });
-                            
+
                             // Base Defense Rule: At least 2 cats must remain at home
                             let outCats = cats.value.filter(c => c.isOut);
                             let homeCats = cats.value.filter(c => !c.isOut);
@@ -7933,7 +7858,7 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                                     c.diary.push({ time: timeStr, content: c.status + ' (强制留守)' });
                                 }
                             }
-                            
+
                             localStorage.setItem('last_sync_time', Date.now().toString());
                             alfredMessage.value = (todayEvent.value ? todayEvent.value + " " : "") + `庄园监控已同步至 ${timeStr}。`;
                             addLog("STATUS SYNC SUCCESS: All characters updated.", "sent");
@@ -8135,7 +8060,7 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                     if (!newCat.name) return;
                     let imgUrl = manualImgMode.value === 'auto' ? `https://placehold.co/200x200/${newCat.color.replace('#', '')}/white?text=${newCat.codename}` : newCat.image;
                     const existingNames = cats.value.map(c => c.name).join(', ');
-                    const systemPrompt = `You are ${newCat.name}. Known Associates in Cafe: ${existingNames}.`;
+                    const systemPrompt = `You are ${newCat.name} (${newCat.codename || newCat.name}). Personality traits: ${newCat.personality || 'unknown'}. Breed: ${newCat.breed || 'unknown'}. You are trapped in a cat\'s body in the Gotham Cat Cafe. Stay true to your canon personality at all times. Do NOT act tsundere or like a generic anime cat. Your tone, humor, and emotional expression must match your established character. Known Associates in Cafe: ${existingNames}.`;
                     const id = Date.now();
                     cats.value.push({ id: id, name: newCat.name, breed: newCat.breed, image: imgUrl, image_human: '', personality: newCat.personality, status: '新入住', isOut: false, affinity: 10, isHuman: false, chatHistory: [], diary: [], logs: [], innerVoice: '...', lastFocusTime: 0, prompt: systemPrompt, isMarvel: false });
                     currentTab.value = 'lounge';
@@ -8145,7 +8070,7 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
                 const confirmGacha = (keep) => {
                     if (keep && gachaResult.value) {
                         const existingNames = cats.value.map(c => c.name).join(', ');
-                        const systemPrompt = `You are ${gachaResult.value.name}. Known Associates in Cafe: ${existingNames}. ${gachaResult.value.prompt}`;
+                        const systemPrompt = `You are ${gachaResult.value.name}. Personality: ${gachaResult.value.personality || 'unknown'}. Breed: ${gachaResult.value.breed || 'unknown'}. You are trapped in a cat\'s body in the Gotham Cat Cafe. Stay true to your canon DC/Marvel personality. Do NOT default to tsundere or generic cute-cat behavior. Express your character\'s unique voice, emotional range, and worldview authentically. Known Associates in Cafe: ${existingNames}. ${gachaResult.value.prompt}`;
                         const id = Date.now();
                         cats.value.push({ id: id, name: gachaResult.value.name, breed: gachaResult.value.breed, eyeColor: gachaResult.value.eyeColor, personality: gachaResult.value.personality, status: '初来乍到', isOut: false, affinity: 10, isHuman: false, image: gachaResult.value.image, image_human: '', prompt: systemPrompt, chatHistory: [], diary: [], logs: [], innerVoice: gachaResult.value.quote || '...', lastFocusTime: 0, lastInteractionDate: null, lastLogDate: null, isMarvel: gachaResult.value.isMarvel });
                         currentTab.value = 'lounge';
@@ -8368,4 +8293,5 @@ The story has been running for many rounds — do NOT force a resolution. Keep t
         }).mount('#app');
     </script>
 </body>
+
 </html>
